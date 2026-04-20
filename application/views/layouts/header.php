@@ -528,17 +528,75 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section-title">Main Menu</div>
+            <div class="nav-section-title">Main</div>
             <a href="<?= site_url('dashboard') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'dashboard') ? 'active' : '' ?>">
                 <i class="bi bi-grid-1x2-fill"></i>
                 <span>Dashboard</span>
             </a>
+
+            <?php $rs = $this->session->userdata('role_slug'); ?>
+
+            <?php if (in_array($rs, array('super_admin','school_admin'))): ?>
+            <div class="nav-section-title">Administration</div>
             <a href="<?= site_url('users') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'users') ? 'active' : '' ?>">
                 <i class="bi bi-people-fill"></i>
-                <span>Manage Users</span>
+                <span>Users</span>
             </a>
+            <a href="<?= site_url('academic/school_years') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'school_years') ? 'active' : '' ?>">
+                <i class="bi bi-calendar3"></i>
+                <span>School Years</span>
+            </a>
+            <a href="<?= site_url('academic/grade_levels') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'grade_levels') ? 'active' : '' ?>">
+                <i class="bi bi-list-ol"></i>
+                <span>Grade Levels</span>
+            </a>
+            <a href="<?= site_url('academic/strands') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'strands') ? 'active' : '' ?>">
+                <i class="bi bi-signpost-split-fill"></i>
+                <span>SHS Strands</span>
+            </a>
+            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
+                <i class="bi bi-mortarboard-fill"></i>
+                <span>Programs (CHED)</span>
+            </a>
+            <a href="<?= site_url('academic/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
+                <i class="bi bi-book-fill"></i>
+                <span>Subjects</span>
+            </a>
+            <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
+                <i class="bi bi-diagram-3-fill"></i>
+                <span>Sections</span>
+            </a>
+            <?php endif; ?>
 
-            <div class="nav-section-title" style="margin-top: 0.5rem;">Account</div>
+            <?php if (in_array($rs, array('super_admin','school_admin','registrar'))): ?>
+            <div class="nav-section-title">Enrollment</div>
+            <a href="<?= site_url('enrollment/students') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'students') ? 'active' : '' ?>">
+                <i class="bi bi-person-badge-fill"></i>
+                <span>Students</span>
+            </a>
+            <a href="<?= site_url('enrollment') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'enrollment' && !$this->uri->segment(2)) ? 'active' : '' ?>">
+                <i class="bi bi-clipboard-check-fill"></i>
+                <span>Enrollment List</span>
+            </a>
+            <a href="<?= site_url('enrollment/enroll') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'enroll') ? 'active' : '' ?>">
+                <i class="bi bi-person-plus-fill"></i>
+                <span>Enroll Student</span>
+            </a>
+            <?php endif; ?>
+
+            <?php if (in_array($rs, array('super_admin','school_admin','teacher'))): ?>
+            <div class="nav-section-title">Academics</div>
+            <a href="<?= site_url('grades') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'grades') ? 'active' : '' ?>">
+                <i class="bi bi-journal-check"></i>
+                <span>Grades</span>
+            </a>
+            <a href="<?= site_url('attendance') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'attendance') ? 'active' : '' ?>">
+                <i class="bi bi-calendar-check-fill"></i>
+                <span>Attendance</span>
+            </a>
+            <?php endif; ?>
+
+            <div class="nav-section-title">Account</div>
             <a href="<?= site_url('auth/logout') ?>" class="sidebar-link">
                 <i class="bi bi-box-arrow-left"></i>
                 <span>Logout</span>

@@ -34,8 +34,8 @@
                             </td>
                             <td style="color:#64748b;"><?= htmlspecialchars($user->email) ?></td>
                             <td>
-                                <span class="badge-role <?= ($user->role == 'admin') ? 'badge-admin' : 'badge-user' ?>">
-                                    <?= ucfirst($user->role) ?>
+                                <span class="badge-role <?= (in_array($user->role_slug, array('super_admin','school_admin'))) ? 'badge-admin' : 'badge-user' ?>">
+                                    <?= $user->role_name ?>
                                 </span>
                             </td>
                             <td>

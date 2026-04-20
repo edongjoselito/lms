@@ -14,31 +14,47 @@
 
             <form action="<?= ($user) ? site_url('users/edit/' . $user->id) : site_url('users/create') ?>" method="post">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">First Name</label>
                         <input type="text" class="form-control" name="first_name"
                                value="<?= ($user) ? htmlspecialchars($user->first_name) : '' ?>" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name"
+                               value="<?= ($user && isset($user->middle_name)) ? htmlspecialchars($user->middle_name) : '' ?>">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Last Name</label>
                         <input type="text" class="form-control" name="last_name"
                                value="<?= ($user) ? htmlspecialchars($user->last_name) : '' ?>" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-2">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" placeholder="Jr., III"
+                               value="<?= ($user && isset($user->suffix)) ? htmlspecialchars($user->suffix) : '' ?>">
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Email Address</label>
                         <input type="email" class="form-control" name="email"
                                value="<?= ($user) ? htmlspecialchars($user->email) : '' ?>" required>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Password <?= ($user) ? '<small style="color:#94a3b8;font-weight:400;">(leave blank to keep current)</small>' : '' ?></label>
+                    <div class="col-md-4">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone"
+                               value="<?= ($user && isset($user->phone)) ? htmlspecialchars($user->phone) : '' ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Password <?= ($user) ? '<small style="color:#94a3b8;font-weight:400;">(blank = keep current)</small>' : '' ?></label>
                         <input type="password" class="form-control" name="password"
                                <?= ($user) ? '' : 'required' ?> minlength="6">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Role</label>
-                        <select class="form-select" name="role" required>
-                            <option value="user" <?= ($user && $user->role == 'user') ? 'selected' : '' ?>>User</option>
-                            <option value="admin" <?= ($user && $user->role == 'admin') ? 'selected' : '' ?>>Admin</option>
+                        <select class="form-select" name="role_id" required>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= $role->id ?>" <?= ($user && $user->role_id == $role->id) ? 'selected' : '' ?>><?= $role->name ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-6">

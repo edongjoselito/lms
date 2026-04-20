@@ -6,12 +6,12 @@ class Auth extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Admin_model');
+        $this->load->model('User_model');
     }
 
     public function index()
     {
-        if ($this->session->userdata('admin_logged_in')) {
+        if ($this->session->userdata('logged_in')) {
             redirect('dashboard');
         }
         $this->load->view('auth/login');
@@ -26,18 +26,22 @@ class Auth extends CI_Controller {
         $email = $this->input->post('email', TRUE);
         $password = $this->input->post('password');
 
-        $user = $this->Admin_model->login($email, $password);
+        $user = $this->User_model->authenticate($email, $password);
 
         if ($user) {
             $session_data = array(
-                'user_id'          => $user->id,
-                'first_name'       => $user->first_name,
-                'last_name'        => $user->last_name,
-                'email'            => $user->email,
-                'role'             => $user->role,
-                'admin_logged_in'  => TRUE
+                'user_id'    => $user->id,
+                'role_id'    => $user->role_id,
+                'role_slug'  => $user->role_slug,
+                'role_name'  => $user->role_name,
+                'first_name' => $user->first_name,
+                'last_name'  => $user->last_name,
+                'email'      => $user->email,
+                'logged_in'  => TRUE
             );
             $this->session->set_userdata($session_data);
+            $this->User_model->update_last_login($user->id);
+
             redirect('dashboard');
         } else {
             $this->session->set_flashdata('error', 'Invalid email or password.');
