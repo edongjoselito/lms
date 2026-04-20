@@ -6,14 +6,16 @@ class Enrollment extends Staff_Controller {
     public function __construct()
     {
         parent::__construct();
+        $this->require_school();
         $this->load->model(array('Enrollment_model', 'Academic_model', 'User_model'));
     }
 
     public function index()
     {
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         $filters = array();
         if ($sy) $filters['school_year_id'] = $sy->id;
+        if ($this->school_id) $filters['school_id'] = $this->school_id;
         if ($this->input->get('system_type')) $filters['system_type'] = $this->input->get('system_type');
 
         $data['title'] = 'Enrollment';
@@ -25,8 +27,10 @@ class Enrollment extends Staff_Controller {
 
     public function students()
     {
+        $filters = array();
+        if ($this->school_id) $filters['school_id'] = $this->school_id;
         $data['title'] = 'Students';
-        $data['students'] = $this->Enrollment_model->get_students();
+        $data['students'] = $this->Enrollment_model->get_students($filters);
         $this->render('enrollment/students', $data);
     }
 
@@ -49,6 +53,7 @@ class Enrollment extends Staff_Controller {
             }
 
             $student_data = array(
+                'school_id'      => $this->school_id,
                 'lrn'            => $this->input->post('lrn', TRUE) ?: NULL,
                 'student_id'     => $this->input->post('student_id', TRUE) ?: NULL,
                 'system_type'    => $this->input->post('system_type', TRUE),
@@ -78,10 +83,11 @@ class Enrollment extends Staff_Controller {
 
     public function enroll()
     {
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         if ($this->input->method() === 'post') {
             $d = array(
                 'student_id'     => $this->input->post('student_id'),
+                'school_id'      => $this->school_id,
                 'school_year_id' => $sy->id,
                 'section_id'     => $this->input->post('section_id') ?: NULL,
                 'system_type'    => $this->input->post('system_type', TRUE),
@@ -99,8 +105,13 @@ class Enrollment extends Staff_Controller {
 
         $data['title'] = 'Enroll Student';
         $data['school_year'] = $sy;
-        $data['students'] = $this->Enrollment_model->get_students(array('status' => 'active'));
-        $data['sections'] = $sy ? $this->Academic_model->get_sections(array('school_year_id' => $sy->id)) : array();
+        $stud_filters = array('status' => 'active');
+        if ($this->school_id) $stud_filters['school_id'] = $this->school_id;
+        $data['students'] = $this->Enrollment_model->get_students($stud_filters);
+        $sec_filters = array();
+        if ($sy) $sec_filters['school_year_id'] = $sy->id;
+        if ($this->school_id) $sec_filters['school_id'] = $this->school_id;
+        $data['sections'] = $this->Academic_model->get_sections($sec_filters);
         $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs();
         $data['strands'] = $this->Academic_model->get_strands();

@@ -6,6 +6,7 @@ class Academic extends Admin_Controller {
     public function __construct()
     {
         parent::__construct();
+        $this->require_school();
         $this->load->model(array('Academic_model', 'User_model'));
     }
 
@@ -13,7 +14,7 @@ class Academic extends Admin_Controller {
     public function school_years()
     {
         $data['title'] = 'School Years';
-        $data['school_years'] = $this->Academic_model->get_school_years();
+        $data['school_years'] = $this->Academic_model->get_school_years($this->school_id);
         $this->render('academic/school_years', $data);
     }
 
@@ -21,7 +22,7 @@ class Academic extends Admin_Controller {
     {
         if ($this->input->method() === 'post') {
             $d = array(
-                'school_id'  => 1,
+                'school_id'  => $this->school_id,
                 'year_start' => $this->input->post('year_start'),
                 'year_end'   => $this->input->post('year_end'),
                 'is_active'  => $this->input->post('is_active') ? 1 : 0,
@@ -201,9 +202,10 @@ class Academic extends Admin_Controller {
     // ---- Sections ----
     public function sections()
     {
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         $filters = array();
         if ($sy) $filters['school_year_id'] = $sy->id;
+        if ($this->school_id) $filters['school_id'] = $this->school_id;
         $data['title'] = 'Sections';
         $data['school_year'] = $sy;
         $data['sections'] = $this->Academic_model->get_sections($filters);
@@ -215,10 +217,11 @@ class Academic extends Admin_Controller {
 
     public function create_section()
     {
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         if ($this->input->method() === 'post') {
             $d = array(
                 'school_year_id' => $sy->id,
+                'school_id'      => $this->school_id,
                 'name'           => $this->input->post('name', TRUE),
                 'system_type'    => $this->input->post('system_type', TRUE),
                 'grade_level_id' => $this->input->post('grade_level_id') ?: NULL,
@@ -263,7 +266,7 @@ class Academic extends Admin_Controller {
             redirect('academic/sections');
         }
         $data['title'] = 'Edit Section';
-        $data['school_year'] = $this->Academic_model->get_active_school_year();
+        $data['school_year'] = $this->Academic_model->get_active_school_year($this->school_id);
         $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs();
         $data['strands'] = $this->Academic_model->get_strands();

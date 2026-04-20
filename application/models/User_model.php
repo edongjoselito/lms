@@ -26,13 +26,17 @@ class User_model extends CI_Model {
 
     public function get_all($filters = array())
     {
-        $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug');
+        $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug, schools.name as school_name');
         $this->db->join('roles', 'roles.id = users.role_id');
+        $this->db->join('schools', 'schools.id = users.school_id', 'left');
         if (!empty($filters['role_id'])) {
             $this->db->where('users.role_id', $filters['role_id']);
         }
         if (!empty($filters['status'])) {
             $this->db->where('users.status', $filters['status']);
+        }
+        if (!empty($filters['school_id'])) {
+            $this->db->where('users.school_id', $filters['school_id']);
         }
         return $this->db->order_by('users.created_at', 'DESC')->get('users')->result();
     }
@@ -92,15 +96,26 @@ class User_model extends CI_Model {
         return $this->db->count_all('users');
     }
 
-    public function count_by_role($role_slug)
+    public function count_by_role($role_slug, $school_id = null)
     {
-        return $this->db->join('roles', 'roles.id = users.role_id')
-                        ->where('roles.slug', $role_slug)
-                        ->count_all_results('users');
+        $this->db->join('roles', 'roles.id = users.role_id');
+        $this->db->where('roles.slug', $role_slug);
+        if ($school_id) {
+            $this->db->where('users.school_id', $school_id);
+        }
+        return $this->db->count_all_results('users');
     }
 
     public function count_active()
     {
+        return $this->db->where('status', 1)->count_all_results('users');
+    }
+
+    public function count_by_school($school_id = null)
+    {
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
         return $this->db->where('status', 1)->count_all_results('users');
     }
 }

@@ -12,7 +12,7 @@ class Grades extends MY_Controller {
 
     public function index()
     {
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         $data['title'] = 'Grading';
         $data['school_year'] = $sy;
 
@@ -21,7 +21,10 @@ class Grades extends MY_Controller {
             $data['classes'] = $teacher ? $this->Academic_model->get_teacher_classes($teacher->id, $sy ? $sy->id : null) : array();
             $this->render('grades/teacher_index', $data);
         } else {
-            $data['sections'] = $sy ? $this->Academic_model->get_sections(array('school_year_id' => $sy->id)) : array();
+            $filters = array();
+            if ($sy) $filters['school_year_id'] = $sy->id;
+            if ($this->school_id) $filters['school_id'] = $this->school_id;
+            $data['sections'] = $this->Academic_model->get_sections($filters);
             $this->render('grades/admin_index', $data);
         }
     }
@@ -31,7 +34,7 @@ class Grades extends MY_Controller {
         $cp = $this->Academic_model->get_class_program($class_program_id);
         if (!$cp) show_404();
 
-        $sy = $this->Academic_model->get_active_school_year();
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
         $students = $sy ? $this->Enrollment_model->get_section_students($cp->section_id, $sy->id) : array();
         $semester = $this->Academic_model->get_active_semester('quarter');
 

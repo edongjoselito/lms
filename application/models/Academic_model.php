@@ -5,13 +5,19 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Academic_model extends CI_Model {
 
     // ---- School Years ----
-    public function get_school_years()
+    public function get_school_years($school_id = null)
     {
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
         return $this->db->order_by('year_start', 'DESC')->get('school_years')->result();
     }
 
-    public function get_active_school_year()
+    public function get_active_school_year($school_id = null)
     {
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
         return $this->db->where('is_active', 1)->get('school_years')->row();
     }
 
@@ -184,6 +190,9 @@ class Academic_model extends CI_Model {
         if (!empty($filters['grade_level_id'])) {
             $this->db->where('sections.grade_level_id', $filters['grade_level_id']);
         }
+        if (!empty($filters['school_id'])) {
+            $this->db->where('sections.school_id', $filters['school_id']);
+        }
         return $this->db->get('sections')->result();
     }
 
@@ -228,7 +237,7 @@ class Academic_model extends CI_Model {
 
     public function get_class_program($id)
     {
-        return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name')
+        return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, sections.system_type')
                         ->join('subjects', 'subjects.id = class_programs.subject_id')
                         ->join('sections', 'sections.id = class_programs.section_id')
                         ->where('class_programs.id', $id)

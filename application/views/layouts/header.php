@@ -522,19 +522,38 @@
                 <i class="bi bi-mortarboard-fill"></i>
             </div>
             <div>
-                <div class="brand-text">LMS Admin</div>
-                <div class="brand-sub">Management Panel</div>
+                <div class="brand-text"><?= $this->session->userdata('school_name') ?: 'LMS Platform' ?></div>
+                <div class="brand-sub"><?= $this->session->userdata('school_id') ? 'School Panel' : 'Management Panel' ?></div>
             </div>
         </div>
 
+        <?php if ($this->session->userdata('role_slug') === 'super_admin' && $this->session->userdata('school_id')): ?>
+        <div class="px-3 pb-2">
+            <a href="<?= site_url('schools') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:rgba(99,102,241,0.1);border-radius:10px;font-size:0.78rem;color:#6366f1;text-decoration:none;font-weight:600;">
+                <i class="bi bi-arrow-left-right"></i>
+                <span>Switch School</span>
+            </a>
+        </div>
+        <?php endif; ?>
+
         <nav class="sidebar-nav">
+            <?php $rs = $this->session->userdata('role_slug'); ?>
+
+            <?php if ($rs !== 'student'): ?>
             <div class="nav-section-title">Main</div>
             <a href="<?= site_url('dashboard') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'dashboard') ? 'active' : '' ?>">
                 <i class="bi bi-grid-1x2-fill"></i>
                 <span>Dashboard</span>
             </a>
+            <?php endif; ?>
 
-            <?php $rs = $this->session->userdata('role_slug'); ?>
+            <?php if ($rs === 'super_admin'): ?>
+            <div class="nav-section-title">Platform</div>
+            <a href="<?= site_url('schools') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'schools') ? 'active' : '' ?>">
+                <i class="bi bi-building"></i>
+                <span>Schools</span>
+            </a>
+            <?php endif; ?>
 
             <?php if (in_array($rs, array('super_admin','school_admin'))): ?>
             <div class="nav-section-title">Administration</div>
@@ -596,6 +615,14 @@
             </a>
             <?php endif; ?>
 
+            <?php if (in_array($rs, array('super_admin','school_admin','teacher','student'))): ?>
+            <div class="nav-section-title">Learning</div>
+            <a href="<?= site_url('courses') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('courses','lessons','quizzes')) ? 'active' : '' ?>">
+                <i class="bi bi-mortarboard-fill"></i>
+                <span>Courses</span>
+            </a>
+            <?php endif; ?>
+
             <div class="nav-section-title">Account</div>
             <a href="<?= site_url('auth/logout') ?>" class="sidebar-link">
                 <i class="bi bi-box-arrow-left"></i>
@@ -610,7 +637,7 @@
                 </div>
                 <div class="user-info">
                     <div class="user-name"><?= $this->session->userdata('first_name') . ' ' . $this->session->userdata('last_name') ?></div>
-                    <div class="user-role"><?= $this->session->userdata('role') ?></div>
+                    <div class="user-role"><?= $this->session->userdata('role_name') ?></div>
                 </div>
             </div>
         </div>
@@ -626,6 +653,11 @@
                 <h1><?= isset($title) ? $title : 'Dashboard' ?></h1>
             </div>
             <div class="topbar-right">
+                <?php if ($this->session->userdata('school_name')): ?>
+                <span style="background:#f1f5f9;padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:#475569;margin-right:0.5rem;">
+                    <i class="bi bi-building me-1"></i><?= htmlspecialchars($this->session->userdata('school_name')) ?>
+                </span>
+                <?php endif; ?>
                 <a href="<?= site_url('auth/logout') ?>" class="btn-logout">
                     <i class="bi bi-box-arrow-right"></i>
                     Logout

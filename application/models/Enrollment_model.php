@@ -25,6 +25,9 @@ class Enrollment_model extends CI_Model {
         if (!empty($filters['section_id'])) {
             $this->db->where('enrollments.section_id', $filters['section_id']);
         }
+        if (!empty($filters['school_id'])) {
+            $this->db->where('enrollments.school_id', $filters['school_id']);
+        }
         return $this->db->order_by('u.last_name', 'ASC')->get('enrollments')->result();
     }
 
@@ -58,11 +61,14 @@ class Enrollment_model extends CI_Model {
         return $this->db->where('id', $id)->delete('enrollments');
     }
 
-    public function count_enrolled($school_year_id)
+    public function count_enrolled($school_year_id, $school_id = null)
     {
-        return $this->db->where('school_year_id', $school_year_id)
-                        ->where('status', 'enrolled')
-                        ->count_all_results('enrollments');
+        $this->db->where('school_year_id', $school_year_id);
+        $this->db->where('status', 'enrolled');
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        return $this->db->count_all_results('enrollments');
     }
 
     // ---- Students ----
@@ -78,6 +84,9 @@ class Enrollment_model extends CI_Model {
         }
         if (!empty($filters['status'])) {
             $this->db->where('students.status', $filters['status']);
+        }
+        if (!empty($filters['school_id'])) {
+            $this->db->where('students.school_id', $filters['school_id']);
         }
         return $this->db->order_by('u.last_name', 'ASC')->get('students')->result();
     }
@@ -102,6 +111,9 @@ class Enrollment_model extends CI_Model {
     {
         $user_data['password'] = password_hash($user_data['password'], PASSWORD_BCRYPT);
         $user_data['role_id'] = 5; // student role
+        if (isset($student_data['school_id'])) {
+            $user_data['school_id'] = $student_data['school_id'];
+        }
         $this->db->insert('users', $user_data);
         $user_id = $this->db->insert_id();
 
@@ -110,10 +122,13 @@ class Enrollment_model extends CI_Model {
         return $this->db->insert_id();
     }
 
-    public function count_students($system_type = null)
+    public function count_students($system_type = null, $school_id = null)
     {
         if ($system_type) {
             $this->db->where('system_type', $system_type);
+        }
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
         }
         return $this->db->where('status', 'active')->count_all_results('students');
     }

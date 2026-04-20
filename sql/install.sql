@@ -29,6 +29,7 @@ INSERT INTO `roles` (`name`, `slug`, `description`) VALUES
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `role_id` int(11) UNSIGNED NOT NULL DEFAULT 4,
+  `school_id` int(11) UNSIGNED DEFAULT NULL,
   `first_name` varchar(100) NOT NULL,
   `middle_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) NOT NULL,
@@ -47,9 +48,14 @@ CREATE TABLE IF NOT EXISTS `users` (
   CONSTRAINT `fk_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Default super admin (password: password)
-INSERT INTO `users` (`role_id`, `first_name`, `last_name`, `email`, `password`, `status`) VALUES
-(1, 'Super', 'Admin', 'admin@lms.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+-- Default users (password for all: password)
+INSERT INTO `users` (`role_id`, `school_id`, `first_name`, `last_name`, `email`, `password`, `status`) VALUES
+(1, NULL,  'Super',  'Admin',     'admin@lms.com',        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(2, 1,     'Maria',  'Santos',    'admin@school.com',     '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(3, 1,     'Juan',   'Dela Cruz', 'registrar@school.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(4, 1,     'Ana',    'Reyes',     'teacher@school.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(5, 1,     'Carlos', 'Garcia',    'student@school.com',   '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(6, 1,     'Rosa',   'Mendoza',   'parent@school.com',    '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
 
 CREATE TABLE IF NOT EXISTS `schools` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -239,6 +245,7 @@ CREATE TABLE IF NOT EXISTS `program_outcomes` (
 
 CREATE TABLE IF NOT EXISTS `subjects` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `school_id` int(11) UNSIGNED DEFAULT NULL,
   `code` varchar(30) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
@@ -303,6 +310,7 @@ CREATE TABLE IF NOT EXISTS `melcs` (
 CREATE TABLE IF NOT EXISTS `students` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(11) UNSIGNED NOT NULL,
+  `school_id` int(11) UNSIGNED NOT NULL DEFAULT 1,
   `lrn` varchar(20) DEFAULT NULL,
   `student_id` varchar(30) DEFAULT NULL,
   `system_type` enum('deped','ched') NOT NULL DEFAULT 'deped',
@@ -331,6 +339,7 @@ CREATE TABLE IF NOT EXISTS `students` (
 CREATE TABLE IF NOT EXISTS `teachers` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(11) UNSIGNED NOT NULL,
+  `school_id` int(11) UNSIGNED NOT NULL DEFAULT 1,
   `employee_id` varchar(30) DEFAULT NULL,
   `department` varchar(150) DEFAULT NULL,
   `specialization` varchar(255) DEFAULT NULL,
@@ -371,6 +380,7 @@ CREATE TABLE IF NOT EXISTS `parent_student` (
 CREATE TABLE IF NOT EXISTS `sections` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `school_year_id` int(11) UNSIGNED NOT NULL,
+  `school_id` int(11) UNSIGNED NOT NULL DEFAULT 1,
   `name` varchar(100) NOT NULL,
   `system_type` enum('deped','ched') NOT NULL DEFAULT 'deped',
   `grade_level_id` int(11) UNSIGNED DEFAULT NULL,
@@ -390,6 +400,7 @@ CREATE TABLE IF NOT EXISTS `sections` (
 CREATE TABLE IF NOT EXISTS `enrollments` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `student_id` int(11) UNSIGNED NOT NULL,
+  `school_id` int(11) UNSIGNED NOT NULL DEFAULT 1,
   `school_year_id` int(11) UNSIGNED NOT NULL,
   `section_id` int(11) UNSIGNED DEFAULT NULL,
   `system_type` enum('deped','ched') NOT NULL DEFAULT 'deped',
@@ -436,6 +447,7 @@ CREATE TABLE IF NOT EXISTS `class_programs` (
 
 CREATE TABLE IF NOT EXISTS `grade_components` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `school_id` int(11) UNSIGNED DEFAULT NULL,
   `system_type` enum('deped','ched') NOT NULL DEFAULT 'deped',
   `name` varchar(100) NOT NULL,
   `code` varchar(20) NOT NULL,
@@ -577,12 +589,41 @@ CREATE TABLE IF NOT EXISTS `rubric_criteria` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
--- SECTION 8: LEARNING CONTENT MANAGEMENT
+-- SECTION 8: COURSES & LEARNING CONTENT MANAGEMENT
 -- =====================================================
+
+CREATE TABLE IF NOT EXISTS `courses` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `school_id` int(11) UNSIGNED NOT NULL DEFAULT 1,
+  `code` varchar(30) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `cover_image` varchar(500) DEFAULT NULL,
+  `created_by` int(11) UNSIGNED DEFAULT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_courses_school` (`school_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `course_enrollments` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `role` enum('teacher','student') NOT NULL DEFAULT 'student',
+  `status` enum('active','completed','dropped') NOT NULL DEFAULT 'active',
+  `enrolled_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_course_user` (`course_id`, `user_id`),
+  KEY `idx_ce_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `modules` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_program_id` int(11) UNSIGNED NOT NULL,
+  `course_id` int(11) UNSIGNED DEFAULT NULL,
+  `class_program_id` int(11) UNSIGNED DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `order_num` int(11) DEFAULT 1,
@@ -590,8 +631,7 @@ CREATE TABLE IF NOT EXISTS `modules` (
   `created_by` int(11) UNSIGNED DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `fk_mod_cp` (`class_program_id`),
-  CONSTRAINT `fk_mod_cp` FOREIGN KEY (`class_program_id`) REFERENCES `class_programs`(`id`) ON DELETE CASCADE
+  KEY `idx_modules_course` (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `lessons` (
@@ -632,7 +672,9 @@ CREATE TABLE IF NOT EXISTS `lesson_progress` (
 
 CREATE TABLE IF NOT EXISTS `quizzes` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `class_program_id` int(11) UNSIGNED NOT NULL,
+  `course_id` int(11) UNSIGNED DEFAULT NULL,
+  `class_program_id` int(11) UNSIGNED DEFAULT NULL,
+  `school_id` int(11) UNSIGNED DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `quiz_type` enum('quiz','exam','assignment','activity') NOT NULL DEFAULT 'quiz',
@@ -648,8 +690,8 @@ CREATE TABLE IF NOT EXISTS `quizzes` (
   `created_by` int(11) UNSIGNED DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `fk_quiz_cp` (`class_program_id`),
-  CONSTRAINT `fk_quiz_cp` FOREIGN KEY (`class_program_id`) REFERENCES `class_programs`(`id`) ON DELETE CASCADE
+  KEY `idx_quizzes_course` (`course_id`),
+  KEY `idx_quizzes_cp` (`class_program_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `quiz_questions` (

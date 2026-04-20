@@ -37,10 +37,23 @@ class Auth extends CI_Controller {
                 'first_name' => $user->first_name,
                 'last_name'  => $user->last_name,
                 'email'      => $user->email,
+                'school_id'  => $user->school_id,
                 'logged_in'  => TRUE
             );
+
+            // Load school name if user belongs to a school
+            if ($user->school_id) {
+                $school = $this->db->where('id', $user->school_id)->get('schools')->row();
+                $session_data['school_name'] = $school ? $school->name : '';
+            }
+
             $this->session->set_userdata($session_data);
             $this->User_model->update_last_login($user->id);
+
+            // Super admin without school → go to school selection
+            if ($user->role_slug === 'super_admin' && !$user->school_id) {
+                redirect('schools/select');
+            }
 
             redirect('dashboard');
         } else {

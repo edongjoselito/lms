@@ -6,7 +6,8 @@ class MY_Controller extends CI_Controller {
 
     protected $current_user = null;
     protected $role_slug = null;
-    protected $allowed_roles = array();
+    protected $school_id = null;
+    protected $current_school = null;
 
     public function __construct()
     {
@@ -21,8 +22,15 @@ class MY_Controller extends CI_Controller {
                 'first_name' => $this->session->userdata('first_name'),
                 'last_name'  => $this->session->userdata('last_name'),
                 'email'      => $this->session->userdata('email'),
+                'school_id'  => $this->session->userdata('school_id'),
             );
             $this->role_slug = $this->current_user->role_slug;
+            $this->school_id = $this->session->userdata('school_id');
+
+            // Load current school info
+            if ($this->school_id) {
+                $this->current_school = $this->db->where('id', $this->school_id)->get('schools')->row();
+            }
         }
     }
 
@@ -39,6 +47,22 @@ class MY_Controller extends CI_Controller {
         if (!empty($roles) && !in_array($this->role_slug, $roles)) {
             show_error('You do not have permission to access this page.', 403);
         }
+    }
+
+    protected function require_school()
+    {
+        $this->require_login();
+        if (!$this->school_id && !$this->is_super_admin()) {
+            show_error('No school context. Please contact your administrator.', 403);
+        }
+        if ($this->is_super_admin() && !$this->school_id) {
+            redirect('schools/select');
+        }
+    }
+
+    protected function is_super_admin()
+    {
+        return $this->role_slug === 'super_admin';
     }
 
     protected function is_admin()
@@ -61,10 +85,27 @@ class MY_Controller extends CI_Controller {
         return $this->role_slug === 'registrar';
     }
 
+    protected function school_filter($builder = null, $table = null, $allow_null = false)
+    {
+        if ($this->school_id) {
+            $col = $table ? $table . '.school_id' : 'school_id';
+            if ($allow_null) {
+                $this->db->group_start();
+                $this->db->where($col, $this->school_id);
+                $this->db->or_where($col, NULL);
+                $this->db->group_end();
+            } else {
+                $this->db->where($col, $this->school_id);
+            }
+        }
+    }
+
     protected function render($view, $data = array())
     {
         $data['current_user'] = $this->current_user;
         $data['role_slug'] = $this->role_slug;
+        $data['school_id'] = $this->school_id;
+        $data['current_school'] = $this->current_school;
         $this->load->view('layouts/header', $data);
         $this->load->view($view, $data);
         $this->load->view('layouts/footer', $data);

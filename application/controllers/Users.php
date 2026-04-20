@@ -11,8 +11,12 @@ class Users extends Admin_Controller {
 
     public function index()
     {
+        $filters = array();
+        if ($this->school_id) {
+            $filters['school_id'] = $this->school_id;
+        }
         $data['title'] = 'Manage Users';
-        $data['users'] = $this->User_model->get_all();
+        $data['users'] = $this->User_model->get_all($filters);
         $data['roles'] = $this->User_model->get_roles();
         $this->render('users/index', $data);
     }
@@ -40,6 +44,7 @@ class Users extends Admin_Controller {
                 'phone'       => $this->input->post('phone', TRUE),
                 'password'    => $this->input->post('password'),
                 'role_id'     => $this->input->post('role_id'),
+                'school_id'   => $this->school_id,
                 'status'      => $this->input->post('status') ? 1 : 0
             );
 

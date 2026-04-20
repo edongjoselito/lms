@@ -12,6 +12,7 @@
                 <tr>
                     <th>User</th>
                     <th>Email</th>
+                    <th>School</th>
                     <th>Role</th>
                     <th>Status</th>
                     <th>Created</th>
@@ -33,6 +34,7 @@
                                 </div>
                             </td>
                             <td style="color:#64748b;"><?= htmlspecialchars($user->email) ?></td>
+                            <td style="color:#64748b;font-size:0.85rem;"><?= isset($user->school_name) && $user->school_name ? htmlspecialchars($user->school_name) : '<span style="color:#cbd5e1;">—</span>' ?></td>
                             <td>
                                 <span class="badge-role <?= (in_array($user->role_slug, array('super_admin','school_admin'))) ? 'badge-admin' : 'badge-user' ?>">
                                     <?= $user->role_name ?>
@@ -62,7 +64,7 @@
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="6" class="text-center py-5" style="color:#94a3b8;">
+                        <td colspan="7" class="text-center py-5" style="color:#94a3b8;">
                             <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
                             No users found
                         </td>
