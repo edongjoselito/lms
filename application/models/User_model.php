@@ -43,8 +43,9 @@ class User_model extends CI_Model {
 
     public function get($id)
     {
-        return $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug')
+        return $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug, schools.name as school_name')
                         ->join('roles', 'roles.id = users.role_id')
+                        ->join('schools', 'schools.id = users.school_id', 'left')
                         ->where('users.id', $id)
                         ->get('users')
                         ->row();
@@ -65,6 +66,33 @@ class User_model extends CI_Model {
             unset($data['password']);
         }
         return $this->db->where('id', $id)->update('users', $data);
+    }
+
+    public function update_profile($user_id, $data)
+    {
+        $allowed_fields = array('first_name', 'last_name', 'email');
+        $update_data = array();
+        foreach ($allowed_fields as $field) {
+            if (isset($data[$field])) {
+                $update_data[$field] = $data[$field];
+            }
+        }
+        if (!empty($update_data)) {
+            return $this->db->where('id', $user_id)->update('users', $update_data);
+        }
+        return false;
+    }
+
+    public function change_password($user_id, $current_password, $new_password)
+    {
+        $user = $this->db->where('id', $user_id)->get('users')->row();
+        if (!$user) return false;
+        if (!password_verify($current_password, $user->password)) return false;
+
+        $this->db->where('id', $user_id)->update('users', array(
+            'password' => password_hash($new_password, PASSWORD_BCRYPT)
+        ));
+        return true;
     }
 
     public function delete($id)

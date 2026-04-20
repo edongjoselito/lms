@@ -9,6 +9,11 @@
         <h5 style="font-weight:700;margin:0;"><i class="bi bi-people-fill me-2" style="color:#6366f1;"></i>Participants</h5>
         <p style="color:#64748b;font-size:0.85rem;margin:0.25rem 0 0 0;"><?= htmlspecialchars($course->title) ?></p>
     </div>
+    <div class="d-flex gap-2">
+        <a href="<?= site_url('courses/download_enrollment_template/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
+            <i class="bi bi-download me-1"></i> Download Template
+        </a>
+    </div>
 </div>
 
 <div class="row g-4">
@@ -56,7 +61,7 @@
                             <div style="color:#94a3b8;font-size:0.75rem;"><?= htmlspecialchars($s->email) ?></div>
                         </div>
                     </div>
-                    <a href="<?= site_url('courses/unenroll/' . $course->id . '/' . $s->user_id) ?>" class="btn-action btn-delete" title="Remove" onclick="return confirm('Remove this student?');"><i class="bi bi-x-lg"></i></a>
+                    <a href="<?= site_url('courses/unenroll_user/' . $course->id . '/' . $s->user_id) ?>" class="btn-action btn-delete" title="Remove" onclick="return confirm('Remove this student?');"><i class="bi bi-x-lg"></i></a>
                 </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -82,8 +87,25 @@
                         </label>
                         <?php endforeach; ?>
                     </div>
-                    <button type="submit" class="btn-primary-custom btn-sm mt-3 w-100"><i class="bi bi-plus-lg me-1"></i> Enroll Selected</button>
                 <?php endif; ?>
+                <?php if (!empty($available_students)): ?>
+                <button type="submit" class="btn-primary-custom w-100 mt-3"><i class="bi bi-check-lg"></i> Enroll Selected</button>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <!-- Bulk Import -->
+        <div style="background:white;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;margin-top:1rem;">
+            <div class="p-3" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                <h6 style="margin:0;font-weight:700;font-size:0.9rem;"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Bulk Import</h6>
+            </div>
+            <form action="<?= site_url('courses/import_enrollment/' . $course->id) ?>" method="post" enctype="multipart/form-data" class="p-3">
+                <div class="mb-3">
+                    <label style="font-size:0.85rem;font-weight:600;color:#334155;">Upload CSV File</label>
+                    <input type="file" class="form-control" name="enrollment_file" accept=".csv" required style="font-size:0.85rem;">
+                    <small style="color:#94a3b8;font-size:0.75rem;">Format: First Name, Last Name, Email</small>
+                </div>
+                <button type="submit" class="btn-primary-custom w-100"><i class="bi bi-upload"></i> Import</button>
             </form>
         </div>
     </div>

@@ -40,6 +40,36 @@
             </div>
             <?php endif; ?>
         </div>
+        <?php if ($is_student_view && !$is_enrolled): ?>
+        <div>
+            <form action="<?= site_url('courses/self_enroll/' . $course->id) ?>" method="post">
+                <div style="margin-top:1rem;">
+                    <label style="font-size:0.85rem;font-weight:600;color:#334155;">Section (if applicable)</label>
+                    <select class="form-control" name="section_id" style="border-radius:10px;margin-top:0.25rem;">
+                        <option value="">Select your section</option>
+                        <?php if (isset($sections)): ?>
+                            <?php foreach ($sections as $s): ?>
+                                <option value="<?= $s->id ?>"><?= htmlspecialchars($s->name) ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div style="margin-top:1rem;">
+                    <label style="font-size:0.85rem;font-weight:600;color:#334155;">Enrollment Key</label>
+                    <input type="text" class="form-control" name="enrollment_key" placeholder="Enter the enrollment key" style="border-radius:10px;margin-top:0.25rem;" required>
+                </div>
+                <button type="submit" class="btn-primary-custom mt-2" style="border-radius:10px;">
+                    <i class="bi bi-person-plus me-1"></i> Enroll in Course
+                </button>
+            </form>
+        </div>
+        <?php elseif ($is_student_view && $is_enrolled && !$can_edit): ?>
+        <div>
+            <a href="<?= site_url('courses/unenroll/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;padding:0.6rem 1.25rem;color:#ef4444;" onclick="return confirm('Are you sure you want to unenroll from this course? Your progress will be lost.');">
+                <i class="bi bi-person-dash me-1"></i> Unenroll
+            </a>
+        </div>
+        <?php endif; ?>
         <?php if ($can_edit): ?>
         <div class="d-flex gap-2">
             <a href="<?= site_url('courses/student_progress/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
@@ -47,6 +77,12 @@
             </a>
             <a href="<?= site_url('courses/participants/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
                 <i class="bi bi-people"></i> Participants
+            </a>
+            <a href="<?= site_url('courses/collaborators/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
+                <i class="bi bi-person-workspace"></i> Collaborators
+            </a>
+            <a href="<?= site_url('attendance?course_id=' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
+                <i class="bi bi-calendar-check-fill"></i> Attendance
             </a>
             <a href="<?= site_url('courses/edit/' . $course->id) ?>" class="btn btn-light btn-sm" style="border-radius:10px;font-size:0.8rem;font-weight:500;">
                 <i class="bi bi-pencil"></i> Edit
@@ -59,6 +95,7 @@
     </div>
 </div>
 
+<?php if (!$is_student_view || $is_enrolled): ?>
 <div class="row g-4">
     <!-- Main Content: Modules & Lessons -->
     <div class="col-lg-8">
@@ -227,3 +264,4 @@
         </div>
     </div>
 </div>
+<?php endif; ?>

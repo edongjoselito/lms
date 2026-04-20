@@ -47,8 +47,18 @@ class Auth extends CI_Controller {
                 $session_data['school_name'] = $school ? $school->name : '';
             }
 
+            // Initialize last_activity for students
+            if ($user->role_slug === 'student') {
+                $session_data['last_activity'] = time();
+            }
+
             $this->session->set_userdata($session_data);
             $this->User_model->update_last_login($user->id);
+
+            // Track login time for attendance (students only)
+            if ($user->role_slug === 'student' && $user->school_id) {
+                $this->_track_login($user->id, $user->school_id);
+            }
 
             // Super admin without school → go to school selection
             if ($user->role_slug === 'super_admin' && !$user->school_id) {
@@ -64,7 +74,64 @@ class Auth extends CI_Controller {
 
     public function logout()
     {
+        $user_id = $this->session->userdata('user_id');
+        $role_slug = $this->session->userdata('role_slug');
+        $school_id = $this->session->userdata('school_id');
+
+        // Track logout time for attendance (students only)
+        if ($role_slug === 'student' && $school_id) {
+            $this->_track_logout($user_id, $school_id);
+        }
+
         $this->session->sess_destroy();
         redirect('auth');
+    }
+
+    private function _track_login($user_id, $school_id)
+    {
+        $today = date('Y-m-d');
+
+        // Check if there's already an attendance record for today without logout time
+        $existing = $this->db->where('user_id', $user_id)
+                             ->where('date', $today)
+                             ->where('logout_time IS NULL')
+                             ->get('attendance')->row();
+
+        if (!$existing) {
+            // Create new attendance record for login
+            $this->db->insert('attendance', array(
+                'user_id' => $user_id,
+                'course_id' => 0, // 0 means general LMS access, not course-specific
+                'date' => $today,
+                'login_time' => date('Y-m-d H:i:s'),
+                'duration_minutes' => 0,
+                'created_at' => date('Y-m-d H:i:s')
+            ));
+        }
+    }
+
+    private function _track_logout($user_id, $school_id)
+    {
+        $today = date('Y-m-d');
+
+        // Find today's attendance record without logout time
+        $att = $this->db->where('user_id', $user_id)
+                        ->where('date', $today)
+                        ->where('logout_time IS NULL')
+                        ->order_by('id', 'DESC')
+                        ->limit(1)
+                        ->get('attendance')->row();
+
+        if ($att && $att->login_time) {
+            $login = strtotime($att->login_time);
+            $logout = strtotime(date('Y-m-d H:i:s'));
+            $duration_minutes = round(($logout - $login) / 60);
+
+            // Update attendance with logout time and duration
+            $this->db->where('id', $att->id)->update('attendance', array(
+                'logout_time' => date('Y-m-d H:i:s'),
+                'duration_minutes' => $duration_minutes
+            ));
+        }
     }
 }

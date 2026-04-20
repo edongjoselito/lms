@@ -561,30 +561,6 @@
                 <i class="bi bi-people-fill"></i>
                 <span>Users</span>
             </a>
-            <a href="<?= site_url('academic/school_years') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'school_years') ? 'active' : '' ?>">
-                <i class="bi bi-calendar3"></i>
-                <span>School Years</span>
-            </a>
-            <a href="<?= site_url('academic/grade_levels') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'grade_levels') ? 'active' : '' ?>">
-                <i class="bi bi-list-ol"></i>
-                <span>Grade Levels</span>
-            </a>
-            <a href="<?= site_url('academic/strands') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'strands') ? 'active' : '' ?>">
-                <i class="bi bi-signpost-split-fill"></i>
-                <span>SHS Strands</span>
-            </a>
-            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
-                <i class="bi bi-mortarboard-fill"></i>
-                <span>Programs (CHED)</span>
-            </a>
-            <a href="<?= site_url('academic/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
-                <i class="bi bi-book-fill"></i>
-                <span>Subjects</span>
-            </a>
-            <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
-                <i class="bi bi-diagram-3-fill"></i>
-                <span>Sections</span>
-            </a>
             <?php endif; ?>
 
             <?php if (in_array($rs, array('super_admin','school_admin','registrar'))): ?>
@@ -624,6 +600,23 @@
             <?php endif; ?>
 
             <div class="nav-section-title">Account</div>
+            <a href="<?= site_url('profile') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'profile') ? 'active' : '' ?>">
+                <i class="bi bi-person-circle"></i>
+                <span>My Profile</span>
+            </a>
+            <?php if (isset($original_role_slug) && $original_role_slug === 'teacher'): ?>
+                <?php if (isset($is_student_mode) && $is_student_mode): ?>
+                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#b45309;">
+                    <i class="bi bi-person-badge-fill"></i>
+                    <span>Exit Student Mode</span>
+                </a>
+                <?php else: ?>
+                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link">
+                    <i class="bi bi-eye-fill"></i>
+                    <span>View as Student</span>
+                </a>
+                <?php endif; ?>
+            <?php endif; ?>
             <a href="<?= site_url('auth/logout') ?>" class="sidebar-link">
                 <i class="bi bi-box-arrow-left"></i>
                 <span>Logout</span>
@@ -666,6 +659,17 @@
         </div>
 
         <div class="content-area">
+            <?php if (isset($is_student_mode) && $is_student_mode): ?>
+                <div class="alert alert-warning d-flex justify-content-between align-items-center mb-3" style="border-radius:10px;padding:0.75rem 1rem;">
+                    <div>
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Student Mode Active:</strong> You are viewing the system as a student would see it.
+                    </div>
+                    <a href="<?= site_url('mode/toggle') ?>" class="btn btn-sm" style="background:#b45309;color:white;border-radius:8px;padding:0.4rem 0.8rem;font-size:0.85rem;">
+                        Exit
+                    </a>
+                </div>
+            <?php endif; ?>
             <?php if ($this->session->flashdata('success')): ?>
                 <div class="alert alert-modern alert-success-modern mb-3">
                     <i class="bi bi-check-circle-fill"></i>

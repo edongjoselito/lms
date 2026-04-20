@@ -8,6 +8,8 @@ class MY_Controller extends CI_Controller {
     protected $role_slug = null;
     protected $school_id = null;
     protected $current_school = null;
+    protected $is_student_mode = false;
+    protected $original_role_slug = null;
 
     public function __construct()
     {
@@ -24,12 +26,35 @@ class MY_Controller extends CI_Controller {
                 'email'      => $this->session->userdata('email'),
                 'school_id'  => $this->session->userdata('school_id'),
             );
-            $this->role_slug = $this->current_user->role_slug;
+            $this->original_role_slug = $this->session->userdata('role_slug');
+            $this->role_slug = $this->session->userdata('role_slug');
             $this->school_id = $this->session->userdata('school_id');
+
+            // Check if teacher is in student mode
+            if ($this->session->userdata('student_mode') && $this->session->userdata('student_mode') === true) {
+                $this->is_student_mode = true;
+                $this->role_slug = 'student'; // Override role for student mode
+            }
 
             // Load current school info
             if ($this->school_id) {
                 $this->current_school = $this->db->where('id', $this->school_id)->get('schools')->row();
+            }
+
+            // Auto-logout students after 5 minutes of inactivity (only for actual students, not teachers in student mode)
+            if ($this->role_slug === 'student' && !$this->is_student_mode) {
+                $last_activity = $this->session->userdata('last_activity');
+                $now = time();
+
+                if ($last_activity && ($now - $last_activity) > 300) {
+                    // 5 minutes = 300 seconds
+                    $this->session->sess_destroy();
+                    redirect('auth');
+                    return;
+                }
+
+                // Update last activity time
+                $this->session->set_userdata('last_activity', $now);
             }
         }
     }
@@ -106,9 +131,26 @@ class MY_Controller extends CI_Controller {
         $data['role_slug'] = $this->role_slug;
         $data['school_id'] = $this->school_id;
         $data['current_school'] = $this->current_school;
+        $data['is_student_mode'] = $this->is_student_mode;
+        $data['original_role_slug'] = $this->original_role_slug;
         $this->load->view('layouts/header', $data);
         $this->load->view($view, $data);
         $this->load->view('layouts/footer', $data);
+    }
+
+    protected function toggle_student_mode()
+    {
+        if ($this->original_role_slug !== 'teacher') {
+            show_error('Only teachers can switch to student mode.', 403);
+        }
+
+        if ($this->is_student_mode) {
+            $this->session->set_userdata('student_mode', false);
+        } else {
+            $this->session->set_userdata('student_mode', true);
+        }
+
+        redirect($this->input->server('HTTP_REFERER') ?: 'dashboard');
     }
 }
 

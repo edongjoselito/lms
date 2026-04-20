@@ -69,39 +69,20 @@ class Course_model extends CI_Model {
     // ---- Enrollment ----
     public function enroll_user($course_id, $user_id, $role = 'student')
     {
-        $existing = $this->db->where('course_id', $course_id)
-                             ->where('user_id', $user_id)
-                             ->get('course_enrollments')->row();
-        if ($existing) {
-            return $this->db->where('id', $existing->id)->update('course_enrollments', array('status' => 'active'));
-        }
-        $this->db->insert('course_enrollments', array(
+        return $this->db->insert('course_enrollments', array(
             'course_id' => $course_id,
-            'user_id'   => $user_id,
-            'role'      => $role,
-            'status'    => 'active',
+            'user_id' => $user_id,
+            'role' => $role,
+            'status' => 'active',
+            'enrolled_at' => date('Y-m-d H:i:s'),
         ));
-        return $this->db->insert_id();
     }
 
     public function unenroll_user($course_id, $user_id)
     {
         return $this->db->where('course_id', $course_id)
                         ->where('user_id', $user_id)
-                        ->update('course_enrollments', array('status' => 'dropped'));
-    }
-
-    public function get_enrollments($course_id, $role = null)
-    {
-        $this->db->select('course_enrollments.*, CONCAT(u.first_name, " ", u.last_name) as name, u.email, r.name as role_name', FALSE);
-        $this->db->join('users u', 'u.id = course_enrollments.user_id');
-        $this->db->join('roles r', 'r.id = u.role_id', 'left');
-        $this->db->where('course_enrollments.course_id', $course_id);
-        $this->db->where('course_enrollments.status', 'active');
-        if ($role) {
-            $this->db->where('course_enrollments.role', $role);
-        }
-        return $this->db->order_by('u.last_name', 'ASC')->get('course_enrollments')->result();
+                        ->delete('course_enrollments');
     }
 
     public function is_enrolled($course_id, $user_id)
@@ -110,6 +91,91 @@ class Course_model extends CI_Model {
                         ->where('user_id', $user_id)
                         ->where('status', 'active')
                         ->count_all_results('course_enrollments') > 0;
+    }
+
+    // ---- Collaborators ----
+    public function add_collaborator($course_id, $teacher_id, $section_id = null)
+    {
+        $this->db->where('course_id', $course_id)->where('teacher_id', $teacher_id)->delete('course_collaborators');
+        return $this->db->insert('course_collaborators', array(
+            'course_id' => $course_id,
+            'teacher_id' => $teacher_id,
+            'section_id' => $section_id,
+        ));
+    }
+
+    public function remove_collaborator($course_id, $teacher_id)
+    {
+        return $this->db->where('course_id', $course_id)->where('teacher_id', $teacher_id)->delete('course_collaborators');
+    }
+
+    public function get_collaborators($course_id)
+    {
+        return $this->db->select('course_collaborators.*, CONCAT(u.first_name, " ", u.last_name) as name, u.email, s.name as section_name', FALSE)
+                        ->join('users u', 'u.id = course_collaborators.teacher_id')
+                        ->join('roles r', 'r.id = u.role_id')
+                        ->join('sections s', 's.id = course_collaborators.section_id', 'left')
+                        ->where('course_collaborators.course_id', $course_id)
+                        ->where('r.slug', 'teacher')
+                        ->get('course_collaborators')->result();
+    }
+
+    public function is_collaborator($course_id, $teacher_id)
+    {
+        return $this->db->where('course_id', $course_id)
+                        ->where('teacher_id', $teacher_id)
+                        ->count_all_results('course_collaborators') > 0;
+    }
+
+    public function get_collaborator_sections($course_id, $teacher_id)
+    {
+        $collab = $this->db->select('section_id')
+                         ->where('course_id', $course_id)
+                         ->where('teacher_id', $teacher_id)
+                         ->get('course_collaborators')
+                         ->row();
+        return $collab ? $collab->section_id : null;
+    }
+
+    // ---- Section Enrollment Keys ----
+    public function set_section_enrollment_key($course_id, $section_id, $key)
+    {
+        $this->db->where('course_id', $course_id)->where('section_id', $section_id)->delete('section_enrollment_keys');
+        return $this->db->insert('section_enrollment_keys', array(
+            'course_id' => $course_id,
+            'section_id' => $section_id,
+            'enrollment_key' => $key,
+        ));
+    }
+
+    public function get_section_enrollment_key($course_id, $section_id)
+    {
+        $row = $this->db->where('course_id', $course_id)->where('section_id', $section_id)->get('section_enrollment_keys')->row();
+        return $row ? $row->enrollment_key : null;
+    }
+
+    public function get_all_section_keys($course_id)
+    {
+        return $this->db->select('section_enrollment_keys.*, s.name as section_name', FALSE)
+                        ->join('sections s', 's.id = section_enrollment_keys.section_id')
+                        ->where('section_enrollment_keys.course_id', $course_id)
+                        ->get('section_enrollment_keys')->result();
+    }
+
+    public function get_enrollments($course_id, $role = null, $section_id = null)
+    {
+        $this->db->select('course_enrollments.*, CONCAT(u.first_name, " ", u.last_name) as name, u.email, u.section_id, r.name as role_name', FALSE);
+        $this->db->join('users u', 'u.id = course_enrollments.user_id');
+        $this->db->join('roles r', 'r.id = u.role_id', 'left');
+        $this->db->where('course_enrollments.course_id', $course_id);
+        $this->db->where('course_enrollments.status', 'active');
+        if ($role) {
+            $this->db->where('course_enrollments.role', $role);
+        }
+        if ($section_id) {
+            $this->db->where('u.section_id', $section_id);
+        }
+        return $this->db->order_by('course_enrollments.created_at', 'DESC')->get('course_enrollments')->result();
     }
 
     public function get_user_courses($user_id, $role = null, $school_id = null)
@@ -159,25 +225,27 @@ class Course_model extends CI_Model {
         return $this->db->order_by('courses.title', 'ASC')->get('courses')->result();
     }
 
-    public function get_available_students($course_id, $school_id = null)
+    public function get_available_students($course_id, $school_id = null, $section_id = null)
     {
-        $enrolled_ids = $this->db->select('user_id')
-                                 ->where('course_id', $course_id)
-                                 ->where('status', 'active')
-                                 ->get('course_enrollments')
-                                 ->result();
-        $exclude = array_map(function($e) { return $e->user_id; }, $enrolled_ids);
-
-        $this->db->select('users.id, users.first_name, users.last_name, users.email');
+        $this->db->select('users.id, CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE);
         $this->db->join('roles', 'roles.id = users.role_id');
+        $this->db->where('roles.slug', 'student');
         $this->db->where('users.status', 1);
-        $this->db->where_in('roles.slug', array('student'));
         if ($school_id) {
             $this->db->where('users.school_id', $school_id);
         }
-        if (!empty($exclude)) {
-            $this->db->where_not_in('users.id', $exclude);
+        if ($section_id) {
+            $this->db->where('users.section_id', $section_id);
         }
-        return $this->db->order_by('users.last_name', 'ASC')->get('users')->result();
+        $enrolled_ids = $this->db->select('user_id')
+                            ->where('course_id', $course_id)
+                            ->where('status', 'active')
+                            ->get('course_enrollments')
+                            ->result_array();
+        $enrolled_ids = array_column($enrolled_ids, 'user_id');
+        if (!empty($enrolled_ids)) {
+            $this->db->where_not_in('users.id', $enrolled_ids);
+        }
+        return $this->db->order_by('users.last_name, users.first_name')->get('users')->result();
     }
 }

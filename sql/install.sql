@@ -599,6 +599,7 @@ CREATE TABLE IF NOT EXISTS `courses` (
   `title` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `category` varchar(100) DEFAULT NULL,
+  `enrollment_key` varchar(50) DEFAULT NULL,
   `cover_image` varchar(500) DEFAULT NULL,
   `created_by` int(11) UNSIGNED DEFAULT NULL,
   `is_published` tinyint(1) NOT NULL DEFAULT 0,
@@ -719,6 +720,36 @@ CREATE TABLE IF NOT EXISTS `quiz_choices` (
   CONSTRAINT `fk_qc_question` FOREIGN KEY (`question_id`) REFERENCES `quiz_questions`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `course_collaborators` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) UNSIGNED NOT NULL,
+  `teacher_id` int(11) UNSIGNED NOT NULL,
+  `section_id` int(11) UNSIGNED DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_collab_course` (`course_id`),
+  KEY `idx_collab_teacher` (`teacher_id`),
+  KEY `idx_collab_section` (`section_id`),
+  CONSTRAINT `fk_collab_course` FOREIGN KEY (`course_id`) REFERENCES `courses`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_collab_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_collab_section` FOREIGN KEY (`section_id`) REFERENCES `sections`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `section_enrollment_keys` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `course_id` int(11) UNSIGNED NOT NULL,
+  `section_id` int(11) UNSIGNED NOT NULL,
+  `enrollment_key` varchar(50) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_section_key` (`course_id`, `section_id`),
+  KEY `idx_section_key_course` (`course_id`),
+  KEY `idx_section_key_section` (`section_id`),
+  CONSTRAINT `fk_section_key_course` FOREIGN KEY (`course_id`) REFERENCES `courses`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_section_key_section` FOREIGN KEY (`section_id`) REFERENCES `sections`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `quiz_attempts` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `quiz_id` int(11) UNSIGNED NOT NULL,
@@ -775,19 +806,18 @@ CREATE TABLE IF NOT EXISTS `question_bank` (
 
 CREATE TABLE IF NOT EXISTS `attendance` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `enrollment_id` int(11) UNSIGNED NOT NULL,
-  `class_program_id` int(11) UNSIGNED NOT NULL,
+  `course_id` int(11) UNSIGNED NOT NULL DEFAULT 0,
+  `user_id` int(11) UNSIGNED NOT NULL,
   `date` date NOT NULL,
-  `status` enum('present','absent','late','excused') NOT NULL DEFAULT 'present',
-  `remarks` varchar(255) DEFAULT NULL,
-  `recorded_by` int(11) UNSIGNED DEFAULT NULL,
+  `login_time` datetime DEFAULT NULL,
+  `logout_time` datetime DEFAULT NULL,
+  `duration_minutes` int(11) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_attendance` (`enrollment_id`, `class_program_id`, `date`),
-  KEY `fk_att_enrollment` (`enrollment_id`),
-  KEY `fk_att_cp` (`class_program_id`),
-  CONSTRAINT `fk_att_enrollment` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_att_cp` FOREIGN KEY (`class_program_id`) REFERENCES `class_programs`(`id`) ON DELETE CASCADE
+  KEY `idx_attendance_course` (`course_id`),
+  KEY `idx_attendance_user` (`user_id`),
+  KEY `idx_attendance_date` (`date`),
+  CONSTRAINT `fk_attendance_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================

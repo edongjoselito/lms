@@ -1,5 +1,5 @@
-<div class="row justify-content-center">
-    <div class="col-lg-7">
+<div class="row">
+    <div class="col-12">
         <div class="mb-3">
             <a href="<?= site_url('courses') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Courses
@@ -29,16 +29,22 @@
                         <input type="text" class="form-control" name="category" value="<?= $course ? htmlspecialchars($course->category) : '' ?>" placeholder="e.g. English, Science, Math">
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Enrollment Key <span style="color:#ef4444;">*</span></label>
+                        <input type="text" class="form-control" name="enrollment_key" value="<?= $course ? htmlspecialchars($course->enrollment_key ?? '') : '' ?>" placeholder="Required key for student enrollment" required>
+                        <small style="color:#94a3b8;font-size:0.75rem;">Students must enter this key to enroll in the course.</small>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">Cover Image</label>
                         <input type="file" class="form-control" name="cover_image" accept="image/*">
                         <?php if ($course && $course->cover_image): ?>
                             <small class="text-muted">Current: <?= basename($course->cover_image) ?></small>
                         <?php endif; ?>
                     </div>
-                    <div class="col-12">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_published" value="1" id="publishSwitch" <?= ($course && $course->is_published) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="publishSwitch">Publish this course (visible to enrolled students)</label>
+                    <div class="col-md-6">
+                        <label class="form-label">Published</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="is_published" value="1" id="publishSwitch" <?= ($course && $course->is_published) || !$course ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="publishSwitch">Make this course visible to students</label>
                         </div>
                     </div>
                 </div>
