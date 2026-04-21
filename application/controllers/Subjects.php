@@ -17,6 +17,9 @@ class Subjects extends MY_Controller {
         if ($this->input->get('program_id')) {
             $filters['program_id'] = $this->input->get('program_id');
         }
+        if ($this->input->get('grade_level_id')) {
+            $filters['grade_level_id'] = $this->input->get('grade_level_id');
+        }
         if ($this->input->get('semester_type')) {
             $filters['semester_type'] = $this->input->get('semester_type');
         }
@@ -24,7 +27,9 @@ class Subjects extends MY_Controller {
         $data['title'] = 'Subjects';
         $data['subjects'] = $this->Academic_model->get_subjects($filters);
         $data['programs'] = $this->Academic_model->get_programs();
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['filter_program'] = $this->input->get('program_id');
+        $data['filter_grade_level'] = $this->input->get('grade_level_id');
         $data['filter_semester'] = $this->input->get('semester_type');
         $this->render('subjects/index', $data);
     }
@@ -111,7 +116,7 @@ class Subjects extends MY_Controller {
     public function delete($id)
     {
         $subject = $this->Academic_model->get_subject($id);
-        $subject_name = $subject ? $subject->name : 'Unknown';
+        $subject_name = $subject ? ($subject->description ?: $subject->code) : 'Unknown';
         
         $this->Academic_model->delete_subject($id);
         
@@ -127,7 +132,7 @@ class Subjects extends MY_Controller {
         $data['subject'] = $this->Academic_model->get_subject($id);
         if (!$data['subject']) show_404();
         
-        $data['title'] = 'Subject Details: ' . $data['subject']->name;
+        $data['title'] = 'Subject Details: ' . ($data['subject']->description ?: $data['subject']->code);
         $this->render('subjects/view', $data);
     }
 }

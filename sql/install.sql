@@ -427,6 +427,7 @@ CREATE TABLE IF NOT EXISTS `class_programs` (
   `section_id` int(11) UNSIGNED NOT NULL,
   `subject_id` int(11) UNSIGNED NOT NULL,
   `teacher_id` int(11) UNSIGNED DEFAULT NULL,
+  `enrollment_key` varchar(50) DEFAULT NULL,
   `semester_id` int(11) UNSIGNED DEFAULT NULL,
   `schedule_day` varchar(20) DEFAULT NULL,
   `schedule_time_start` time DEFAULT NULL,

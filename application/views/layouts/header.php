@@ -635,7 +635,7 @@
                 <i class="bi bi-person-circle"></i>
                 <span>My Profile</span>
             </a>
-            <?php if (isset($original_role_slug) && $original_role_slug === 'teacher'): ?>
+            <?php if (isset($original_role_slug) && in_array($original_role_slug, array('teacher', 'course_creator'))): ?>
                 <?php if (isset($is_student_mode) && $is_student_mode): ?>
                 <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#b45309;">
                     <i class="bi bi-person-badge-fill"></i>

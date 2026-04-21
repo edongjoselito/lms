@@ -145,8 +145,8 @@ class MY_Controller extends CI_Controller {
 
     protected function toggle_student_mode()
     {
-        if ($this->original_role_slug !== 'teacher') {
-            show_error('Only teachers can switch to student mode.', 403);
+        if (!in_array($this->original_role_slug, array('teacher', 'course_creator'))) {
+            show_error('Only teachers and course creators can switch to student mode.', 403);
         }
 
         if ($this->is_student_mode) {

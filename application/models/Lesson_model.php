@@ -219,6 +219,61 @@ class Lesson_model extends CI_Model {
         return true;
     }
 
+    public function get_subject_lesson_ids($subject_id, $published_only = true)
+    {
+        $this->db->select('lessons.id')
+                 ->join('modules', 'modules.id = lessons.module_id')
+                 ->where('modules.subject_id', $subject_id);
+
+        if ($published_only) {
+            $this->db->where('lessons.is_published', 1)
+                     ->where('modules.is_published', 1);
+        }
+
+        $rows = $this->db->order_by('modules.order_num', 'ASC')
+                         ->order_by('lessons.order_num', 'ASC')
+                         ->get('lessons')
+                         ->result();
+
+        return array_map(function($r) { return (int) $r->id; }, $rows);
+    }
+
+    public function get_completed_lesson_ids_by_subject($subject_id, $user_id)
+    {
+        $rows = $this->db->select('lesson_progress.lesson_id')
+                         ->join('lessons', 'lessons.id = lesson_progress.lesson_id')
+                         ->join('modules', 'modules.id = lessons.module_id')
+                         ->where('modules.subject_id', $subject_id)
+                         ->where('lesson_progress.student_id', $user_id)
+                         ->where('lesson_progress.status', 'completed')
+                         ->get('lesson_progress')
+                         ->result();
+
+        return array_map(function($r) { return (int) $r->lesson_id; }, $rows);
+    }
+
+    public function get_subject_progress_percent($subject_id, $user_id)
+    {
+        $total = $this->get_subject_lesson_ids($subject_id, true);
+        if (empty($total)) return 0;
+
+        $completed = $this->get_completed_lesson_ids_by_subject($subject_id, $user_id);
+        return round((count($completed) / count($total)) * 100);
+    }
+
+    public function is_subject_lesson_accessible($lesson_id, $subject_id, $user_id)
+    {
+        $ordered = $this->get_subject_lesson_ids($subject_id, true);
+        $completed = $this->get_completed_lesson_ids_by_subject($subject_id, $user_id);
+
+        foreach ($ordered as $lid) {
+            if ((int) $lid === (int) $lesson_id) return true;
+            if (!in_array((int) $lid, $completed)) return false;
+        }
+
+        return true;
+    }
+
     /**
      * Get student progress data for a course (for teacher monitoring).
      */

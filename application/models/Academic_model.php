@@ -129,6 +129,7 @@ class Academic_model extends CI_Model {
     public function get_subjects($filters = array())
     {
         $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, programs.name as program_name, learning_areas.name as learning_area_name');
+        $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
         $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
         $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
@@ -168,7 +169,12 @@ class Academic_model extends CI_Model {
 
     public function get_subject($id)
     {
-        return $this->db->where('id', $id)->get('subjects')->row();
+        $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, programs.name as program_name, learning_areas.name as learning_area_name');
+        $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
+        $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
+        $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
+        $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
+        return $this->db->where('subjects.id', $id)->get('subjects')->row();
     }
 
     public function create_subject($data)
@@ -244,8 +250,16 @@ class Academic_model extends CI_Model {
     }
 
     // ---- Class Programs (Section-Subject-Teacher mapping) ----
+    public function ensure_class_program_enrollment_key_column()
+    {
+        if (!$this->db->field_exists('enrollment_key', 'class_programs')) {
+            $this->db->query("ALTER TABLE `class_programs` ADD COLUMN `enrollment_key` varchar(50) DEFAULT NULL AFTER `teacher_id`");
+        }
+    }
+
     public function get_class_programs($section_id)
     {
+        $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, CONCAT(u.first_name, " ", u.last_name) as teacher_name, semesters.name as semester_name', FALSE)
                         ->join('subjects', 'subjects.id = class_programs.subject_id')
                         ->join('teachers', 'teachers.id = class_programs.teacher_id', 'left')
@@ -258,6 +272,7 @@ class Academic_model extends CI_Model {
 
     public function get_class_program($id)
     {
+        $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, sections.system_type')
                         ->join('subjects', 'subjects.id = class_programs.subject_id')
                         ->join('sections', 'sections.id = class_programs.section_id')
@@ -266,8 +281,134 @@ class Academic_model extends CI_Model {
                         ->row();
     }
 
+    public function get_class_program_by_subject_section($subject_id, $section_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        return $this->db->where('subject_id', $subject_id)
+                        ->where('section_id', $section_id)
+                        ->get('class_programs')
+                        ->row();
+    }
+
+    public function get_subject_sections($subject_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+                        ->join('sections', 'sections.id = class_programs.section_id')
+                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+                        ->join('programs', 'programs.id = sections.program_id', 'left')
+                        ->where('class_programs.subject_id', $subject_id)
+                        ->where('class_programs.status', 1)
+                        ->order_by('sections.name', 'ASC')
+                        ->get('class_programs')
+                        ->result();
+    }
+
+    public function subject_has_enrollment_keys($subject_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        return $this->db->where('subject_id', $subject_id)
+                        ->where('enrollment_key IS NOT NULL', null, false)
+                        ->where('enrollment_key !=', '')
+                        ->where('status', 1)
+                        ->count_all_results('class_programs') > 0;
+    }
+
+    public function validate_subject_enrollment_key($subject_id, $enrollment_key)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        $key = trim((string) $enrollment_key);
+        if ($key === '') {
+            return null;
+        }
+
+        return $this->db->select('class_programs.*, sections.name as section_name')
+                        ->join('sections', 'sections.id = class_programs.section_id')
+                        ->where('class_programs.subject_id', $subject_id)
+                        ->where('class_programs.enrollment_key', $key)
+                        ->where('class_programs.status', 1)
+                        ->get('class_programs')
+                        ->row();
+    }
+
+    public function save_subject_section($subject_id, $section_id, $enrollment_key = null)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        $key = trim((string) $enrollment_key);
+        $data = array(
+            'subject_id'      => $subject_id,
+            'section_id'      => $section_id,
+            'enrollment_key'  => $key === '' ? null : $key,
+            'status'          => 1,
+        );
+
+        $existing = $this->get_class_program_by_subject_section($subject_id, $section_id);
+        if ($existing) {
+            $this->db->where('id', $existing->id)->update('class_programs', $data);
+            return $existing->id;
+        }
+
+        $this->db->insert('class_programs', $data);
+        return $this->db->insert_id();
+    }
+
+    public function save_subject_section_by_name($subject_id, $section_name, $enrollment_key = null)
+    {
+        $this->db->where('school_id', $this->session->userdata('school_id'));
+        $section = $this->db->where('name', $section_name)->get('sections')->row();
+
+        if (!$section) {
+            $school_year = $this->db->where('is_active', 1)->where('school_id', $this->session->userdata('school_id'))->get('school_years')->row();
+            $school_year_id = $school_year ? $school_year->id : null;
+            
+            $section_data = array(
+                'name'          => $section_name,
+                'school_id'     => $this->session->userdata('school_id'),
+                'system_type'   => 'custom',
+                'school_year_id'=> $school_year_id,
+            );
+            $this->db->insert('sections', $section_data);
+            $section_id = $this->db->insert_id();
+        } else {
+            $section_id = $section->id;
+        }
+
+        return $this->save_subject_section($subject_id, $section_id, $enrollment_key);
+    }
+
+    public function remove_subject_section($class_program_id, $subject_id)
+    {
+        return $this->db->where('id', $class_program_id)
+                        ->where('subject_id', $subject_id)
+                        ->delete('class_programs');
+    }
+
+    public function update_subject_section($class_program_id, $subject_id, $section_name, $enrollment_key = null)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        
+        $class_program = $this->db->where('id', $class_program_id)->where('subject_id', $subject_id)->get('class_programs')->row();
+        if (!$class_program) {
+            return false;
+        }
+
+        $key = trim((string) $enrollment_key);
+        
+        $section = $this->db->where('id', $class_program->section_id)->get('sections')->row();
+        if ($section && $section->name !== $section_name) {
+            $this->db->where('id', $class_program->section_id)->update('sections', array('name' => $section_name));
+        }
+
+        $this->db->where('id', $class_program_id)->where('subject_id', $subject_id)->update('class_programs', array(
+            'enrollment_key' => $key === '' ? null : $key
+        ));
+
+        return true;
+    }
+
     public function get_teacher_classes($teacher_id, $school_year_id = null)
     {
+        $this->ensure_class_program_enrollment_key_column();
         $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, grade_levels.name as grade_level_name, programs.code as program_code', FALSE);
         $this->db->join('subjects', 'subjects.id = class_programs.subject_id');
         $this->db->join('sections', 'sections.id = class_programs.section_id');
