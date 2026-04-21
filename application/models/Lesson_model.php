@@ -232,24 +232,31 @@ class Lesson_model extends CI_Model {
 
         $rows = $this->db->order_by('modules.order_num', 'ASC')
                          ->order_by('lessons.order_num', 'ASC')
-                         ->get('lessons')
-                         ->result();
-
+                         ->get('lessons');
         return array_map(function($r) { return (int) $r->id; }, $rows);
     }
 
-    public function get_completed_lesson_ids_by_subject($subject_id, $user_id)
+    public function get_completed_lesson_ids_by_subject($subject_id, $student_id)
     {
-        $rows = $this->db->select('lesson_progress.lesson_id')
-                         ->join('lessons', 'lessons.id = lesson_progress.lesson_id')
-                         ->join('modules', 'modules.id = lessons.module_id')
-                         ->where('modules.subject_id', $subject_id)
-                         ->where('lesson_progress.student_id', $user_id)
-                         ->where('lesson_progress.status', 'completed')
-                         ->get('lesson_progress')
-                         ->result();
+        $this->db->select('lesson_completions.lesson_id');
+        $this->db->from('lesson_completions');
+        $this->db->join('lessons', 'lessons.id = lesson_completions.lesson_id');
+        $this->db->join('modules', 'modules.id = lessons.module_id');
+        $this->db->where('lesson_completions.student_id', $student_id);
+        $this->db->where('modules.subject_id', $subject_id);
+        $result = $this->db->get()->result();
+        
+        $ids = array();
+        foreach ($result as $row) {
+            $ids[] = (int) $row->lesson_id;
+        }
+        return $ids;
+    }
 
-        return array_map(function($r) { return (int) $r->lesson_id; }, $rows);
+    public function get_total_completed_lessons($student_id)
+    {
+        return $this->db->where('student_id', $student_id)
+                        ->count_all_results('lesson_completions');
     }
 
     public function get_subject_progress_percent($subject_id, $user_id)
@@ -336,5 +343,71 @@ class Lesson_model extends CI_Model {
             $this->db->where('id', $id)->where('module_id', $module_id)->update('activities', ['order_num' => $index + 1]);
         }
         return true;
+    }
+
+    // ---- Lesson Completions (Sequential Access) ----
+    public function mark_lesson_completed($student_id, $lesson_id)
+    {
+        $data = array(
+            'student_id' => $student_id,
+            'lesson_id' => $lesson_id,
+            'completed_at' => date('Y-m-d H:i:s')
+        );
+        
+        $existing = $this->db->where('student_id', $student_id)
+                            ->where('lesson_id', $lesson_id)
+                            ->get('lesson_completions')
+                            ->row();
+        
+        if ($existing) {
+            return true;
+        }
+        
+        $this->db->insert('lesson_completions', $data);
+        return $this->db->insert_id();
+    }
+
+    public function is_lesson_completed($student_id, $lesson_id)
+    {
+        return $this->db->where('student_id', $student_id)
+                        ->where('lesson_id', $lesson_id)
+                        ->count_all_results('lesson_completions') > 0;
+    }
+
+    public function get_student_lesson_completions($student_id, $subject_id)
+    {
+        $this->db->select('lesson_completions.lesson_id, lesson_completions.completed_at');
+        $this->db->from('lesson_completions');
+        $this->db->join('lessons', 'lessons.id = lesson_completions.lesson_id');
+        $this->db->join('modules', 'modules.id = lessons.module_id');
+        $this->db->where('lesson_completions.student_id', $student_id);
+        $this->db->where('modules.subject_id', $subject_id);
+        return $this->db->get()->result();
+    }
+
+    public function get_previous_lesson($lesson_id, $module_id)
+    {
+        $current_lesson = $this->get_lesson($lesson_id);
+        if (!$current_lesson) {
+            return null;
+        }
+
+        return $this->db->where('module_id', $module_id)
+                        ->where('order_num <', $current_lesson->order_num)
+                        ->order_by('order_num', 'DESC')
+                        ->limit(1)
+                        ->get('lessons')
+                        ->row();
+    }
+
+    public function can_access_lesson($student_id, $lesson_id, $module_id)
+    {
+        $previous_lesson = $this->get_previous_lesson($lesson_id, $module_id);
+        
+        if (!$previous_lesson) {
+            return true;
+        }
+
+        return $this->is_lesson_completed($student_id, $previous_lesson->id);
     }
 }

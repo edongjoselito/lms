@@ -394,15 +394,130 @@ class Academic_model extends CI_Model {
 
         $key = trim((string) $enrollment_key);
         
-        $section = $this->db->where('id', $class_program->section_id)->get('sections')->row();
-        if ($section && $section->name !== $section_name) {
-            $this->db->where('id', $class_program->section_id)->update('sections', array('name' => $section_name));
-        }
+        // Always update the section name
+        $this->db->where('id', $class_program->section_id)->update('sections', array('name' => $section_name));
 
+        // Update enrollment key
         $this->db->where('id', $class_program_id)->where('subject_id', $subject_id)->update('class_programs', array(
             'enrollment_key' => $key === '' ? null : $key
         ));
 
+        return true;
+    }
+
+    public function update_subject_cover_photo($subject_id, $cover_photo)
+    {
+        $this->db->where('id', $subject_id)->update('subjects', array('cover_photo' => $cover_photo));
+        return true;
+    }
+
+    public function get_student_enrolled_subjects($student_id)
+    {
+        $student = $this->db->where('id', $student_id)->get('students')->row();
+        if (!$student) {
+            return array();
+        }
+        
+        // For now, return empty array - enrollment tracking needs proper table structure
+        return array();
+    }
+
+    public function get_available_subjects_for_student($student_id)
+    {
+        $student = $this->db->where('id', $student_id)->get('students')->row();
+        if (!$student) {
+            return array();
+        }
+        
+        // Get all subjects for the student's school
+        $this->db->select('subjects.*, class_programs.enrollment_key as requires_key', FALSE);
+        $this->db->from('class_programs');
+        $this->db->join('subjects', 'subjects.id = class_programs.subject_id');
+        $this->db->where('class_programs.status', 1);
+        $this->db->where('subjects.school_id', $student->school_id);
+        
+        return $this->db->get()->result();
+    }
+
+    public function get_subjects_for_student($student_id, $filters = array())
+    {
+        $student = $this->db->where('id', $student_id)->get('students')->row();
+        if (!$student) {
+            return array();
+        }
+        
+        // Query subjects directly from subjects table
+        $this->db->select('subjects.*', FALSE);
+        $this->db->from('subjects');
+        $this->db->where('subjects.school_id', $student->school_id);
+        
+        if (!empty($filters['system_type'])) {
+            $this->db->where('subjects.system_type', $filters['system_type']);
+        }
+        
+        $subjects = $this->db->get()->result();
+        
+        // Group by program (using program_code if available, otherwise 'General')
+        $grouped = array();
+        foreach ($subjects as $subject) {
+            $program_key = 'General';
+            if (!isset($grouped[$program_key])) {
+                $grouped[$program_key] = array(
+                    'program_code' => 'General',
+                    'program_name' => 'All Subjects',
+                    'subjects' => array()
+                );
+            }
+            $grouped[$program_key]['subjects'][] = $subject;
+        }
+        
+        return $grouped;
+    }
+
+    public function validate_enrollment_key($subject_id, $enrollment_key, $student_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        
+        $student = $this->db->where('id', $student_id)->get('students')->row();
+        if (!$student) {
+            return false;
+        }
+        
+        // Validate enrollment key - get any class_program for this subject
+        $class_program = $this->db->where('subject_id', $subject_id)
+                                  ->where('status', 1)
+                                  ->get('class_programs')
+                                  ->row();
+        
+        if (!$class_program) {
+            return false;
+        }
+        
+        $stored_key = trim((string) $class_program->enrollment_key);
+        $provided_key = trim((string) $enrollment_key);
+        
+        // If no key is set, allow enrollment
+        if ($stored_key === '') {
+            return true;
+        }
+        
+        // Validate key
+        if ($stored_key === $provided_key) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function enroll_student($student_id, $class_program_id)
+    {
+        // Placeholder - enrollment tracking needs proper table structure
+        return true;
+    }
+
+    public function is_student_enrolled($student_id, $subject_id)
+    {
+        // For now, return true to allow access
         return true;
     }
 

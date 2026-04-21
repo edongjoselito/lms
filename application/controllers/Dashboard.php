@@ -24,9 +24,9 @@ class Dashboard extends MY_Controller {
             return;
         }
 
-        // Students go straight to subjects
+        // Students go to their dedicated dashboard
         if ($this->is_student()) {
-            redirect('subjects');
+            redirect('student');
             return;
         }
 

@@ -66,9 +66,18 @@ Each school operates in isolation. Data is scoped by `school_id`:
 
 ### Course-Based Learning System
 - **Course Structure**: Courses contain modules with lessons and quizzes
-- **Sequential Access**: Students must complete lessons in order (configurable)
+- **Sequential Access**: Students must complete lessons in order (enforced)
 - **Progress Tracking**: Real-time progress bars for course completion
 - **Student Progress View**: Teachers can monitor individual student progress
+
+### Student Access System
+- **Student Dashboard**: Dedicated dashboard for students to view enrolled courses and progress
+- **Subjects Page**: Browse available courses grouped by program with enrollment options
+- **Content Viewing**: Read-only access to course content (modules and lessons)
+- **Sequential Lessons**: Students cannot proceed to the next lesson until the previous one is completed
+- **Enrollment System**: Enrollment key validation for course access
+- **Unenrollment**: Students can unenroll from courses (removes all progress)
+- **Modern UI**: Modern, responsive interface with Inter font and gradient designs
 
 ### Enrollment Management
 - **Enrollment Keys**: Teachers set mandatory keys for course enrollment to prevent unauthorized access

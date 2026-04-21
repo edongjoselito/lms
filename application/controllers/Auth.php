@@ -47,8 +47,18 @@ class Auth extends CI_Controller {
                 $session_data['school_name'] = $school ? $school->name : '';
             }
 
-            // Initialize last_activity for students
+            // Set student_id for students
             if ($user->role_slug === 'student') {
+                $student = $this->db->where('user_id', $user->id)->get('students')->row();
+                if ($student) {
+                    $session_data['student_id'] = $student->id;
+                } else {
+                    // Try to find student by matching user_id with user table
+                    $student_by_id = $this->db->where('id', $user->id)->get('students')->row();
+                    if ($student_by_id) {
+                        $session_data['student_id'] = $student_by_id->id;
+                    }
+                }
                 $session_data['last_activity'] = time();
             }
 
@@ -91,13 +101,20 @@ class Auth extends CI_Controller {
     {
         $today = date('Y-m-d');
 
-        // Check if there's already an attendance record for today without logout time
+        // Check if there's already an attendance record for today with course_id=0
         $existing = $this->db->where('user_id', $user_id)
+                             ->where('course_id', 0)
                              ->where('date', $today)
-                             ->where('logout_time IS NULL')
                              ->get('attendance')->row();
 
-        if (!$existing) {
+        if ($existing) {
+            // Update existing record with new login time
+            $this->db->where('id', $existing->id)->update('attendance', array(
+                'login_time' => date('Y-m-d H:i:s'),
+                'logout_time' => null,
+                'duration_minutes' => 0
+            ));
+        } else {
             // Create new attendance record for login
             $this->db->insert('attendance', array(
                 'user_id' => $user_id,

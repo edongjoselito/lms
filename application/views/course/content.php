@@ -48,7 +48,7 @@ $is_student_mode = $student_content_view;
 <div class="row">
     <div class="col-12">
         <div class="mb-3">
-            <a href="<?= site_url('course/subjects') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
+            <a href="<?= site_url('subjects') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Subjects
             </a>
         </div>
@@ -63,6 +63,9 @@ $is_student_mode = $student_content_view;
                         </a>
                     <?php endif; ?>
                     <?php if ($edit_mode): ?>
+                        <button class="btn btn-sm btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#coverPhotoModal">
+                            <i class="bi bi-image me-1"></i> Cover Photo
+                        </button>
                         <a href="<?= site_url('course/content/' . $subject->id) ?>" class="btn btn-sm btn-outline-secondary me-2">
                             <i class="bi bi-eye me-1"></i> View Mode
                         </a>
@@ -76,6 +79,11 @@ $is_student_mode = $student_content_view;
                     <?php endif; ?>
                 </div>
             </div>
+            <?php if (!empty($subject->cover_photo)): ?>
+            <div class="course-cover-photo">
+                <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Course Cover" style="width:100%;height:auto;max-height:300px;object-fit:cover;border-radius:8px;">
+            </div>
+            <?php endif; ?>
             <?php if (!empty($is_student_mode)): ?>
                 <div class="p-3 border-top" style="background:#f8fafc;">
                     <?php if (!empty($has_subject_access)): ?>
@@ -574,47 +582,9 @@ $is_student_mode = $student_content_view;
                 <h5 style="font-weight:700;margin-bottom:1rem;font-size:1rem;">
                     <i class="bi bi-people-fill me-2" style="color:#16a34a;"></i>Sections
                 </h5>
-                <form action="<?= site_url('course/add_subject_section/' . $subject->id) ?>" method="post" class="mb-3">
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold">Section</label>
-                        <input type="text" name="section_name" class="form-control form-control-sm" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-semibold">Enrollment Key</label>
-                        <div class="input-group">
-                            <input type="password" name="enrollment_key" class="form-control form-control-sm" maxlength="50" id="enrollmentKeyInput">
-                            <button class="btn btn-outline-secondary" type="button" onclick="toggleEnrollmentKeyVisibility()">
-                                <i class="bi bi-eye" id="enrollmentKeyIcon"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-outline-success w-100">
-                        <i class="bi bi-plus-lg me-1"></i>Add Section
-                    </button>
-                </form>
-
-                <div id="editSectionForm" style="display:none;" class="mt-3">
-                    <form action="<?= site_url('course/edit_subject_section/' . $subject->id) ?>" method="post">
-                        <input type="hidden" name="class_program_id" id="editClassProgramId">
-                        <div class="mb-2">
-                            <label class="form-label small fw-semibold">Section</label>
-                            <input type="text" name="section_name" class="form-control form-control-sm" required id="editSectionName">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small fw-semibold">Enrollment Key</label>
-                            <div class="input-group">
-                                <input type="password" name="enrollment_key" class="form-control form-control-sm" maxlength="50" id="editEnrollmentKeyInput">
-                                <button class="btn btn-outline-secondary" type="button" onclick="toggleEditEnrollmentKeyVisibility()">
-                                    <i class="bi bi-eye" id="editEnrollmentKeyIcon"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                            <button type="button" class="btn btn-sm btn-secondary" onclick="hideEditSection()">Cancel</button>
-                        </div>
-                    </form>
-                </div>
+                <button class="btn btn-sm btn-outline-success w-100 mb-3" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                    <i class="bi bi-plus-lg me-1"></i>Add Section
+                </button>
 
                 <?php if (empty($subject_sections)): ?>
                     <p class="text-muted mb-0" style="font-size:0.85rem;">No sections added. Students can access this course without an enrollment key.</p>
@@ -622,7 +592,10 @@ $is_student_mode = $student_content_view;
                     <div class="section-key-list">
                         <?php foreach ($subject_sections as $section_access): ?>
                             <?php $has_key = trim((string) ($section_access->enrollment_key ?? '')) !== ''; ?>
-                            <div class="section-key-item" id="sectionItem<?= $section_access->id ?>">
+                            <div class="section-key-item" id="sectionItem<?= $section_access->id ?>" 
+                             data-id="<?= $section_access->id ?>" 
+                             data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>" 
+                             data-enrollment-key="<?= htmlspecialchars($section_access->enrollment_key ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                 <div>
                                     <strong><?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?></strong>
                                     <span class="<?= $has_key ? 'text-success' : 'text-muted' ?>">
@@ -630,7 +603,7 @@ $is_student_mode = $student_content_view;
                                     </span>
                                 </div>
                                 <div>
-                                    <button class="btn btn-sm btn-link p-0 me-2" onclick="showEditSection(<?= $section_access->id ?>, '<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($section_access->enrollment_key ?? '', ENT_QUOTES, 'UTF-8') ?>')" title="Edit">
+                                    <button class="btn btn-sm btn-link p-0 me-2" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <a href="<?= site_url('course/remove_subject_section/' . $subject->id . '/' . $section_access->id) ?>" class="btn btn-sm btn-link text-danger p-0" title="Remove section" onclick="return confirm('Remove this section from the course?');">
@@ -701,6 +674,109 @@ $is_student_mode = $student_content_view;
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Add Module</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($edit_mode): ?>
+<div class="modal fade" id="coverPhotoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="<?= site_url('course/upload_cover_photo/' . $subject->id) ?>" method="post" enctype="multipart/form-data" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Course Cover Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <?php if (!empty($subject->cover_photo)): ?>
+                <div class="mb-3">
+                    <label class="form-label">Current Cover Photo</label>
+                    <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Current Cover" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;">
+                    <div class="mt-2">
+                        <a href="<?= site_url('course/remove_cover_photo/' . $subject->id) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this cover photo?');">
+                            <i class="bi bi-trash me-1"></i> Remove Cover Photo
+                        </a>
+                    </div>
+                </div>
+                <hr>
+                <?php endif; ?>
+                <div class="mb-3">
+                    <label class="form-label">Upload New Cover Photo</label>
+                    <input type="file" class="form-control" name="cover_photo" accept="image/*" required>
+                    <div class="form-text">Recommended size: 1200x400px. Supported formats: JPG, PNG, GIF, WebP.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload Cover Photo</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($edit_mode): ?>
+<!-- Add Section Modal -->
+<div class="modal fade" id="addSectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="<?= site_url('course/add_subject_section/' . $subject->id) ?>" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Section</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Section Name</label>
+                    <input type="text" class="form-control" name="section_name" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Enrollment Key</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" name="enrollment_key" maxlength="50" id="enrollmentKeyInput">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleEnrollmentKeyVisibility()">
+                            <i class="bi bi-eye" id="enrollmentKeyIcon"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Leave blank for open access (no enrollment key required)</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-success">Add Section</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Section Modal -->
+<div class="modal fade" id="editSectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="<?= site_url('course/edit_subject_section/' . $subject->id) ?>" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Section</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="class_program_id" id="editClassProgramId">
+                <div class="mb-3">
+                    <label class="form-label">Section Name</label>
+                    <input type="text" class="form-control" name="section_name" required id="editSectionName">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Enrollment Key</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" name="enrollment_key" maxlength="50" id="editEnrollmentKeyInput">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleEditEnrollmentKeyVisibility()">
+                            <i class="bi bi-eye" id="editEnrollmentKeyIcon"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Leave blank for open access (no enrollment key required)</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
     </div>
@@ -1054,45 +1130,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'https://' + url;
     }
 
-    function toggleEnrollmentKeyVisibility() {
-        var input = document.getElementById('enrollmentKeyInput');
-        var icon = document.getElementById('enrollmentKeyIcon');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-        }
-    }
-
-    function toggleEditEnrollmentKeyVisibility() {
-        var input = document.getElementById('editEnrollmentKeyInput');
-        var icon = document.getElementById('editEnrollmentKeyIcon');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-        }
-    }
-
-    function showEditSection(id, sectionName, enrollmentKey) {
-        document.getElementById('editClassProgramId').value = id;
-        document.getElementById('editSectionName').value = sectionName;
-        document.getElementById('editEnrollmentKeyInput').value = enrollmentKey;
-        document.getElementById('editSectionForm').style.display = 'block';
-    }
-
-    function hideEditSection() {
-        document.getElementById('editSectionForm').style.display = 'none';
-    }
-
     function runCommand(command, value) {
         document.execCommand(command, false, value || null);
     }
@@ -1285,4 +1322,70 @@ document.addEventListener('DOMContentLoaded', function () {
         refreshToolbarState();
     });
 });
+</script>
+
+<script>
+// Global functions for inline onclick handlers
+function toggleEnrollmentKeyVisibility() {
+    var input = document.getElementById('enrollmentKeyInput');
+    var icon = document.getElementById('enrollmentKeyIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+function toggleEditEnrollmentKeyVisibility() {
+    var input = document.getElementById('editEnrollmentKeyInput');
+    var icon = document.getElementById('editEnrollmentKeyIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+function showEditSectionModal(id) {
+    console.log('showEditSectionModal called with id:', id);
+    var sectionItem = document.getElementById('sectionItem' + id);
+    console.log('sectionItem:', sectionItem);
+    if (sectionItem) {
+        var sectionName = sectionItem.getAttribute('data-section-name');
+        var enrollmentKey = sectionItem.getAttribute('data-enrollment-key');
+        console.log('sectionName:', sectionName);
+        console.log('enrollmentKey:', enrollmentKey);
+        
+        document.getElementById('editClassProgramId').value = sectionItem.getAttribute('data-id');
+        document.getElementById('editSectionName').value = sectionName;
+        document.getElementById('editEnrollmentKeyInput').value = enrollmentKey;
+        
+        var modalElement = document.getElementById('editSectionModal');
+        console.log('modalElement:', modalElement);
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            console.error('Bootstrap is not loaded');
+            alert('Error: Bootstrap is not loaded');
+        }
+    } else {
+        console.error('Section item not found with id: sectionItem' + id);
+    }
+}
+
+function hideEditSection() {
+    var modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
 </script>

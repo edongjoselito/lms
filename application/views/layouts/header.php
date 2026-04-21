@@ -588,14 +588,6 @@
                 <i class="bi bi-speedometer2"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= site_url('course/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && $this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
-                <i class="bi bi-book-fill"></i>
-                <span>Manage Subjects</span>
-            </a>
-            <a href="<?= site_url('academic/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
-                <i class="bi bi-plus-circle"></i>
-                <span>Add New Subject</span>
-            </a>
             <?php endif; ?>
 
             <?php if ($rs === 'school_admin'): ?>
@@ -622,12 +614,27 @@
             <?php endif; ?>
             <?php endif; ?>
 
+            <?php if ($rs === 'student'): ?>
+            <div class="nav-section-title">Main</div>
+            <a href="<?= site_url('student') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'student' && !$this->uri->segment(2)) ? 'active' : '' ?>">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span>Dashboard</span>
+            </a>
+            <?php endif; ?>
+
             <?php if (in_array($rs, array('school_admin','teacher','student','course_creator'))): ?>
             <div class="nav-section-title">Learning</div>
+            <?php if ($rs === 'student'): ?>
+            <a href="<?= site_url('student/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'student' && $this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
+                <i class="bi bi-book-fill"></i>
+                <span>Subjects</span>
+            </a>
+            <?php else: ?>
             <a href="<?= site_url('subjects') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('subjects')) ? 'active' : '' ?>">
                 <i class="bi bi-book-fill"></i>
                 <span>Subjects</span>
             </a>
+            <?php endif; ?>
             <?php endif; ?>
 
             <div class="nav-section-title">Account</div>

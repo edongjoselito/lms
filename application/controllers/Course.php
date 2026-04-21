@@ -76,20 +76,13 @@ class Course extends MY_Controller {
     public function subjects()
     {
         $this->require_course_manager();
-        $data['title'] = 'Manage Subjects';
-        
-        $this->school_filter(null, 'subjects');
-        $data['subjects'] = $this->Academic_model->get_subjects();
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
-        
-        $this->render('course/subjects', $data);
+        redirect('subjects');
     }
 
     public function content($subject_id = null)
     {
         if (!$subject_id) {
-            redirect('course/subjects');
+            redirect('subjects');
         }
         
         $subject = $this->Academic_model->get_subject($subject_id);
@@ -323,11 +316,8 @@ class Course extends MY_Controller {
             return;
         }
 
-        $this->Lesson_model->update_progress($this->current_user->id, $lesson_id, array(
-            'status' => 'completed',
-            'progress_percent' => 100,
-            'completed_at' => date('Y-m-d H:i:s'),
-        ));
+        $student_id = $this->current_user->id;
+        $this->Lesson_model->mark_lesson_completed($student_id, $lesson_id);
     }
 
     private function get_video_embed_markup($video_url)
@@ -426,7 +416,7 @@ class Course extends MY_Controller {
     public function lesson($lesson_id = null)
     {
         if (!$lesson_id) {
-            redirect('course/subjects');
+            redirect('subjects');
         }
 
         $lesson = $this->Lesson_model->get_lesson($lesson_id);
@@ -482,7 +472,7 @@ class Course extends MY_Controller {
     public function complete_lesson($lesson_id = null)
     {
         if (!$lesson_id) {
-            redirect('course/subjects');
+            redirect('subjects');
         }
 
         if (!$this->is_student_content_view() || !$this->current_user) {
@@ -521,7 +511,7 @@ class Course extends MY_Controller {
     public function activity($activity_id = null)
     {
         if (!$activity_id) {
-            redirect('course/subjects');
+            redirect('subjects');
         }
 
         $activity = $this->Lesson_model->get_activity($activity_id);
@@ -562,7 +552,7 @@ class Course extends MY_Controller {
     public function enroll_subject($subject_id = null)
     {
         if (!$subject_id) {
-            redirect('course/subjects');
+            redirect('subjects');
         }
 
         $subject = $this->Academic_model->get_subject($subject_id);
@@ -626,6 +616,61 @@ class Course extends MY_Controller {
                 $this->session->set_flashdata('success', 'Section access updated.');
             }
         }
+        redirect('course/content/' . $subject_id . '?edit=1');
+    }
+
+    public function upload_cover_photo($subject_id)
+    {
+        $this->require_course_manager();
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject) show_404();
+
+        if (!empty($_FILES['cover_photo']['name'])) {
+            $upload_path = FCPATH . 'uploads/covers/';
+            if (!is_dir($upload_path)) {
+                mkdir($upload_path, 0755, true);
+            }
+
+            $config['upload_path'] = $upload_path;
+            $config['allowed_types'] = 'gif|jpg|jpeg|png|webp';
+            $config['max_size'] = 5120;
+            $config['encrypt_name'] = true;
+            $config['file_name'] = 'cover_' . $subject_id . '_' . time();
+
+            $this->load->library('upload', $config);
+
+            if ($this->upload->do_upload('cover_photo')) {
+                $upload_data = $this->upload->data();
+                
+                if (!empty($subject->cover_photo) && file_exists($upload_path . $subject->cover_photo)) {
+                    unlink($upload_path . $subject->cover_photo);
+                }
+
+                $this->Academic_model->update_subject_cover_photo($subject_id, $upload_data['file_name']);
+                $this->session->set_flashdata('success', 'Cover photo uploaded successfully.');
+            } else {
+                $this->session->set_flashdata('error', $this->upload->display_errors('', ''));
+            }
+        }
+
+        redirect('course/content/' . $subject_id . '?edit=1');
+    }
+
+    public function remove_cover_photo($subject_id)
+    {
+        $this->require_course_manager();
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject) show_404();
+
+        if (!empty($subject->cover_photo)) {
+            $upload_path = FCPATH . 'uploads/covers/';
+            if (file_exists($upload_path . $subject->cover_photo)) {
+                unlink($upload_path . $subject->cover_photo);
+            }
+            $this->Academic_model->update_subject_cover_photo($subject_id, null);
+            $this->session->set_flashdata('success', 'Cover photo removed successfully.');
+        }
+
         redirect('course/content/' . $subject_id . '?edit=1');
     }
 
