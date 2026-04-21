@@ -4,6 +4,14 @@
     </a>
 </div>
 
+<?php if (isset($has_attempts) && $has_attempts): ?>
+<div class="mb-4 p-3" style="background:#fef3c7;border-radius:10px;border:1px solid #f59e0b;">
+    <div style="color:#b45309;font-size:0.85rem;font-weight:600;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> This assessment has <?= $attempt_count ?> student attempt(s). Questions cannot be modified after students have taken the quiz.
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h5 style="font-weight:700;margin:0;"><i class="bi bi-list-ol me-2" style="color:#6366f1;"></i><?= htmlspecialchars($quiz->title) ?></h5>
@@ -11,9 +19,11 @@
             <?= count($questions) ?> question<?= count($questions) != 1 ? 's' : '' ?> &middot; <?= $quiz->total_points ?: 0 ?> total points
         </p>
     </div>
+    <?php if (!isset($has_attempts) || !$has_attempts): ?>
     <a href="<?= site_url('quizzes/add_question/' . $quiz->id) ?>" class="btn-primary-custom">
         <i class="bi bi-plus-lg"></i> Add Question
     </a>
+    <?php endif; ?>
 </div>
 
 <?php if (empty($questions)): ?>
@@ -35,10 +45,12 @@
                 </span>
                 <span style="color:#94a3b8;font-size:0.78rem;"><?= $q->points ?> pt<?= $q->points != 1 ? 's' : '' ?></span>
             </div>
+            <?php if (!isset($has_attempts) || !$has_attempts): ?>
             <div class="d-flex gap-1">
                 <a href="<?= site_url('quizzes/edit_question/' . $q->id) ?>" class="btn-action" title="Edit"><i class="bi bi-pencil"></i></a>
                 <a href="<?= site_url('quizzes/delete_question/' . $q->id) ?>" class="btn-action btn-delete" title="Delete" onclick="return confirm('Delete this question?');"><i class="bi bi-trash"></i></a>
             </div>
+            <?php endif; ?>
         </div>
         <div style="font-size:0.95rem;color:#0f172a;line-height:1.6;margin-bottom:0.75rem;"><?= nl2br(htmlspecialchars($q->question_text)) ?></div>
 

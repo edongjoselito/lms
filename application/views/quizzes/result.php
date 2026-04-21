@@ -1,5 +1,5 @@
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="row">
+    <div class="col-12">
         <div class="mb-3">
             <a href="<?= site_url('courses/view/' . $course->id) ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Course
@@ -84,10 +84,35 @@
                 <div class="ms-5 p-3" style="background:#f8fafc;border-radius:10px;font-size:0.85rem;color:#334155;">
                     <?= $q->student_answer ? nl2br(htmlspecialchars($q->student_answer->answer_text)) : '<em>No answer</em>' ?>
                 </div>
-                <?php if ($q->student_answer && $q->student_answer->feedback): ?>
-                    <div class="ms-5 mt-2 p-2" style="background:#eff6ff;border-radius:8px;font-size:0.82rem;color:#1d4ed8;">
-                        <i class="bi bi-chat-left-text me-1"></i> <strong>Feedback:</strong> <?= htmlspecialchars($q->student_answer->feedback) ?>
-                    </div>
+                <?php if ($q->student_answer): ?>
+                    <?php if ($role_slug !== 'student' && $q->student_answer->score === null): ?>
+                    <!-- Grading Form for Teachers -->
+                    <form action="<?= site_url('quizzes/grade_essay/' . $q->student_answer->id) ?>" method="post" class="ms-5 mt-3 p-3" style="background:#fff7ed;border-radius:10px;border:1px solid #fdba74;">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label style="font-size:0.8rem;font-weight:600;color:#334155;">Score (max <?= $q->points ?>)</label>
+                                <input type="number" class="form-control" name="score" min="0" max="<?= $q->points ?>" step="0.5" required style="font-size:0.85rem;">
+                            </div>
+                            <div class="col-md-9">
+                                <label style="font-size:0.8rem;font-weight:600;color:#334155;">Feedback</label>
+                                <textarea class="form-control" name="feedback" rows="2" placeholder="Add feedback for the student..." style="font-size:0.85rem;"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary-custom mt-2" style="font-size:0.85rem;padding:0.4rem 0.8rem;">
+                            <i class="bi bi-check-lg me-1"></i> Submit Grade
+                        </button>
+                    </form>
+                    <?php else: ?>
+                        <!-- Show graded result -->
+                        <div class="ms-5 mt-2 p-2" style="background:#ecfdf5;border-radius:8px;font-size:0.82rem;color:#047857;">
+                            <i class="bi bi-check-circle-fill me-1"></i> <strong>Score:</strong> <?= $q->student_answer->score ?> / <?= $q->points ?>
+                        </div>
+                        <?php if ($q->student_answer->feedback): ?>
+                        <div class="ms-5 mt-2 p-2" style="background:#eff6ff;border-radius:8px;font-size:0.82rem;color:#1d4ed8;">
+                            <i class="bi bi-chat-left-text me-1"></i> <strong>Feedback:</strong> <?= htmlspecialchars($q->student_answer->feedback) ?>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>
         </div>

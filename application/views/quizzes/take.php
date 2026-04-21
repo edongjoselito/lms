@@ -1,5 +1,5 @@
-<div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="row">
+    <div class="col-12">
         <div style="background:white;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
             <div class="p-4" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;">
                 <h4 style="font-weight:700;margin:0;"><?= htmlspecialchars($quiz->title) ?></h4>

@@ -370,7 +370,7 @@ CREATE TABLE IF NOT EXISTS `parent_student` (
   KEY `fk_ps_parent` (`parent_id`),
   KEY `fk_ps_student` (`student_id`),
   CONSTRAINT `fk_ps_parent` FOREIGN KEY (`parent_id`) REFERENCES `parents`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_ps_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_ps_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
@@ -416,7 +416,7 @@ CREATE TABLE IF NOT EXISTS `enrollments` (
   KEY `fk_enr_student` (`student_id`),
   KEY `fk_enr_sy` (`school_year_id`),
   KEY `fk_enr_section` (`section_id`),
-  CONSTRAINT `fk_enr_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`),
+  CONSTRAINT `fk_enr_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`),
   CONSTRAINT `fk_enr_sy` FOREIGN KEY (`school_year_id`) REFERENCES `school_years`(`id`),
   CONSTRAINT `fk_enr_section` FOREIGN KEY (`section_id`) REFERENCES `sections`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -556,7 +556,7 @@ CREATE TABLE IF NOT EXISTS `gpa_records` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_gpa_student` (`student_id`),
-  CONSTRAINT `fk_gpa_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_gpa_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- CHED Rubrics
@@ -767,7 +767,7 @@ CREATE TABLE IF NOT EXISTS `quiz_attempts` (
   KEY `fk_qa_quiz` (`quiz_id`),
   KEY `fk_qa_student` (`student_id`),
   CONSTRAINT `fk_qa_quiz` FOREIGN KEY (`quiz_id`) REFERENCES `quizzes`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_qa_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_qa_student` FOREIGN KEY (`student_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `quiz_attempt_answers` (

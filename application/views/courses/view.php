@@ -252,7 +252,15 @@
                                     <a href="<?= site_url('quizzes/delete/' . $q->id) ?>" class="btn-action btn-delete" title="Delete" onclick="return confirm('Delete?');"><i class="bi bi-trash"></i></a>
                                 <?php else: ?>
                                     <?php if ($q->is_published): ?>
-                                        <a href="<?= site_url('quizzes/take/' . $q->id) ?>" class="btn-primary-custom btn-sm" style="padding:0.3rem 0.7rem;font-size:0.75rem;"><i class="bi bi-pencil-square"></i> Take</a>
+                                        <?php 
+                                        $attempts = isset($quiz_attempts[$q->id]) ? $quiz_attempts[$q->id] : array();
+                                        $can_take = count($attempts) < $q->max_attempts;
+                                        if ($can_take): ?>
+                                            <a href="<?= site_url('quizzes/take/' . $q->id) ?>" class="btn-primary-custom btn-sm" style="padding:0.3rem 0.7rem;font-size:0.75rem;"><i class="bi bi-pencil-square"></i> Take</a>
+                                        <?php else: ?>
+                                            <?php $last_attempt = end($attempts); ?>
+                                            <a href="<?= site_url('quizzes/result/' . $last_attempt->id) ?>" class="btn-primary-custom btn-sm" style="padding:0.3rem 0.7rem;font-size:0.75rem;background:#64748b;"><i class="bi bi-eye"></i> View</a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </div>

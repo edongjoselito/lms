@@ -52,6 +52,14 @@ class Quizzes extends MY_Controller {
         if (!$quiz) show_404();
         $course = $this->Course_model->get_course($quiz->course_id);
 
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $id)->count_all_results('quiz_attempts');
+        if ($attempt_count > 0) {
+            $this->session->set_flashdata('error', 'Cannot edit assessment. ' . $attempt_count . ' student(s) have already taken this quiz.');
+            redirect('courses/view/' . $quiz->course_id);
+            return;
+        }
+
         if ($this->input->method() === 'post') {
             $d = array(
                 'title'              => $this->input->post('title', TRUE),
@@ -83,6 +91,15 @@ class Quizzes extends MY_Controller {
         $quiz = $this->Quiz_model->get_quiz($id);
         if (!$quiz) show_404();
         $course_id = $quiz->course_id;
+
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $id)->count_all_results('quiz_attempts');
+        if ($attempt_count > 0) {
+            $this->session->set_flashdata('error', 'Cannot delete assessment. ' . $attempt_count . ' student(s) have already taken this quiz.');
+            redirect('courses/view/' . $course_id);
+            return;
+        }
+
         $this->Quiz_model->delete_quiz($id);
         $this->session->set_flashdata('success', 'Assessment deleted.');
         redirect('courses/view/' . $course_id);
@@ -95,6 +112,10 @@ class Quizzes extends MY_Controller {
         $quiz = $this->Quiz_model->get_quiz($quiz_id);
         if (!$quiz) show_404();
 
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $quiz_id)->count_all_results('quiz_attempts');
+        $has_attempts = $attempt_count > 0;
+
         $questions = $this->Quiz_model->get_questions($quiz_id);
         foreach ($questions as &$q) {
             $q->choices = $this->Quiz_model->get_choices($q->id);
@@ -105,6 +126,8 @@ class Quizzes extends MY_Controller {
         $data['quiz'] = $quiz;
         $data['course'] = $course;
         $data['questions'] = $questions;
+        $data['has_attempts'] = $has_attempts;
+        $data['attempt_count'] = $attempt_count;
         $this->render('quizzes/questions', $data);
     }
 
@@ -113,6 +136,14 @@ class Quizzes extends MY_Controller {
         $this->require_role(array('super_admin', 'school_admin', 'teacher'));
         $quiz = $this->Quiz_model->get_quiz($quiz_id);
         if (!$quiz) show_404();
+
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $quiz_id)->count_all_results('quiz_attempts');
+        if ($attempt_count > 0) {
+            $this->session->set_flashdata('error', 'Cannot add questions. ' . $attempt_count . ' student(s) have already taken this quiz.');
+            redirect('quizzes/questions/' . $quiz_id);
+            return;
+        }
 
         if ($this->input->method() === 'post') {
             $qdata = array(
@@ -158,6 +189,14 @@ class Quizzes extends MY_Controller {
         if (!$question) show_404();
         $quiz = $this->Quiz_model->get_quiz($question->quiz_id);
 
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $question->quiz_id)->count_all_results('quiz_attempts');
+        if ($attempt_count > 0) {
+            $this->session->set_flashdata('error', 'Cannot edit question. ' . $attempt_count . ' student(s) have already taken this quiz.');
+            redirect('quizzes/questions/' . $question->quiz_id);
+            return;
+        }
+
         if ($this->input->method() === 'post') {
             $qdata = array(
                 'question_type' => $this->input->post('question_type', TRUE),
@@ -200,6 +239,15 @@ class Quizzes extends MY_Controller {
         $question = $this->Quiz_model->get_question($id);
         if (!$question) show_404();
         $quiz_id = $question->quiz_id;
+
+        // Check if quiz has attempts
+        $attempt_count = $this->db->where('quiz_id', $quiz_id)->count_all_results('quiz_attempts');
+        if ($attempt_count > 0) {
+            $this->session->set_flashdata('error', 'Cannot delete question. ' . $attempt_count . ' student(s) have already taken this quiz.');
+            redirect('quizzes/questions/' . $quiz_id);
+            return;
+        }
+
         $this->Quiz_model->delete_question($id);
         $this->_recalc_total_points($quiz_id);
         $this->session->set_flashdata('success', 'Question deleted.');
@@ -222,8 +270,10 @@ class Quizzes extends MY_Controller {
         if ($in_progress) {
             $attempt = $in_progress;
         } elseif (count($attempts) >= $quiz->max_attempts) {
-            $this->session->set_flashdata('error', 'Maximum attempts reached.');
-            redirect('courses/view/' . $quiz->course_id);
+            // Redirect to last attempt result instead of showing error
+            $last_attempt = end($attempts);
+            $this->session->set_flashdata('info', 'Maximum attempts reached. Viewing your last submission.');
+            redirect('quizzes/result/' . $last_attempt->id);
             return;
         } else {
             $attempt_id = $this->Quiz_model->start_attempt($quiz_id, $user_id);
@@ -321,6 +371,27 @@ class Quizzes extends MY_Controller {
         $data['course'] = $course;
         $data['attempts'] = $this->Quiz_model->get_all_attempts($quiz_id);
         $this->render('quizzes/attempts', $data);
+    }
+
+    public function grade_essay($answer_id)
+    {
+        $this->require_role(array('super_admin', 'school_admin', 'teacher'));
+        
+        if ($this->input->method() !== 'post') {
+            show_404();
+            return;
+        }
+
+        $score = $this->input->post('score');
+        $feedback = $this->input->post('feedback');
+
+        $answer = $this->db->where('id', $answer_id)->get('quiz_attempt_answers')->row();
+        if (!$answer) show_404();
+
+        $this->Quiz_model->grade_essay($answer_id, $score, $feedback, $this->current_user->id);
+
+        $this->session->set_flashdata('success', 'Essay graded successfully.');
+        redirect('quizzes/result/' . $answer->attempt_id);
     }
 
     private function _recalc_total_points($quiz_id)

@@ -79,6 +79,14 @@ class Courses extends MY_Controller {
         $this->db->where('school_id', $this->school_id ?: 1);
         $sections = $this->db->get('sections')->result();
 
+        // Get student's quiz attempts if student
+        $quiz_attempts = array();
+        if ($this->is_student()) {
+            foreach ($quizzes as $q) {
+                $quiz_attempts[$q->id] = $this->Quiz_model->get_student_attempts($q->id, $this->current_user->id);
+            }
+        }
+
         $data['title'] = $course->title;
         $data['course'] = $course;
         $data['modules'] = $modules;
@@ -91,6 +99,7 @@ class Courses extends MY_Controller {
         $data['lesson_accessible'] = $lesson_accessible;
         $data['is_student_view'] = $this->is_student();
         $data['sections'] = $sections;
+        $data['quiz_attempts'] = $quiz_attempts;
         $this->render('courses/view', $data);
     }
 

@@ -28,7 +28,7 @@
                     <tr>
                         <td>
                             <div style="font-weight:600;font-size:0.9rem;"><?= htmlspecialchars($a->student_name) ?></div>
-                            <div style="color:#94a3b8;font-size:0.75rem;"><?= $a->lrn ?: $a->stud_id_num ?></div>
+                            <div style="color:#94a3b8;font-size:0.75rem;"><?= htmlspecialchars($a->email ?? '') ?></div>
                         </td>
                         <td class="text-center">#<?= $a->attempt_number ?></td>
                         <td class="text-center" style="font-weight:700;"><?= $a->score !== null ? $a->score : '-' ?> / <?= $a->total_points ?></td>
