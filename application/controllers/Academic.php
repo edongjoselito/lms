@@ -53,6 +53,136 @@ class Academic extends Admin_Controller {
         $this->render('academic/grade_levels', $data);
     }
 
+    public function create_grade_level()
+    {
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'code'         => $this->input->post('code', TRUE),
+                'name'         => $this->input->post('name', TRUE),
+                'category'     => $this->input->post('category', TRUE),
+                'level_order'  => $this->input->post('level_order'),
+                'status'       => 1,
+            );
+            $this->db->insert('grade_levels', $d);
+            $this->session->set_flashdata('success', 'Grade level created.');
+            redirect('academic/grade_levels');
+        }
+        $data['title'] = 'Add Grade Level';
+        $data['grade_level'] = null;
+        $this->render('academic/grade_level_form', $data);
+    }
+
+    public function edit_grade_level($id)
+    {
+        $data['grade_level'] = $this->Academic_model->get_grade_level($id);
+        if (!$data['grade_level']) show_404();
+
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'code'         => $this->input->post('code', TRUE),
+                'name'         => $this->input->post('name', TRUE),
+                'category'     => $this->input->post('category', TRUE),
+                'level_order'  => $this->input->post('level_order'),
+            );
+            $this->db->where('id', $id)->update('grade_levels', $d);
+            $this->session->set_flashdata('success', 'Grade level updated.');
+            redirect('academic/grade_levels');
+        }
+        $data['title'] = 'Edit Grade Level';
+        $this->render('academic/grade_level_form', $data);
+    }
+
+    public function delete_grade_level($id)
+    {
+        $this->Academic_model->delete_grade_level($id);
+        $this->session->set_flashdata('success', 'Grade level deleted.');
+        redirect('academic/grade_levels');
+    }
+
+    public function grade_level_subjects($grade_level_id)
+    {
+        $grade_level = $this->Academic_model->get_grade_level($grade_level_id);
+        if (!$grade_level) show_404();
+
+        if ($this->input->method() === 'post') {
+            // Add subject to grade level
+            $subject_id = $this->input->post('subject_id');
+            $units = $this->input->post('units');
+            
+            if ($subject_id) {
+                $d = array(
+                    'grade_level_id'  => $grade_level_id,
+                    'units'           => $units,
+                );
+                $this->Academic_model->update_subject($subject_id, $d);
+                $this->session->set_flashdata('success', 'Subject added to grade level.');
+            }
+            redirect('academic/grade_level_subjects/' . $grade_level_id);
+        }
+
+        $data['title'] = 'Manage Subjects - ' . $grade_level->name;
+        $data['grade_level'] = $grade_level;
+        $data['grade_level_subjects'] = $this->Academic_model->get_subjects_by_grade_level($grade_level_id);
+        $data['available_subjects'] = $this->Academic_model->get_subjects(array('grade_level_id' => null));
+        $this->render('academic/grade_level_subjects', $data);
+    }
+
+    public function remove_subject_from_grade_level($grade_level_id, $subject_id)
+    {
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if ($subject) {
+            $d = array(
+                'grade_level_id' => null,
+            );
+            $this->Academic_model->update_subject($subject_id, $d);
+            $this->session->set_flashdata('success', 'Subject removed from grade level.');
+        }
+        redirect('academic/grade_level_subjects/' . $grade_level_id);
+    }
+
+    public function create_grade_level_subject($grade_level_id)
+    {
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'code'            => $this->input->post('code', TRUE),
+                'description'     => $this->input->post('description', TRUE),
+                'grade_level_id'  => $grade_level_id,
+                'semester_type'   => $this->input->post('semester_type', TRUE),
+                'units'           => $this->input->post('units'),
+                'lec_hours'       => $this->input->post('lec_hours'),
+                'lab_hours'       => $this->input->post('lab_hours'),
+                'status'          => 1,
+            );
+            $subject_id = $this->Academic_model->create_subject($d);
+            $this->session->set_flashdata('success', 'Subject created and added to grade level.');
+            redirect('academic/grade_level_subjects/' . $grade_level_id);
+        }
+        redirect('academic/grade_levels');
+    }
+
+    public function edit_grade_level_subject($grade_level_id, $subject_id)
+    {
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject || $subject->grade_level_id != $grade_level_id) show_404();
+
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'semester_type'   => $this->input->post('semester_type', TRUE),
+                'units'           => $this->input->post('units'),
+                'lec_hours'       => $this->input->post('lec_hours'),
+                'lab_hours'       => $this->input->post('lab_hours'),
+            );
+            $this->Academic_model->update_subject($subject_id, $d);
+            $this->session->set_flashdata('success', 'Subject updated successfully.');
+            redirect('academic/grade_level_subjects/' . $grade_level_id);
+        }
+
+        $data['title'] = 'Edit Subject';
+        $data['grade_level'] = $this->Academic_model->get_grade_level($grade_level_id);
+        $data['subject'] = $subject;
+        $this->render('academic/edit_grade_level_subject', $data);
+    }
+
     // ---- SHS Tracks & Strands ----
     public function strands()
     {
@@ -119,6 +249,97 @@ class Academic extends Admin_Controller {
         redirect('academic/programs');
     }
 
+    public function program_subjects($program_id)
+    {
+        $program = $this->Academic_model->get_program($program_id);
+        if (!$program) show_404();
+
+        if ($this->input->method() === 'post') {
+            // Add subject to program
+            $subject_id = $this->input->post('subject_id');
+            $semester_type = $this->input->post('semester_type', TRUE);
+            $year_level = $this->input->post('year_level');
+            $units = $this->input->post('units');
+            
+            if ($subject_id) {
+                $d = array(
+                    'program_id'      => $program_id,
+                    'semester_type'   => $semester_type,
+                    'year_level'      => $year_level,
+                    'units'           => $units,
+                );
+                $this->Academic_model->update_subject($subject_id, $d);
+                $this->session->set_flashdata('success', 'Subject added to program.');
+            }
+            redirect('academic/program_subjects/' . $program_id);
+        }
+
+        $data['title'] = 'Manage Subjects - ' . $program->name;
+        $data['program'] = $program;
+        $data['program_subjects'] = $this->Academic_model->get_subjects_by_program($program_id);
+        $data['available_subjects'] = $this->Academic_model->get_subjects(array('program_id' => null));
+        $this->render('academic/program_subjects', $data);
+    }
+
+    public function remove_subject_from_program($program_id, $subject_id)
+    {
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if ($subject) {
+            $d = array(
+                'program_id' => null,
+                'semester_type' => null,
+            );
+            $this->Academic_model->update_subject($subject_id, $d);
+            $this->session->set_flashdata('success', 'Subject removed from program.');
+        }
+        redirect('academic/program_subjects/' . $program_id);
+    }
+
+    public function create_program_subject($program_id)
+    {
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'code'            => $this->input->post('code', TRUE),
+                'description'     => $this->input->post('description', TRUE),
+                'program_id'      => $program_id,
+                'semester_type'   => $this->input->post('semester_type', TRUE),
+                'year_level'      => $this->input->post('year_level'),
+                'units'           => $this->input->post('units'),
+                'lec_hours'       => $this->input->post('lec_hours'),
+                'lab_hours'       => $this->input->post('lab_hours'),
+                'status'          => 1,
+            );
+            $subject_id = $this->Academic_model->create_subject($d);
+            $this->session->set_flashdata('success', 'Subject created and added to program.');
+            redirect('academic/program_subjects/' . $program_id);
+        }
+        redirect('academic/programs');
+    }
+
+    public function edit_program_subject($program_id, $subject_id)
+    {
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject || $subject->program_id != $program_id) show_404();
+
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'semester_type'   => $this->input->post('semester_type', TRUE),
+                'year_level'      => $this->input->post('year_level'),
+                'units'           => $this->input->post('units'),
+                'lec_hours'       => $this->input->post('lec_hours'),
+                'lab_hours'       => $this->input->post('lab_hours'),
+            );
+            $this->Academic_model->update_subject($subject_id, $d);
+            $this->session->set_flashdata('success', 'Subject updated successfully.');
+            redirect('academic/program_subjects/' . $program_id);
+        }
+
+        $data['title'] = 'Edit Subject';
+        $data['program'] = $this->Academic_model->get_program($program_id);
+        $data['subject'] = $subject;
+        $this->render('academic/edit_program_subject', $data);
+    }
+
     // ---- Subjects ----
     public function subjects()
     {
@@ -140,7 +361,6 @@ class Academic extends Admin_Controller {
         if ($this->input->method() === 'post') {
             $d = array(
                 'code'            => $this->input->post('code', TRUE),
-                'name'            => $this->input->post('name', TRUE),
                 'description'     => $this->input->post('description', TRUE),
                 'system_type'     => $this->input->post('system_type', TRUE),
                 'grade_level_id'  => $this->input->post('grade_level_id') ?: NULL,

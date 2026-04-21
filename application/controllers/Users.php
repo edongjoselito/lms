@@ -6,7 +6,7 @@ class Users extends Admin_Controller {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('User_model');
+        $this->load->model(array('User_model', 'Audit_model'));
     }
 
     public function index()
@@ -25,7 +25,11 @@ class Users extends Admin_Controller {
     {
         $data['title'] = 'Add New User';
         $data['user'] = null;
-        $data['roles'] = $this->User_model->get_roles();
+        // Filter roles to show teacher, school_admin, student, registrar, and course_creator
+        $all_roles = $this->User_model->get_roles();
+        $data['roles'] = array_filter($all_roles, function($role) {
+            return in_array($role->slug, array('teacher', 'school_admin', 'student', 'registrar', 'course_creator'));
+        });
 
         if ($this->input->method() === 'post') {
             $email = $this->input->post('email', TRUE);
@@ -49,6 +53,12 @@ class Users extends Admin_Controller {
             );
 
             if ($this->User_model->create($user_data)) {
+                $user_id = $this->db->insert_id();
+                $user_name = $user_data['first_name'] . ' ' . $user_data['last_name'];
+
+                // Audit log
+                $this->Audit_model->log('create', 'user', $user_id, $user_name, 'Created user: ' . $user_name . ' (' . $email . ')');
+
                 $this->session->set_flashdata('success', 'User created successfully.');
                 redirect('users');
             } else {
@@ -91,6 +101,11 @@ class Users extends Admin_Controller {
             );
 
             if ($this->User_model->update($id, $user_data)) {
+                $user_name = $user_data['first_name'] . ' ' . $user_data['last_name'];
+
+                // Audit log
+                $this->Audit_model->log('update', 'user', $id, $user_name, 'Updated user: ' . $user_name . ' (' . $email . ')');
+
                 $this->session->set_flashdata('success', 'User updated successfully.');
                 redirect('users');
             } else {
@@ -109,7 +124,13 @@ class Users extends Admin_Controller {
             redirect('users');
         }
 
+        $user = $this->User_model->get($id);
+        $user_name = $user ? $user->first_name . ' ' . $user->last_name : 'Unknown';
+
         if ($this->User_model->delete($id)) {
+            // Audit log
+            $this->Audit_model->log('delete', 'user', $id, $user_name, 'Deleted user: ' . $user_name);
+
             $this->session->set_flashdata('success', 'User deleted successfully.');
         } else {
             $this->session->set_flashdata('error', 'Failed to delete user.');

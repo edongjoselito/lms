@@ -8,6 +8,7 @@ class Schools extends MY_Controller {
         parent::__construct();
         $this->require_login();
         $this->load->model('School_model');
+        $this->load->model('Audit_model');
     }
 
     public function index()
@@ -47,7 +48,51 @@ class Schools extends MY_Controller {
                 'is_active'  => 1,
             ));
 
-            $this->session->set_flashdata('success', 'School created successfully.');
+            // Create school admin user account
+            $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
+            if ($school_admin_role) {
+                $school_name = $this->input->post('name', TRUE);
+                $school_email = $this->input->post('email', TRUE);
+                
+                // Generate email if not provided
+                if (empty($school_email)) {
+                    $school_email = 'admin@' . strtolower(preg_replace('/[^a-z0-9]/', '', $school_name)) . '.lms';
+                }
+
+                // Generate default password (school name in lowercase)
+                $default_password = strtolower(str_replace(' ', '', $school_name)) . '123';
+
+                $this->db->insert('users', array(
+                    'first_name' => 'School',
+                    'last_name'  => 'Admin',
+                    'email'      => $school_email,
+                    'password'   => password_hash($default_password, PASSWORD_DEFAULT),
+                    'role_id'    => $school_admin_role->id,
+                    'school_id'  => $school_id,
+                    'status'     => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ));
+
+                // Send email with password
+                $this->load->library('email');
+                $this->email->from('berps@softtechservices.net', 'LMS Portal');
+                $this->email->to($school_email);
+                $this->email->subject('Your LMS School Admin Account');
+                
+                $message = $this->load->view('emails/school_admin_password', array(
+                    'school_name' => $school_name,
+                    'email' => $school_email,
+                    'password' => $default_password
+                ), true);
+                
+                $this->email->message($message);
+                $this->email->send();
+            }
+
+            // Audit log
+            $this->Audit_model->log('create', 'school', $school_id, $d['name'], 'Created school: ' . $d['name'] . ' (' . $d['type'] . ')');
+
+            $this->session->set_flashdata('success', 'School created successfully. A school admin account has been created automatically.');
             redirect('schools');
         }
 
@@ -75,6 +120,10 @@ class Schools extends MY_Controller {
                 'status'           => $this->input->post('status') ? 1 : 0,
             );
             $this->School_model->update($id, $d);
+
+            // Audit log
+            $this->Audit_model->log('update', 'school', $id, $d['name'], 'Updated school: ' . $d['name']);
+
             $this->session->set_flashdata('success', 'School updated.');
             redirect('schools');
         }
@@ -118,7 +167,14 @@ class Schools extends MY_Controller {
     public function delete($id)
     {
         $this->require_role(array('super_admin'));
+        $school = $this->School_model->get($id);
+        $school_name = $school ? $school->name : 'Unknown';
+        
         $this->School_model->delete($id);
+
+        // Audit log
+        $this->Audit_model->log('delete', 'school', $id, $school_name, 'Deleted school: ' . $school_name);
+
         $this->session->set_flashdata('success', 'School deleted.');
         redirect('schools');
     }

@@ -27,6 +27,10 @@ class School_model extends CI_Model {
 
     public function delete($id)
     {
+        // Delete school years first (foreign key constraint)
+        $this->db->where('school_id', $id)->delete('school_years');
+        
+        // Delete school
         return $this->db->where('id', $id)->delete('schools');
     }
 

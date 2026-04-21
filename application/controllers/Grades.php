@@ -7,7 +7,7 @@ class Grades extends MY_Controller {
     {
         parent::__construct();
         $this->require_login();
-        $this->load->model(array('Grade_model', 'Academic_model', 'Enrollment_model'));
+        $this->load->model(array('Grade_model', 'Academic_model'));
     }
 
     public function index()

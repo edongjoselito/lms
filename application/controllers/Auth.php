@@ -134,4 +134,23 @@ class Auth extends CI_Controller {
             ));
         }
     }
+
+    public function forgot_password()
+    {
+        if ($this->input->method() === 'post') {
+            $email = $this->input->post('email', TRUE);
+            $user = $this->db->where('email', $email)->get('users')->row();
+
+            if ($user) {
+                // For now, just show a success message
+                // In production, you would send an email with a reset link
+                $this->session->set_flashdata('success', 'Password reset instructions have been sent to your email.');
+            } else {
+                $this->session->set_flashdata('error', 'Email not found.');
+            }
+            redirect('auth/forgot_password');
+        }
+
+        $this->load->view('auth/forgot_password');
+    }
 }

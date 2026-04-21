@@ -19,13 +19,9 @@
                             <option value="ched" <?= ($subject && $subject->system_type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label">Code</label>
                         <input type="text" class="form-control" name="code" value="<?= ($subject) ? htmlspecialchars($subject->code) : '' ?>" required>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Subject Name</label>
-                        <input type="text" class="form-control" name="name" value="<?= ($subject) ? htmlspecialchars($subject->name) : '' ?>" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Description</label>

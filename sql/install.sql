@@ -24,7 +24,8 @@ INSERT INTO `roles` (`name`, `slug`, `description`) VALUES
 ('Registrar', 'registrar', 'Manages enrollment and records'),
 ('Teacher', 'teacher', 'Instructor / Faculty'),
 ('Student', 'student', 'Learner'),
-('Parent', 'parent', 'Parent/Guardian (DepEd K-12)');
+('Parent', 'parent', 'Parent/Guardian (DepEd K-12)'),
+('Course Creator', 'course_creator', 'Manages LMS content per subject/course');
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -623,6 +624,7 @@ CREATE TABLE IF NOT EXISTS `course_enrollments` (
 
 CREATE TABLE IF NOT EXISTS `modules` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `subject_id` int(11) UNSIGNED DEFAULT NULL,
   `course_id` int(11) UNSIGNED DEFAULT NULL,
   `class_program_id` int(11) UNSIGNED DEFAULT NULL,
   `title` varchar(255) NOT NULL,
@@ -632,6 +634,7 @@ CREATE TABLE IF NOT EXISTS `modules` (
   `created_by` int(11) UNSIGNED DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  KEY `idx_modules_subject` (`subject_id`),
   KEY `idx_modules_course` (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -56,6 +56,9 @@
                                     <a href="<?= site_url('schools/edit/' . $s->id) ?>" class="btn-action" title="Edit">
                                         <i class="bi bi-pencil-fill"></i>
                                     </a>
+                                    <a href="<?= site_url('schools/delete/' . $s->id) ?>" class="btn-action btn-delete" title="Delete" onclick="return confirm('Delete this school? This will also delete all associated data including users, courses, and enrollments.');">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

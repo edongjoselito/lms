@@ -539,7 +539,7 @@
         <nav class="sidebar-nav">
             <?php $rs = $this->session->userdata('role_slug'); ?>
 
-            <?php if ($rs !== 'student'): ?>
+            <?php if ($rs !== 'student' && $rs !== 'course_creator'): ?>
             <div class="nav-section-title">Main</div>
             <a href="<?= site_url('dashboard') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'dashboard') ? 'active' : '' ?>">
                 <i class="bi bi-grid-1x2-fill"></i>
@@ -563,23 +563,14 @@
             </a>
             <?php endif; ?>
 
-            <?php if (in_array($rs, array('super_admin','school_admin','registrar'))): ?>
-            <div class="nav-section-title">Enrollment</div>
-            <a href="<?= site_url('enrollment/students') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'students') ? 'active' : '' ?>">
-                <i class="bi bi-person-badge-fill"></i>
-                <span>Students</span>
-            </a>
-            <a href="<?= site_url('enrollment') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'enrollment' && !$this->uri->segment(2)) ? 'active' : '' ?>">
-                <i class="bi bi-clipboard-check-fill"></i>
-                <span>Enrollment List</span>
-            </a>
-            <a href="<?= site_url('enrollment/enroll') ?>" class="sidebar-link <?= ($this->uri->segment(2) == 'enroll') ? 'active' : '' ?>">
-                <i class="bi bi-person-plus-fill"></i>
-                <span>Enroll Student</span>
+            <?php if ($rs === 'super_admin'): ?>
+            <a href="<?= site_url('audit') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'audit') ? 'active' : '' ?>">
+                <i class="bi bi-clock-history"></i>
+                <span>Audit Logs</span>
             </a>
             <?php endif; ?>
 
-            <?php if (in_array($rs, array('super_admin','school_admin','teacher'))): ?>
+            <?php if ($rs === 'teacher'): ?>
             <div class="nav-section-title">Academics</div>
             <a href="<?= site_url('grades') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'grades') ? 'active' : '' ?>">
                 <i class="bi bi-journal-check"></i>
@@ -591,11 +582,51 @@
             </a>
             <?php endif; ?>
 
-            <?php if (in_array($rs, array('super_admin','school_admin','teacher','student'))): ?>
-            <div class="nav-section-title">Learning</div>
-            <a href="<?= site_url('courses') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('courses','lessons','quizzes')) ? 'active' : '' ?>">
+            <?php if ($rs === 'course_creator'): ?>
+            <div class="nav-section-title">Course Management</div>
+            <a href="<?= site_url('course') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && !$this->uri->segment(2)) ? 'active' : '' ?>">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="<?= site_url('course/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && $this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
+                <i class="bi bi-book-fill"></i>
+                <span>Manage Subjects</span>
+            </a>
+            <a href="<?= site_url('academic/subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'subjects') ? 'active' : '' ?>">
+                <i class="bi bi-plus-circle"></i>
+                <span>Add New Subject</span>
+            </a>
+            <?php endif; ?>
+
+            <?php if ($rs === 'school_admin'): ?>
+            <div class="nav-section-title">Academic Setup</div>
+            <?php
+            // Get school type from database
+            $school_type = null;
+            if ($this->session->userdata('school_id')) {
+                $school = $this->db->where('id', $this->session->userdata('school_id'))->get('schools')->row();
+                $school_type = $school ? $school->type : null;
+            }
+            ?>
+            <?php if ($school_type === 'deped' || $school_type === 'both'): ?>
+            <a href="<?= site_url('academic/grade_levels') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'grade_levels') ? 'active' : '' ?>">
+                <i class="bi bi-list-ol"></i>
+                <span>Grade Levels</span>
+            </a>
+            <?php endif; ?>
+            <?php if ($school_type === 'ched' || $school_type === 'both'): ?>
+            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
                 <i class="bi bi-mortarboard-fill"></i>
-                <span>Courses</span>
+                <span>Programs</span>
+            </a>
+            <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (in_array($rs, array('school_admin','teacher','student','course_creator'))): ?>
+            <div class="nav-section-title">Learning</div>
+            <a href="<?= site_url('subjects') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('subjects')) ? 'active' : '' ?>">
+                <i class="bi bi-book-fill"></i>
+                <span>Subjects</span>
             </a>
             <?php endif; ?>
 

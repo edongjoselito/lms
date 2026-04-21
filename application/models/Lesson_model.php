@@ -21,6 +21,24 @@ class Lesson_model extends CI_Model {
                         ->result();
     }
 
+    public function get_modules_by_subject($subject_id)
+    {
+        return $this->db->where('subject_id', $subject_id)
+                        ->order_by('order_num', 'ASC')
+                        ->get('modules')
+                        ->result();
+    }
+
+    public function get_module_with_lessons($module_id)
+    {
+        $module = $this->get_module($module_id);
+        if ($module) {
+            $module->lessons = $this->get_lessons($module_id);
+            $module->activities = $this->get_activities($module_id);
+        }
+        return $module;
+    }
+
     public function get_module($id)
     {
         return $this->db->where('id', $id)->get('modules')->row();
@@ -225,5 +243,43 @@ class Lesson_model extends CI_Model {
         }
 
         return array('students' => $students, 'total_lessons' => $total_lessons);
+    }
+
+    // ---- Activities (Moodle-style: assignments, quizzes, forums, etc.) ----
+    public function get_activities($module_id)
+    {
+        return $this->db->where('module_id', $module_id)
+                        ->order_by('order_num', 'ASC')
+                        ->get('activities')
+                        ->result();
+    }
+
+    public function get_activity($id)
+    {
+        return $this->db->where('id', $id)->get('activities')->row();
+    }
+
+    public function create_activity($data)
+    {
+        $this->db->insert('activities', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_activity($id, $data)
+    {
+        return $this->db->where('id', $id)->update('activities', $data);
+    }
+
+    public function delete_activity($id)
+    {
+        return $this->db->where('id', $id)->delete('activities');
+    }
+
+    public function reorder_activities($module_id, $activity_ids)
+    {
+        foreach ($activity_ids as $index => $id) {
+            $this->db->where('id', $id)->where('module_id', $module_id)->update('activities', ['order_num' => $index + 1]);
+        }
+        return true;
     }
 }

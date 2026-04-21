@@ -128,7 +128,7 @@ class Academic_model extends CI_Model {
     // ---- Subjects ----
     public function get_subjects($filters = array())
     {
-        $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, learning_areas.name as learning_area_name');
+        $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, programs.name as program_name, learning_areas.name as learning_area_name');
         $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
         $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
@@ -142,7 +142,28 @@ class Academic_model extends CI_Model {
         if (!empty($filters['program_id'])) {
             $this->db->where('subjects.program_id', $filters['program_id']);
         }
-        return $this->db->where('subjects.status', 1)->get('subjects')->result();
+        if (!empty($filters['semester_type'])) {
+            $this->db->where('subjects.semester_type', $filters['semester_type']);
+        }
+        return $this->db->where('subjects.status', 1)->order_by('semester_type, code')->get('subjects')->result();
+    }
+
+    public function get_subjects_by_program($program_id)
+    {
+        $this->db->select('subjects.*, programs.code as program_code, programs.name as program_name');
+        $this->db->join('programs', 'programs.id = subjects.program_id');
+        $this->db->where('subjects.program_id', $program_id);
+        $this->db->where('subjects.status', 1);
+        return $this->db->order_by('semester_type, code')->get('subjects')->result();
+    }
+
+    public function get_subjects_by_grade_level($grade_level_id)
+    {
+        $this->db->select('subjects.*, grade_levels.code as grade_level_code, grade_levels.name as grade_level_name');
+        $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id');
+        $this->db->where('subjects.grade_level_id', $grade_level_id);
+        $this->db->where('subjects.status', 1);
+        return $this->db->order_by('code')->get('subjects')->result();
     }
 
     public function get_subject($id)

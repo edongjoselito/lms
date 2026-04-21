@@ -110,6 +110,11 @@ class MY_Controller extends CI_Controller {
         return $this->role_slug === 'registrar';
     }
 
+    protected function is_course_creator()
+    {
+        return $this->role_slug === 'course_creator';
+    }
+
     protected function school_filter($builder = null, $table = null, $allow_null = false)
     {
         if ($this->school_id) {
