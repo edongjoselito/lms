@@ -44,6 +44,10 @@
             transition: transform 0.3s ease;
         }
 
+        body.sidebar-collapsed .sidebar {
+            transform: translateX(-100%);
+        }
+
         .sidebar-brand {
             padding: 1.5rem 1.5rem;
             display: flex;
@@ -185,6 +189,11 @@
         .main-content {
             margin-left: var(--sidebar-width);
             min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        body.sidebar-collapsed .main-content {
+            margin-left: 0;
         }
 
         .topbar {
@@ -213,13 +222,24 @@
         }
 
         .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1.35rem;
             color: var(--text-primary);
             cursor: pointer;
-            padding: 0.25rem;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        .menu-toggle:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
         }
 
         .topbar-right {
@@ -499,9 +519,6 @@
             .main-content {
                 margin-left: 0;
             }
-            .menu-toggle {
-                display: block;
-            }
             .content-area {
                 padding: 1rem;
             }
@@ -522,7 +539,7 @@
     <div class="main-content">
         <div class="topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">
+                <button type="button" class="menu-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
                     <i class="bi bi-list"></i>
                 </button>
                 <h1><?= isset($title) ? $title : 'Dashboard' ?></h1>
