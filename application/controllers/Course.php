@@ -632,6 +632,14 @@ class Course extends MY_Controller {
     public function remove_subject_section($subject_id, $class_program_id)
     {
         $this->require_course_manager();
+
+        // Check if there are enrolled students
+        $enrolled_students = $this->Academic_model->get_section_students($class_program_id);
+        if (!empty($enrolled_students)) {
+            $this->session->set_flashdata('error', 'Cannot remove section. There are ' . count($enrolled_students) . ' student(s) enrolled in this section.');
+            redirect('course/content/' . $subject_id . '?edit=1');
+        }
+
         $this->Academic_model->remove_subject_section($class_program_id, $subject_id);
         $this->session->set_flashdata('success', 'Section access removed.');
         redirect('course/content/' . $subject_id . '?edit=1');
