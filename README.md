@@ -1,6 +1,6 @@
 # LMS - Learning Management System
 
-A multi-tenant Learning Management System supporting **DepEd (K-12)** and **CHED (Higher Education)** academic structures. Built with CodeIgniter 3, Bootstrap 5, and MySQL.
+A multi-tenant Learning Management System supporting **DepEd (K-12)**, **CHED (Higher Education)**, and **TESDA (Technical Vocational)** academic structures. Built with CodeIgniter 3, Bootstrap 5, and MySQL.
 
 ---
 
@@ -39,15 +39,16 @@ All default accounts use the same password: **`password`**
 |------|-------|----------|--------|--------------|
 | **Super Admin** | `admin@lms.com` | `password` | Platform (all schools) | Full platform management, school CRUD, switch between schools |
 | **School Admin** | `admin@school.com` | `password` | Default School | School-level admin: users, academic, enrollment, grades |
+| **Course Creator** | `creator@school.com` | `password` | Default School | Course and lesson creation, content management |
 | **Registrar** | `registrar@school.com` | `password` | Default School | Enrollment, student records, sections |
 | **Teacher** | `teacher@school.com` | `password` | Default School | Class records, grade encoding, attendance |
-| **Student** | `student@school.com` | `password` | Default School | View grades, attendance, class schedule |
+| **Student** | `student@school.com` | `password` | Default School | View grades, attendance, class schedule, course content |
 | **Parent** | `parent@school.com` | `password` | Default School | View child's grades and attendance |
 
 ### Login Flow
 
 - **Super Admin** logs in → redirected to **School Selector** → pick a school → School Dashboard
-- **School Admin / Registrar / Teacher** logs in → goes directly to school **Dashboard**
+- **School Admin / Registrar / Teacher / Course Creator** logs in → goes directly to school **Dashboard**
 - **Student / Parent** logs in → goes to their respective dashboard
 
 ---
@@ -57,33 +58,58 @@ All default accounts use the same password: **`password`**
 Each school operates in isolation. Data is scoped by `school_id`:
 
 - **Super Admin** manages all schools from a platform-level view
-- **School-level users** (admin, registrar, teacher, student, parent) only see data for their school
+- **School-level users** (admin, registrar, teacher, student, parent, course creator) only see data for their school
 - Super Admin can **switch between schools** using the sidebar or topbar
+- Schools can be filtered by type: DepEd, CHED, TESDA, or All
 
 ---
 
 ## Key Features & Enhancements
 
 ### Course-Based Learning System
-- **Course Structure**: Courses contain modules with lessons and quizzes
+- **Course Structure**: Courses contain modules with lessons and activities
+- **Multiple Content Types**: Text, Video, File (PDF), External Link
+- **PDF File Viewer**: Built-in PDF viewer for file-type lessons with download option
 - **Sequential Access**: Students must complete lessons in order (enforced)
 - **Progress Tracking**: Real-time progress bars for course completion
+- **Auto-Complete**: Lessons are automatically marked as complete when opened
+- **Lesson Navigation**: Previous and Next buttons for easy lesson navigation
 - **Student Progress View**: Teachers can monitor individual student progress
 
 ### Student Access System
 - **Student Dashboard**: Dedicated dashboard for students to view enrolled courses and progress
 - **Subjects Page**: Browse available courses grouped by program with enrollment options
 - **Content Viewing**: Read-only access to course content (modules and lessons)
-- **Sequential Lessons**: Students cannot proceed to the next lesson until the previous one is completed
 - **Enrollment System**: Enrollment key validation for course access
+- **Enrollment Records**: Proper enrollment tracking in course_enrollments table
 - **Unenrollment**: Students can unenroll from courses (removes all progress)
 - **Modern UI**: Modern, responsive interface with Inter font and gradient designs
+
+### Course Creator Role
+- **Dedicated Role**: Course Creator role for managing course content
+- **Content Management**: Create and edit courses, modules, lessons, and activities
+- **Activity Types**: Support for Assignment and Discussion activities
+- **File Upload**: PDF file upload for lesson content with automatic viewer
+
+### Academic Program Management
+- **Unified Programs**: Grade levels and programs merged into single academic_programs table
+- **School Filtering**: Programs, grade levels, and subjects filtered by school_id
+- **Multiple School Admins**: Support for multiple School Admins per school
+- **Section Management**: Create and manage sections per subject
+- **Section Views**: View enrolled students, progress, and attendance per section
 
 ### Enrollment Management
 - **Enrollment Keys**: Teachers set mandatory keys for course enrollment to prevent unauthorized access
 - **Student Unenrollment**: Students can unenroll from mistakenly joined courses
 - **Bulk CSV Import**: Download CSV template and bulk enroll students by email (auto-creates new students if not found)
 - **Manual Enrollment**: Teachers can manually enroll students from available list
+- **Backfill Migration**: Automatic backfill of enrollment records for existing students with lesson completions
+
+### School Management
+- **TESDA Support**: Full support for TESDA technical vocational education
+- **Bulk School Upload**: CSV/Excel template for bulk school creation
+- **School Types**: Filter schools by DepEd, CHED, TESDA, or All
+- **Multiple Admins**: Assign multiple School Admins per school
 
 ### Automatic Attendance Tracking
 - **Login/Logout Based**: Attendance is automatically recorded when students log in/out
@@ -100,10 +126,12 @@ Each school operates in isolation. Data is scoped by `school_id`:
 - **Student Auto-Logout**: Automatic logout after 5 minutes of inactivity for students
 - **Role-Based Access**: Different interfaces and permissions for each role
 - **School Isolation**: Multi-tenant architecture with school-level data isolation
+- **Enrollment Validation**: Enrollment key validation prevents unauthorized course access
 
 ### System Configuration
 - **Manila Timezone**: All date/time functions use Asia/Manila timezone (PST)
 - **Responsive Design**: Full-width forms and modern UI for better usability
+- **Card-Based Layouts**: Modern card-based layouts for programs and subjects pages
 
 ---
 
@@ -111,13 +139,13 @@ Each school operates in isolation. Data is scoped by `school_id`:
 
 | Module | Description |
 |--------|-------------|
-| **Schools** | Multi-tenant school management (Super Admin only) |
-| **Users** | User CRUD with role assignment per school, profile management, password change |
-| **Courses** | Course-based learning management with modules, lessons, quizzes, enrollment keys |
-| **Academic** | School years, grade levels, SHS tracks/strands, CHED programs, subjects, sections |
-| **Enrollment** | Student registration (LRN for DepEd, Student ID for CHED), section assignment, course enrollment with key validation, bulk CSV import |
+| **Schools** | Multi-tenant school management (Super Admin only), bulk school upload, TESDA support |
+| **Users** | User CRUD with role assignment per school, profile management, password change, Course Creator role |
+| **Courses** | Course-based learning management with modules, lessons, activities, PDF file upload, enrollment keys |
+| **Academic** | Academic programs (unified grade levels/programs), subjects, sections per subject, school filtering |
+| **Enrollment** | Student registration (LRN for DepEd, Student ID for CHED), section assignment, course enrollment with key validation, bulk CSV import, enrollment backfill |
 | **Grading** | DepEd components (WW, PT, QA) with transmutation table; CHED GPA system |
-| **Attendance** | Automatic login/logout tracking with duration calculation, course-specific attendance views |
+| **Attendance** | Automatic login/logout tracking with duration calculation, course-specific attendance views, section attendance |
 | **Student Mode** | Teachers can switch to student mode to test the interface and access restrictions |
 
 ---
@@ -126,7 +154,7 @@ Each school operates in isolation. Data is scoped by `school_id`:
 
 - **Backend:** PHP 8.x, CodeIgniter 3
 - **Database:** MySQL / MariaDB
-- **Frontend:** Bootstrap 5, Bootstrap Icons
+- **Frontend:** Bootstrap 5, Bootstrap Icons, Inter Font
 - **Server:** XAMPP (Apache)
 
 ---
@@ -137,3 +165,23 @@ Each school operates in isolation. Data is scoped by `school_id`:
 - Multi-tenant migration: `sql/migrate_multitenant.sql`
 - Database name: `lms_db`
 - Default DB config: `root` user, no password, host `127.0.0.1`
+
+---
+
+## Recent Updates
+
+- Added TESDA support to system_type (deped, ched, tesda)
+- Created Course Creator role with dedicated permissions
+- Implemented bulk school upload with CSV/Excel template
+- Added support for multiple School Admins per school
+- Created Section management per subject with student, progress, and attendance views
+- Added Assignment and Discussion activity types
+- Merged Grade Levels and Programs into single academic_programs table
+- Filtered programs, grade levels, and subjects by school_id
+- Modernized programs and subjects pages with card-based layouts
+- Added PDF file upload for lessons with built-in viewer
+- Added Previous/Next navigation buttons for lessons
+- Implemented auto-mark lesson as complete when opened
+- Fixed enrollment detection and UI behavior
+- Added enrollment record creation and backfill migration
+- Fixed completion percentage calculation for published lessons only
