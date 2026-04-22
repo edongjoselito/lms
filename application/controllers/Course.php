@@ -633,10 +633,9 @@ class Course extends MY_Controller {
     {
         $this->require_course_manager();
 
-        // Check if there are enrolled students
-        $enrolled_students = $this->Academic_model->get_section_students($class_program_id);
-        if (!empty($enrolled_students)) {
-            $this->session->set_flashdata('error', 'Cannot remove section. There are ' . count($enrolled_students) . ' student(s) enrolled in this section.');
+        // Check if section can be deleted
+        if (!$this->Academic_model->can_delete_section($class_program_id)) {
+            $this->session->set_flashdata('error', 'Cannot remove section. This is the only section for this course and there are enrolled students.');
             redirect('course/content/' . $subject_id . '?edit=1');
         }
 

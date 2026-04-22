@@ -475,6 +475,28 @@ class Academic_model extends CI_Model {
         return $students;
     }
 
+    public function can_delete_section($section_id)
+    {
+        $section = $this->get_subject_section($section_id);
+        if (!$section) {
+            return false;
+        }
+
+        // Check if this is the only section for the subject
+        $section_count = $this->db->where('subject_id', $section->subject_id)->where('status', 1)->count_all_results('class_programs');
+
+        // If there are multiple sections, allow deletion
+        if ($section_count > 1) {
+            return true;
+        }
+
+        // If this is the only section, check if there are enrolled students
+        $enrollment_count = $this->db->where('course_id', $section->subject_id)->where('status', 'active')->count_all_results('course_enrollments');
+
+        // Only allow deletion if no students are enrolled
+        return $enrollment_count == 0;
+    }
+
     public function subject_has_enrollment_keys($subject_id)
     {
         $this->ensure_class_program_enrollment_key_column();
