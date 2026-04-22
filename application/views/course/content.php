@@ -153,7 +153,7 @@ $is_student_mode = $student_content_view;
                         </div>
                         <?php if ($edit_mode): ?>
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-flip="true">
                                     <i class="bi bi-three-dots-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -309,7 +309,7 @@ $is_student_mode = $student_content_view;
                                         
                                         <?php if ($edit_mode): ?>
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-flip="true">
                                                     <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -799,6 +799,21 @@ $is_student_mode = $student_content_view;
     color: inherit;
     min-width: 0;
     text-decoration: none;
+}
+.dropdown-menu {
+    z-index: 9999 !important;
+}
+.course-content-page {
+    overflow: visible !important;
+}
+.data-table {
+    overflow: visible !important;
+}
+.list-group-item {
+    overflow: visible !important;
+}
+.p-0 {
+    overflow: visible !important;
 }
 .content-item-link h6 {
     color: #1e293b;
