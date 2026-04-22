@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($title) ? $title . ' - ' : '' ?>LMS Admin</title>
-    <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/apklogo.png') ?>">
+    <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/favicon.ico') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
@@ -21,7 +22,11 @@
             --text-secondary: #64748b;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -53,7 +58,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .sidebar-brand .brand-icon {
@@ -134,7 +139,7 @@
 
         .sidebar-footer {
             padding: 1rem 0.75rem;
-            border-top: 1px solid rgba(255,255,255,0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .sidebar-user {
@@ -284,7 +289,7 @@
 
         .stat-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
         }
 
         .stat-card .stat-icon {
@@ -502,7 +507,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
 
@@ -510,24 +515,30 @@
             .sidebar {
                 transform: translateX(-100%);
             }
+
             .sidebar.open {
                 transform: translateX(0);
             }
+
             .sidebar-overlay.active {
                 display: block;
             }
+
             .main-content {
                 margin-left: 0;
             }
+
             .content-area {
                 padding: 1rem;
             }
+
             .topbar {
                 padding: 0.875rem 1rem;
             }
         }
     </style>
 </head>
+
 <body>
 
     <?php $this->load->view('includes/sidebar', array(
@@ -546,9 +557,9 @@
             </div>
             <div class="topbar-right">
                 <?php if ($this->session->userdata('school_name') && (!isset($role_slug) || $role_slug !== 'student')): ?>
-                <span style="background:#f1f5f9;padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:#475569;margin-right:0.5rem;">
-                    <i class="bi bi-building me-1"></i><?= htmlspecialchars($this->session->userdata('school_name')) ?>
-                </span>
+                    <span style="background:#f1f5f9;padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:#475569;margin-right:0.5rem;">
+                        <i class="bi bi-building me-1"></i><?= htmlspecialchars($this->session->userdata('school_name')) ?>
+                    </span>
                 <?php endif; ?>
                 <a href="<?= site_url('auth/logout') ?>" class="btn-logout">
                     <i class="bi bi-box-arrow-right"></i>
