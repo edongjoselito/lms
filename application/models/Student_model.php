@@ -82,6 +82,20 @@ class Student_model extends CI_Model {
                         ->result();
     }
 
+    public function get_ordered_lessons_by_subject($subject_id)
+    {
+        return $this->db->select('l.*, m.title as module_title, m.subject_id')
+                        ->from('lessons l')
+                        ->join('modules m', 'm.id = l.module_id')
+                        ->where('m.subject_id', $subject_id)
+                        ->where('m.is_published', 1)
+                        ->where('l.is_published', 1)
+                        ->order_by('m.order_num', 'ASC')
+                        ->order_by('l.order_num', 'ASC')
+                        ->get()
+                        ->result();
+    }
+
     public function mark_lesson_completed($student_id, $lesson_id)
     {
         $existing = $this->db->where('student_id', $student_id)
@@ -144,12 +158,74 @@ class Student_model extends CI_Model {
 
     public function get_enrolled_subjects($student_id)
     {
-        return $this->db->select('s.*')
-                        ->from('subjects s')
-                        ->join('course_enrollments ce', 'ce.course_id = s.id AND ce.user_id = (SELECT user_id FROM students WHERE id = ' . $this->db->escape($student_id) . ')')
-                        ->where('ce.status', 'active')
-                        ->where('ce.role', 'student')
-                        ->get()
-                        ->result();
+        $student = $this->get_student($student_id);
+        if (!$student) {
+            return array();
+        }
+
+        $subjects = array();
+
+        $course_subjects = $this->db->select('s.*, "" as section_name', FALSE)
+                                   ->from('subjects s')
+                                   ->join('course_enrollments ce', 'ce.course_id = s.id')
+                                   ->where('ce.user_id', $student->user_id)
+                                   ->where('ce.role', 'student')
+                                   ->where('ce.status', 'active')
+                                   ->where('s.status', 1)
+                                   ->get()
+                                   ->result();
+
+        foreach ($course_subjects as $subject) {
+            $subjects[(int) $subject->id] = $subject;
+        }
+
+        $section_subjects = $this->db->select('s.*, sections.name as section_name', FALSE)
+                                    ->from('subjects s')
+                                    ->join('class_programs cp', 'cp.subject_id = s.id AND cp.status = 1')
+                                    ->join('sections', 'sections.id = cp.section_id', 'left')
+                                    ->join('enrollments e', 'e.section_id = cp.section_id')
+                                    ->where('e.student_id', $student_id)
+                                    ->where('e.status', 'enrolled')
+                                    ->where('s.status', 1)
+                                    ->get()
+                                    ->result();
+
+        foreach ($section_subjects as $subject) {
+            $subject_id = (int) $subject->id;
+            if (isset($subjects[$subject_id])) {
+                if (empty($subjects[$subject_id]->section_name) && !empty($subject->section_name)) {
+                    $subjects[$subject_id]->section_name = $subject->section_name;
+                }
+                continue;
+            }
+            $subjects[$subject_id] = $subject;
+        }
+
+        return array_values($subjects);
+    }
+
+    public function is_subject_enrolled($student_id, $subject_id)
+    {
+        $student = $this->get_student($student_id);
+        if (!$student) {
+            return false;
+        }
+
+        $course_enrollment = $this->db->where('user_id', $student->user_id)
+                                      ->where('course_id', $subject_id)
+                                      ->where('role', 'student')
+                                      ->where('status', 'active')
+                                      ->count_all_results('course_enrollments');
+
+        if ($course_enrollment > 0) {
+            return true;
+        }
+
+        return $this->db->from('enrollments e')
+                        ->join('class_programs cp', 'cp.section_id = e.section_id AND cp.status = 1')
+                        ->where('e.student_id', $student_id)
+                        ->where('e.status', 'enrolled')
+                        ->where('cp.subject_id', $subject_id)
+                        ->count_all_results() > 0;
     }
 }

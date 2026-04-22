@@ -97,6 +97,24 @@ class Auth extends CI_Controller {
         redirect('auth');
     }
 
+    public function keep_alive()
+    {
+        $this->output->set_content_type('application/json');
+
+        if (!$this->session->userdata('logged_in')) {
+            $this->output
+                ->set_status_header(401)
+                ->set_output(json_encode(array('success' => false)));
+            return;
+        }
+
+        if ($this->session->userdata('role_slug') === 'student') {
+            $this->session->set_userdata('last_activity', time());
+        }
+
+        $this->output->set_output(json_encode(array('success' => true)));
+    }
+
     private function _track_login($user_id, $school_id)
     {
         $today = date('Y-m-d');

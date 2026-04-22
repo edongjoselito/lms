@@ -80,7 +80,8 @@
 .btn-complete:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
 .completed-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 1rem 2rem; background: #22c55e; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 600; }
 
-.lesson-content { background: #fff; border-radius: 20px; padding: 3rem; border: 1px solid #e2e8f0; line-height: 1.8; color: #1e293b; margin-bottom: 2rem; }
+.lesson-content { background: #fff; border-radius: 20px; padding: 3rem; border: 1px solid #e2e8f0; line-height: 1.8; color: #1e293b; margin-bottom: 2rem; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.lesson-content > * { max-width: 100%; }
 
 .lesson-file-display { margin-bottom: 2rem; }
 .lesson-file-display iframe { border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -104,6 +105,7 @@
 .lesson-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 2rem 0; }
 .lesson-content pre { background: #1e293b; color: #fff; padding: 1.5rem; border-radius: 12px; overflow-x: auto; margin: 1.5rem 0; }
 .lesson-content code { background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #1e293b; }
+.lesson-content table { display: block; width: 100%; overflow-x: auto; }
 .lesson-content ul, .lesson-content ol { margin: 1.5rem 0; padding-left: 2rem; }
 .lesson-content li { margin-bottom: 0.5rem; }
 

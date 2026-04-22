@@ -41,13 +41,13 @@ class MY_Controller extends CI_Controller {
                 $this->current_school = $this->db->where('id', $this->school_id)->get('schools')->row();
             }
 
-            // Auto-logout students after 5 minutes of inactivity (only for actual students, not teachers in student mode)
+            // Auto-logout students using configured session lifetime (only for actual students, not teachers in student mode)
             if ($this->role_slug === 'student' && !$this->is_student_mode) {
                 $last_activity = $this->session->userdata('last_activity');
                 $now = time();
+                $session_expiration = (int) $this->config->item('sess_expiration');
 
-                if ($last_activity && ($now - $last_activity) > 300) {
-                    // 5 minutes = 300 seconds
+                if ($session_expiration > 0 && $last_activity && ($now - $last_activity) > $session_expiration) {
                     $this->session->sess_destroy();
                     redirect('auth');
                     return;

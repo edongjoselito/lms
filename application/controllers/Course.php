@@ -11,7 +11,7 @@ class Course extends MY_Controller {
             !($this->is_student_mode && in_array($this->original_role_slug, array('course_creator', 'teacher')))) {
             show_error('You do not have permission to access this page.', 403);
         }
-        $this->load->model(array('Academic_model', 'User_model', 'Lesson_model'));
+        $this->load->model(array('Academic_model', 'User_model', 'Lesson_model', 'Student_model'));
     }
 
     private function is_student_content_view()
@@ -42,6 +42,22 @@ class Course extends MY_Controller {
     {
         if ($this->original_role_slug !== 'student') {
             return true;
+        }
+
+        if ($this->current_user) {
+            $course_enrollment = $this->db->where('user_id', $this->current_user->id)
+                                          ->where('course_id', $subject_id)
+                                          ->where('role', 'student')
+                                          ->where('status', 'active')
+                                          ->count_all_results('course_enrollments');
+            if ($course_enrollment > 0) {
+                return true;
+            }
+
+            $student = $this->Student_model->get_student_by_user_id($this->current_user->id);
+            if ($student && $this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
+                return true;
+            }
         }
 
         if (!$this->Academic_model->subject_has_enrollment_keys($subject_id)) {
@@ -567,6 +583,27 @@ class Course extends MY_Controller {
             $class_program = $this->Academic_model->validate_subject_enrollment_key($subject_id, $this->input->post('enrollment_key', TRUE));
             if ($class_program) {
                 $this->set_subject_access($subject_id, $class_program->id);
+
+                if ($this->original_role_slug === 'student' && $this->current_user) {
+                    $existing_enrollment = $this->db->where('user_id', $this->current_user->id)
+                                                     ->where('course_id', $subject_id)
+                                                     ->where('role', 'student')
+                                                     ->get('course_enrollments')
+                                                     ->row();
+
+                    if (!$existing_enrollment) {
+                        $this->db->insert('course_enrollments', array(
+                            'user_id'   => $this->current_user->id,
+                            'course_id' => $subject_id,
+                            'role'      => 'student',
+                            'status'    => 'active'
+                        ));
+                    } elseif ($existing_enrollment->status !== 'active') {
+                        $this->db->where('id', $existing_enrollment->id)
+                                 ->update('course_enrollments', array('status' => 'active'));
+                    }
+                }
+
                 $this->session->set_flashdata('success', 'Enrollment key accepted. You can now access this course.');
             } else {
                 $this->session->set_flashdata('error', 'Invalid enrollment key.');

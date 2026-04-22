@@ -6,6 +6,7 @@ class Student extends MY_Controller {
     public function __construct()
     {
         parent::__construct();
+        $this->require_login();
         $this->load->model('Student_model');
         $this->load->model('Lesson_model');
     }
@@ -49,11 +50,24 @@ class Student extends MY_Controller {
             $subject->requires_key = false;
         }
         unset($subject);
+
+        $enrolled_subjects = $this->Student_model->get_enrolled_subjects($student->id);
+        $enrolled_ids = array();
+        foreach ($enrolled_subjects as $subject) {
+            $enrolled_ids[] = (int) $subject->id;
+        }
+
+        $available_subjects = array();
+        foreach ($subjects as $subject) {
+            if (!in_array((int) $subject->id, $enrolled_ids, true)) {
+                $available_subjects[] = $subject;
+            }
+        }
         
         $data['title'] = 'Student Dashboard';
         $data['subjects'] = $subjects;
-        $data['enrolled_subjects'] = array();
-        $data['available_subjects'] = $subjects;
+        $data['enrolled_subjects'] = $enrolled_subjects;
+        $data['available_subjects'] = $available_subjects;
         
         $this->render('student/dashboard', $data);
     }
@@ -116,6 +130,11 @@ class Student extends MY_Controller {
         if (!$subject) {
             show_404();
         }
+
+        if ($this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
+            redirect('student/content/' . $subject_id);
+            return;
+        }
         
         if ($this->input->method() === 'post') {
             $enrollment_key = $this->input->post('enrollment_key', TRUE);
@@ -158,6 +177,9 @@ class Student extends MY_Controller {
                     'role' => 'student',
                     'status' => 'active'
                 ));
+            } elseif ($existing_enrollment->status !== 'active') {
+                $this->db->where('id', $existing_enrollment->id)
+                         ->update('course_enrollments', array('status' => 'active'));
             }
 
             $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject->name));
@@ -191,17 +213,10 @@ class Student extends MY_Controller {
             show_404();
         }
 
-        // Check if student is enrolled in this course
-        $enrollment = $this->db->where('user_id', $user_id)
-                                ->where('course_id', $subject_id)
-                                ->where('role', 'student')
-                                ->where('status', 'active')
-                                ->get('course_enrollments')
-                                ->row();
-
-        if (!$enrollment) {
+        if (!$this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
             $this->session->set_flashdata('error', 'You need to enroll in this course first.');
             redirect('student/enroll/' . $subject_id);
+            return;
         }
 
         // Get modules for this subject
@@ -215,18 +230,33 @@ class Student extends MY_Controller {
         }
         unset($module);
         
-        // Get lesson completions
+        // Get lesson completions using the same published lesson set shown on this page.
+        $ordered_lessons = $this->Student_model->get_ordered_lessons_by_subject($subject_id);
+        $ordered_lesson_ids = array_map(function($lesson) {
+            return (int) $lesson->id;
+        }, $ordered_lessons);
         $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
-        $total_lessons = $this->Student_model->get_total_lessons($subject_id);
+        $completed_lesson_ids = array_values(array_intersect($ordered_lesson_ids, array_map('intval', $completed_lesson_ids)));
+        $total_lessons = count($ordered_lesson_ids);
         $progress_percent = $total_lessons > 0 
             ? round((count($completed_lesson_ids) / $total_lessons) * 100) 
             : 0;
+
+        $accessible_lesson_ids = array();
+        foreach ($ordered_lesson_ids as $lesson_id) {
+            $accessible_lesson_ids[] = $lesson_id;
+            if (!in_array($lesson_id, $completed_lesson_ids, true)) {
+                break;
+            }
+        }
         
         $data['title'] = $subject->code . ' - ' . $subject->description;
         $data['subject'] = $subject;
         $data['modules'] = $modules;
         $data['completed_lesson_ids'] = $completed_lesson_ids;
-        $data['progress_percent'] = $progress_percent;
+        $data['accessible_lesson_ids'] = $accessible_lesson_ids;
+        $data['total_lessons'] = $total_lessons;
+        $data['progress_percent'] = max(0, min(100, $progress_percent));
         
         $this->render('student/content', $data);
     }
@@ -248,45 +278,36 @@ class Student extends MY_Controller {
             show_404();
         }
         
-        // Check if student is enrolled in this course
-        $enrollment = $this->db->where('user_id', $user_id)
-                                ->where('course_id', $subject_id)
-                                ->where('role', 'student')
-                                ->where('status', 'active')
-                                ->get('course_enrollments')
-                                ->row();
-
-        if (!$enrollment) {
+        if (!$this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
             $this->session->set_flashdata('error', 'You need to enroll in this course first.');
             redirect('student/enroll/' . $subject_id);
+            return;
         }
 
-        $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
-        
-        // Get lesson details
-        $lesson = $this->db->select('l.*, m.title as module_title')
-                        ->from('lessons l')
-                        ->join('modules m', 'm.id = l.module_id')
-                        ->where('l.id', $lesson_id)
-                        ->get()
-                        ->row();
-        if (!$lesson) {
+        $ordered_lessons = $this->Student_model->get_ordered_lessons_by_subject($subject_id);
+        $lesson_ids = array_map(function($lesson) {
+            return (int) $lesson->id;
+        }, $ordered_lessons);
+        $lesson_index = array_search((int) $lesson_id, $lesson_ids, true);
+
+        if ($lesson_index === false) {
             show_404();
         }
-        
-        // Check if lesson is sequential and previous lesson is completed
-        $module_lessons = $this->Student_model->get_lessons($lesson->module_id);
-        $lesson_index = array_search($lesson_id, array_column($module_lessons, 'id'));
+
+        $lesson = $ordered_lessons[$lesson_index];
+        $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
+        $completed_lesson_ids = array_values(array_intersect($lesson_ids, array_map('intval', $completed_lesson_ids)));
         
         if ($lesson_index > 0) {
-            $previous_lesson_id = $module_lessons[$lesson_index - 1]->id;
-            if (!in_array($previous_lesson_id, $completed_lesson_ids)) {
+            $previous_lesson_id = (int) $lesson_ids[$lesson_index - 1];
+            if (!in_array($previous_lesson_id, $completed_lesson_ids, true)) {
                 $this->session->set_flashdata('error', 'You must complete the previous lesson first.');
                 redirect('student/content/' . $subject_id);
+                return;
             }
         }
         
-        $is_completed = in_array($lesson_id, $completed_lesson_ids);
+        $is_completed = in_array((int) $lesson_id, $completed_lesson_ids, true);
 
         // Auto-mark lesson as complete when opened
         if (!$is_completed) {
@@ -299,11 +320,11 @@ class Student extends MY_Controller {
         $next_lesson = null;
 
         if ($lesson_index > 0) {
-            $previous_lesson = $module_lessons[$lesson_index - 1];
+            $previous_lesson = $ordered_lessons[$lesson_index - 1];
         }
 
-        if ($lesson_index < count($module_lessons) - 1) {
-            $next_lesson = $module_lessons[$lesson_index + 1];
+        if ($lesson_index < count($ordered_lessons) - 1) {
+            $next_lesson = $ordered_lessons[$lesson_index + 1];
         }
 
         $data['title'] = $lesson->title;

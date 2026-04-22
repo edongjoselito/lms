@@ -52,9 +52,11 @@
                             <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
                             <div class="course-meta">
                                 <span class="course-badge <?= $subject->system_type ?>"><?= strtoupper($subject->system_type) ?></span>
-                                <span class="course-section">
-                                    <i class="bi bi-people-fill"></i> <?= htmlspecialchars($subject->section_name) ?>
-                                </span>
+                                <?php if (!empty($subject->section_name)): ?>
+                                    <span class="course-section">
+                                        <i class="bi bi-people-fill"></i> <?= htmlspecialchars($subject->section_name) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                             <a href="<?= site_url('student/content/' . $subject->id) ?>" class="btn-continue">
                                 Continue Learning <i class="bi bi-arrow-right"></i>

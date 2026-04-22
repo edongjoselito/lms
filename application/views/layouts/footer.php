@@ -12,5 +12,26 @@
             document.getElementById('sidebarOverlay').classList.remove('active');
         }
     </script>
+    <?php if ($this->session->userdata('logged_in')): ?>
+    <script>
+        (function () {
+            var keepAliveUrl = '<?= site_url('auth/keep_alive') ?>';
+            var keepAliveInterval = 240000;
+
+            function keepSessionAlive() {
+                if (document.visibilityState === 'hidden') {
+                    return;
+                }
+
+                fetch(keepAliveUrl, {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                }).catch(function () {});
+            }
+
+            setInterval(keepSessionAlive, keepAliveInterval);
+        })();
+    </script>
+    <?php endif; ?>
 </body>
 </html>
