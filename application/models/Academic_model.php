@@ -394,14 +394,45 @@ class Academic_model extends CI_Model {
             return array();
         }
 
-        return $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE)
-                        ->join('enrollments', 'enrollments.section_id = sections.id')
-                        ->join('students', 'students.id = enrollments.student_id')
+        $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, course_enrollments.enrolled_at as enrolled_date, course_enrollments.user_id', FALSE)
+                        ->join('course_enrollments', 'course_enrollments.course_id = class_programs.subject_id')
+                        ->join('students', 'students.user_id = course_enrollments.user_id')
                         ->join('users', 'users.id = students.user_id')
-                        ->where('sections.id', $section->section_id)
-                        ->where('enrollments.status', 'active')
-                        ->get('sections')
+                        ->where('class_programs.id', $section_id)
+                        ->where('course_enrollments.status', 'active')
+                        ->get('class_programs')
                         ->result();
+
+        // Calculate progress for each student
+        foreach ($students as $student) {
+            $student_id = $this->db->select('id')->where('user_id', $student->user_id)->get('students')->row()->id;
+
+            // Get total lessons (published only)
+            $total_lessons = $this->db->select('COUNT(l.id) as count')
+                                    ->from('lessons l')
+                                    ->join('modules m', 'm.id = l.module_id')
+                                    ->where('m.subject_id', $section->subject_id)
+                                    ->where('l.is_published', 1)
+                                    ->where('m.is_published', 1)
+                                    ->get()
+                                    ->row()->count;
+
+            // Get completed lessons (published only)
+            $completed_lessons = $this->db->select('COUNT(lc.lesson_id) as count')
+                                            ->from('lesson_completions lc')
+                                            ->join('lessons l', 'l.id = lc.lesson_id')
+                                            ->join('modules m', 'm.id = l.module_id')
+                                            ->where('lc.student_id', $student_id)
+                                            ->where('m.subject_id', $section->subject_id)
+                                            ->where('l.is_published', 1)
+                                            ->where('m.is_published', 1)
+                                            ->get()
+                                            ->row()->count;
+
+            $student->progress_percent = $total_lessons > 0 ? round(($completed_lessons / $total_lessons) * 100) : 0;
+        }
+
+        return $students;
     }
 
     public function subject_has_enrollment_keys($subject_id)

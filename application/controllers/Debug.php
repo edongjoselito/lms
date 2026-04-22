@@ -170,4 +170,43 @@ class Debug extends CI_Controller {
             echo "Lesson not found";
         }
     }
+
+    public function section($section_id = 6)
+    {
+        echo "<h2>SECTION INFO FOR SECTION $section_id</h2>";
+
+        $section = $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+                        ->from('class_programs')
+                        ->join('sections', 'sections.id = class_programs.section_id')
+                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+                        ->join('programs', 'programs.id = sections.program_id', 'left')
+                        ->where('class_programs.id', $section_id)
+                        ->where('class_programs.status', 1)
+                        ->get()
+                        ->row();
+
+        if ($section) {
+            echo "<pre>";
+            print_r($section);
+            echo "</pre>";
+
+            echo "<h3>Course Enrollments for Subject ID {$section->subject_id}</h3>";
+            $enrollments = $this->db->select('*')
+                                    ->where('course_id', $section->subject_id)
+                                    ->where('status', 'active')
+                                    ->get('course_enrollments')
+                                    ->result();
+            echo "<pre>";
+            print_r($enrollments);
+            echo "</pre>";
+
+            echo "<h3>Students Table</h3>";
+            $students = $this->db->select('*')->limit(5)->get('students')->result();
+            echo "<pre>";
+            print_r($students);
+            echo "</pre>";
+        } else {
+            echo "Section not found";
+        }
+    }
 }
