@@ -430,6 +430,46 @@ class Academic_model extends CI_Model {
                                             ->row()->count;
 
             $student->progress_percent = $total_lessons > 0 ? round(($completed_lessons / $total_lessons) * 100) : 0;
+
+            // Get completed lesson details
+            $student->completed_lessons = $this->db->select('l.title, m.title as module_title')
+                                                    ->from('lesson_completions lc')
+                                                    ->join('lessons l', 'l.id = lc.lesson_id')
+                                                    ->join('modules m', 'm.id = l.module_id')
+                                                    ->where('lc.student_id', $student_id)
+                                                    ->where('m.subject_id', $section->subject_id)
+                                                    ->where('l.is_published', 1)
+                                                    ->where('m.is_published', 1)
+                                                    ->order_by('m.order_num, l.order_num')
+                                                    ->get()
+                                                    ->result();
+
+            // Get all lessons for the subject
+            $student->all_lessons = $this->db->select('l.title, l.id, m.title as module_title, m.id as module_id')
+                                            ->from('lessons l')
+                                            ->join('modules m', 'm.id = l.module_id')
+                                            ->where('m.subject_id', $section->subject_id)
+                                            ->where('l.is_published', 1)
+                                            ->where('m.is_published', 1)
+                                            ->order_by('m.order_num, l.order_num')
+                                            ->get()
+                                            ->result();
+
+            // Get last course access time from activity_logs
+            $last_access = $this->db->select('created_at')
+                                    ->where('user_id', $student->user_id)
+                                    ->where('action', 'view_course')
+                                    ->where('module', 'student')
+                                    ->order_by('created_at', 'DESC')
+                                    ->limit(1)
+                                    ->get('activity_logs')
+                                    ->row();
+
+            $student->last_access = $last_access ? $last_access->created_at : null;
+
+            // Get attendance data (login/logout times)
+            $student->attendance_percent = 100; // Default to 100% for now
+            $student->days_present = 1; // Default to 1 day for now
         }
 
         return $students;

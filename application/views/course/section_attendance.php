@@ -21,6 +21,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Last Course Access</th>
                             <th>Attendance Rate</th>
                             <th>Days Present</th>
                         </tr>
@@ -30,6 +31,7 @@
                             <tr>
                                 <td><?= htmlspecialchars($student->name ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($student->email ?? 'N/A') ?></td>
+                                <td><?= $student->last_access ? date('M d, Y h:i A', strtotime($student->last_access)) : 'Never' ?></td>
                                 <td>
                                     <div class="progress" style="height:10px;">
                                         <div class="progress-bar bg-success" role="progressbar" style="width:<?= $student->attendance_percent ?? 0 ?>%;" aria-valuenow="<?= $student->attendance_percent ?? 0 ?>" aria-valuemin="0" aria-valuemax="100"></div>

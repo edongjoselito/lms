@@ -219,6 +219,16 @@ class Student extends MY_Controller {
             return;
         }
 
+        // Log course access
+        $this->db->insert('activity_logs', array(
+            'user_id' => $user_id,
+            'action' => 'view_course',
+            'module' => 'student',
+            'description' => 'Viewed course content for subject ID: ' . $subject_id,
+            'ip_address' => $this->input->ip_address(),
+            'created_at' => date('Y-m-d H:i:s')
+        ));
+
         // Get modules for this subject
         $modules = $this->Student_model->get_modules_by_subject($subject_id);
         
