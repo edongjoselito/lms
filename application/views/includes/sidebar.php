@@ -55,17 +55,9 @@ if ($rs === 'student') {
                 <i class="bi bi-building"></i>
                 <span>Schools</span>
             </a>
-            <a href="<?= site_url('users') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'users') ? 'active' : '' ?>">
-                <i class="bi bi-people"></i>
-                <span>Users</span>
-            </a>
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic') ? 'active' : '' ?>">
                 <i class="bi bi-mortarboard-fill"></i>
                 <span>Programs</span>
-            </a>
-            <a href="#" class="sidebar-link">
-                <i class="bi bi-gear"></i>
-                <span>Settings</span>
             </a>
         <?php endif; ?>
 
@@ -141,6 +133,12 @@ if ($rs === 'student') {
             <i class="bi bi-person-circle"></i>
             <span>My Profile</span>
         </a>
+        <?php if ($rs === 'super_admin'): ?>
+            <a href="#" class="sidebar-link">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a>
+        <?php endif; ?>
         <?php if (isset($original_role_slug) && in_array($original_role_slug, array('teacher', 'course_creator'))): ?>
             <?php if (isset($is_student_mode) && $is_student_mode): ?>
                 <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#b45309;">
