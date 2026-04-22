@@ -45,10 +45,11 @@ $student_content_view = !empty($student_content_view) || !empty($is_student_mode
 $is_student_mode = $student_content_view;
 ?>
 
+<div class="course-content-page">
 <div class="row">
     <div class="col-12">
         <div class="mb-3">
-            <a href="<?= site_url('subjects') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
+            <a href="<?= site_url('course/subjects') ?>" style="color:#2f6fed;text-decoration:none;font-size:0.9rem;font-weight:700;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Subjects
             </a>
         </div>
@@ -633,7 +634,7 @@ $is_student_mode = $student_content_view;
         <!-- Course Structure -->
         <div class="form-card">
             <h5 style="font-weight:700;margin-bottom:1rem;font-size:1rem;">
-                <i class="bi bi-diagram-3 me-2" style="color:#6366f1;"></i>Structure
+                <i class="bi bi-diagram-3 me-2" style="color:#2f6fed;"></i>Structure
             </h5>
             <?php if (empty($modules)): ?>
                 <p class="text-muted" style="font-size:0.85rem;">No modules yet.</p>
@@ -649,6 +650,7 @@ $is_student_mode = $student_content_view;
             <?php endif; ?>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Add Module Modal -->
@@ -979,6 +981,249 @@ $is_student_mode = $student_content_view;
     border-top: 1px solid #e2e8f0;
     font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
     font-size: 0.85rem;
+}
+
+.course-content-page {
+    padding: 0.5rem 0 1.5rem;
+}
+
+.course-content-page > .row:first-child .mb-3 a {
+    color: #2f6fed !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.course-content-page > .row:first-child .data-table {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.course-content-page > .row:first-child .table-header {
+    padding: 0.25rem 0 0.75rem;
+    border-bottom: 0;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.course-content-page > .row:first-child .table-header h5 {
+    color: #182033;
+    font-size: 1.55rem;
+    line-height: 1.3;
+    font-weight: 700;
+}
+
+.course-content-page > .row:first-child .table-header .btn,
+.course-content-page .btn-primary,
+.course-content-page .btn-outline-primary,
+.course-content-page .btn-outline-secondary,
+.course-content-page .btn-outline-success,
+.course-content-page .btn-secondary,
+.course-content-page .btn-success {
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.course-content-page .btn-primary,
+.course-content-page .btn-success {
+    background: #2f6fed;
+    border-color: #2f6fed;
+}
+
+.course-content-page .btn-outline-primary {
+    color: #2f6fed;
+    border-color: #d7e6ff;
+    background: #edf4ff;
+}
+
+.course-content-page .btn-outline-primary:hover,
+.course-content-page .btn-outline-secondary:hover,
+.course-content-page .btn-outline-success:hover {
+    background: #2f6fed;
+    border-color: #2f6fed;
+    color: #fff;
+}
+
+.course-content-page .course-cover-photo {
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.course-content-page .course-cover-photo img {
+    border-radius: 8px !important;
+    border: 1px solid #e4e7ec;
+}
+
+.course-content-page > .row.g-4 {
+    margin-top: 0.75rem !important;
+}
+
+.course-content-page .data-table,
+.course-content-page .form-card {
+    border: 1px solid #e4e7ec;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+}
+
+.course-content-page .col-lg-9 > .data-table {
+    margin-bottom: 1rem !important;
+}
+
+.course-content-page .col-lg-9 > .data-table > .table-header {
+    background: #fff !important;
+    border-bottom: 1px solid #edf0f4;
+    padding: 1.15rem 1.25rem;
+}
+
+.course-content-page .col-lg-9 > .data-table > .table-header .badge.bg-primary {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #edf4ff !important;
+    color: #2f6fed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course-content-page .col-lg-9 > .data-table > .table-header h5 {
+    color: #182033;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.course-content-page .col-lg-9 > .data-table > .p-3[style*="background"] {
+    background: #f8fafc !important;
+    border-bottom-color: #edf0f4 !important;
+}
+
+.course-content-page .list-group {
+    padding: 0.75rem;
+    gap: 0.65rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.course-content-page .list-group-item {
+    border: 1px solid #edf0f4 !important;
+    border-radius: 8px !important;
+    background: #f8fafc;
+}
+
+.course-content-page .list-group-item:hover {
+    background: #fff;
+    border-color: #d7e6ff !important;
+}
+
+.course-content-page .content-item-link {
+    color: inherit;
+    min-width: 0;
+    text-decoration: none;
+}
+
+.course-content-page .content-item-link h6 {
+    color: #182033;
+    font-weight: 700;
+}
+
+.course-content-page .content-item-link:hover h6 {
+    color: #2f6fed;
+    text-decoration: none;
+}
+
+.course-content-page .activity-icon {
+    border-radius: 14px !important;
+    background: #edf4ff !important;
+    color: #2f6fed !important;
+}
+
+.course-content-page .badge.bg-light {
+    background: #eef2f7 !important;
+    color: #475467 !important;
+    border-color: #e4e7ec !important;
+}
+
+.course-content-page .badge.bg-success {
+    background: #10b981 !important;
+}
+
+.course-content-page .module-add-panels,
+.course-content-page .item-edit-panel {
+    background: #f8fafc;
+    border-top: 1px solid #edf0f4;
+}
+
+.course-content-page .module-add-form {
+    padding: 1.25rem;
+}
+
+.course-content-page .enrollment-key-panel {
+    color: #667085;
+}
+
+.course-content-page .enrollment-key-panel > i {
+    color: #b7791f;
+}
+
+.course-content-page .section-key-item {
+    border-top-color: #edf0f4;
+}
+
+.course-content-page .col-lg-3 .form-card h5 {
+    color: #182033;
+}
+
+.course-content-page .col-lg-3 .list-group {
+    padding: 0;
+    gap: 0;
+}
+
+.course-content-page .col-lg-3 .list-group-item {
+    border: 0 !important;
+    background: transparent;
+    border-radius: 8px !important;
+}
+
+.course-content-page .col-lg-3 .list-group-item:hover {
+    background: #f8fafc;
+}
+
+.course-content-page .wysiwyg-editor {
+    border-color: #e4e7ec;
+    border-radius: 8px;
+}
+
+.course-content-page .wysiwyg-toolbar {
+    background: #f8fafc;
+    border-bottom-color: #e4e7ec;
+}
+
+.course-content-page .video-lesson-box,
+.course-content-page .file-lesson-box,
+.course-content-page .link-lesson-box {
+    border-radius: 8px !important;
+}
+
+@media (max-width: 768px) {
+    .course-content-page > .row:first-child .table-header {
+        flex-direction: column;
+    }
+
+    .course-content-page > .row:first-child .table-header > div:last-child {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .course-content-page .list-group-item {
+        align-items: flex-start !important;
+        gap: 0.75rem;
+    }
 }
 </style>
 

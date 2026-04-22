@@ -10,16 +10,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         :root {
-            --sidebar-width: 260px;
-            --sidebar-bg: #0f172a;
-            --sidebar-hover: rgba(99, 102, 241, 0.1);
-            --sidebar-active: rgba(99, 102, 241, 0.15);
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --body-bg: #f1f5f9;
+            --sidebar-width: 280px;
+            --sidebar-bg: #ffffff;
+            --sidebar-hover: rgba(255, 255, 255, 0.06);
+            --sidebar-active: rgba(47, 111, 237, 0.18);
+            --primary: #2f6fed;
+            --primary-light: #7aa7ff;
+            --accent: #10b981;
+            --body-bg: #f6f7fb;
             --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
+            --text-primary: #182033;
+            --text-secondary: #667085;
+            --border-soft: #e4e7ec;
+            --shadow-soft: 0 12px 30px rgba(24, 32, 51, 0.06);
         }
 
         * {
@@ -33,6 +36,7 @@
             background: var(--body-bg);
             color: var(--text-primary);
             min-height: 100vh;
+            line-height: 1.5;
         }
 
         /* Sidebar */
@@ -47,6 +51,8 @@
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease;
+            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
+            border-right: 1px solid #e2e8f0;
         }
 
         body.sidebar-collapsed .sidebar {
@@ -57,14 +63,14 @@
             padding: 1.5rem 1.5rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            gap: 0.875rem;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .sidebar-brand .brand-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;
@@ -72,20 +78,21 @@
             color: white;
             font-size: 1.25rem;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
         }
 
         .sidebar-brand .brand-text {
-            color: #f1f5f9;
-            font-weight: 700;
-            font-size: 1.15rem;
-            letter-spacing: -0.025em;
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
         }
 
         .sidebar-brand .brand-sub {
             color: #64748b;
             font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.04em;
         }
 
         .sidebar-nav {
@@ -95,40 +102,41 @@
         }
 
         .nav-section-title {
-            color: #475569;
+            color: #94a3b8;
             font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            padding: 0.75rem 0.75rem 0.5rem;
+            letter-spacing: 0.04em;
+            padding: 1rem 1.25rem 0.5rem;
         }
 
         .sidebar-link {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.7rem 0.875rem;
-            color: #94a3b8;
+            padding: 0.7rem 1rem;
+            color: #475569;
             text-decoration: none;
             border-radius: 10px;
             font-size: 0.9rem;
             font-weight: 500;
-            margin-bottom: 2px;
+            margin: 0 0.75rem;
             transition: all 0.2s ease;
         }
 
         .sidebar-link:hover {
-            color: #e2e8f0;
-            background: var(--sidebar-hover);
+            color: #0f172a;
+            background: #f1f5f9;
         }
 
         .sidebar-link.active {
-            color: white;
-            background: var(--sidebar-active);
+            color: #0f172a;
+            background: #eff4ff;
+            font-weight: 600;
         }
 
         .sidebar-link.active i {
-            color: var(--primary-light);
+            color: #0d9488;
         }
 
         .sidebar-link i {
@@ -138,29 +146,31 @@
         }
 
         .sidebar-footer {
-            padding: 1rem 0.75rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            margin: 0 0.75rem;
+            border-radius: 12px;
         }
 
         .sidebar-user {
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.625rem 0.75rem;
+            padding: 0.625rem;
             border-radius: 10px;
             text-decoration: none;
             transition: background 0.2s;
         }
 
         .sidebar-user:hover {
-            background: var(--sidebar-hover);
+            background: #f1f5f9;
         }
 
         .sidebar-user .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -176,8 +186,8 @@
         }
 
         .sidebar-user .user-name {
-            color: #e2e8f0;
-            font-size: 0.85rem;
+            color: #0f172a;
+            font-size: 0.9rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -186,7 +196,7 @@
 
         .sidebar-user .user-role {
             color: #64748b;
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             text-transform: capitalize;
         }
 
@@ -202,8 +212,8 @@
         }
 
         .topbar {
-            background: var(--card-bg);
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.94);
+            border-bottom: 1px solid var(--border-soft);
             padding: 0.875rem 2rem;
             display: flex;
             align-items: center;
@@ -211,6 +221,7 @@
             position: sticky;
             top: 0;
             z-index: 999;
+            backdrop-filter: blur(12px);
         }
 
         .topbar-left {
@@ -232,9 +243,9 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
             font-size: 1.35rem;
             color: var(--text-primary);
             cursor: pointer;
@@ -243,8 +254,8 @@
         }
 
         .menu-toggle:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
+            background: #f7f9fc;
+            border-color: #cfd6e3;
         }
 
         .topbar-right {
@@ -253,15 +264,107 @@
             gap: 0.75rem;
         }
 
+        /* Search Bar */
+        .search-bar {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar i {
+            position: absolute;
+            left: 14px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .search-bar input {
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            width: 260px;
+            background: #f8fafc;
+            color: #0f172a;
+            transition: all 0.2s;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #0d9488;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        }
+
+        .search-bar input::placeholder {
+            color: #94a3b8;
+        }
+
+        /* Switch School Button */
+        .btn-switch-school {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+            color: #475569;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-switch-school:hover {
+            border-color: #0d9488;
+            color: #0d9488;
+            background: rgba(13, 148, 136, 0.05);
+        }
+
+        /* Topbar Icon Buttons */
+        .topbar-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            color: #64748b;
+            font-size: 1.1rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .topbar-icon-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .notification-dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
         .btn-logout {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            border-radius: 10px;
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
+            border-radius: 12px;
+            background: #fff5f5;
+            color: #c24132;
+            border: 1px solid #ffd6d1;
             font-size: 0.85rem;
             font-weight: 500;
             text-decoration: none;
@@ -269,8 +372,8 @@
         }
 
         .btn-logout:hover {
-            background: #fee2e2;
-            color: #b91c1c;
+            background: #ffe8e5;
+            color: #a83225;
         }
 
         .content-area {
@@ -280,16 +383,17 @@
         /* Cards */
         .stat-card {
             background: var(--card-bg);
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 1.5rem;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-soft);
+            transition: all 0.2s ease;
             height: 100%;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-soft);
         }
 
         .stat-card .stat-icon {
@@ -320,9 +424,10 @@
         /* Table */
         .data-table {
             background: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
             overflow: hidden;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
         }
 
         .data-table .table-header {
@@ -330,7 +435,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border-soft);
         }
 
         .data-table .table-header h5 {
@@ -344,20 +449,20 @@
         }
 
         .table thead th {
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            background: #f7f9fc;
+            border-bottom: 1px solid var(--border-soft);
             color: var(--text-secondary);
             font-size: 0.78rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0;
             padding: 0.875rem 1.5rem;
         }
 
         .table tbody td {
             padding: 1rem 1.5rem;
             vertical-align: middle;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f0f2f5;
             font-size: 0.9rem;
         }
 
@@ -420,7 +525,7 @@
         }
 
         .btn-action:hover {
-            background: #f1f5f9;
+            background: #f7f9fc;
             color: var(--text-primary);
         }
 
@@ -431,32 +536,33 @@
         }
 
         .btn-primary-custom {
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 0.6rem 1.25rem;
             font-weight: 600;
             font-size: 0.875rem;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            transition: all 0.3s;
+            transition: all 0.2s;
             text-decoration: none;
         }
 
         .btn-primary-custom:hover {
             transform: translateY(-1px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 20px rgba(47, 111, 237, 0.2);
             color: white;
         }
 
         /* Form styles */
         .form-card {
             background: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            border: 1px solid var(--border-soft);
             padding: 2rem;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
         }
 
         .form-card .form-label {
@@ -468,8 +574,8 @@
 
         .form-card .form-control,
         .form-card .form-select {
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
             padding: 0.625rem 1rem;
             font-size: 0.9rem;
             transition: all 0.2s;
@@ -478,7 +584,7 @@
         .form-card .form-control:focus,
         .form-card .form-select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.12);
         }
 
         /* Alert styles */
@@ -507,7 +613,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(15, 18, 27, 0.48);
             z-index: 999;
         }
 
@@ -556,7 +662,27 @@
                 <h1><?= isset($title) ? $title : 'Dashboard' ?></h1>
             </div>
             <div class="topbar-right">
-                <?php if ($this->session->userdata('school_name') && (!isset($role_slug) || $role_slug !== 'student')): ?>
+                <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
+                    <!-- Search Bar -->
+                    <div class="search-bar">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="Search schools or admins..." />
+                    </div>
+                    <!-- Switch School Button -->
+                    <a href="<?= site_url('schools/select') ?>" class="btn-switch-school">
+                        <i class="bi bi-arrow-left-right"></i>
+                        Switch School
+                    </a>
+                    <!-- Notification Icon -->
+                    <button type="button" class="topbar-icon-btn" title="Notifications">
+                        <i class="bi bi-bell"></i>
+                        <span class="notification-dot"></span>
+                    </button>
+                    <!-- Help Icon -->
+                    <button type="button" class="topbar-icon-btn" title="Help">
+                        <i class="bi bi-question-circle"></i>
+                    </button>
+                <?php elseif ($this->session->userdata('school_name') && (!isset($role_slug) || $role_slug !== 'student')): ?>
                     <span style="background:#f1f5f9;padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:#475569;margin-right:0.5rem;">
                         <i class="bi bi-building me-1"></i><?= htmlspecialchars($this->session->userdata('school_name')) ?>
                     </span>

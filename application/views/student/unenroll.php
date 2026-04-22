@@ -33,23 +33,145 @@
 </div>
 
 <style>
-.unenroll-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.unenroll-container { background: #fff; border-radius: 24px; padding: 3rem; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-.unenroll-header { text-align: center; margin-bottom: 2rem; }
-.warning-icon { width: 80px; height: 80px; background: #fef3c7; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #d97706; font-size: 2.5rem; margin-bottom: 1.5rem; }
-.unenroll-header h1 { font-size: 1.75rem; font-weight: 700; color: #1e293b; margin: 0 0 0.5rem 0; }
-.subject-name { font-size: 1.125rem; font-weight: 600; color: #1e293b; margin: 0 0 0.25rem 0; }
-.subject-code { font-size: 0.875rem; color: #64748b; margin: 0; }
+.unenroll-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0 1.5rem;
+}
 
-.unenroll-warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
-.unenroll-warning > p:first-child { font-size: 1rem; font-weight: 600; color: #991b1b; margin: 0 0 1rem 0; }
-.warning-text { font-size: 0.875rem; font-weight: 600; color: #991b1b; margin: 0 0 0.5rem 0; }
-.unenroll-warning ul { margin: 0; padding-left: 1.5rem; color: #7f1d1d; font-size: 0.875rem; }
-.unenroll-warning li { margin-bottom: 0.5rem; }
+.unenroll-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.75rem;
+    max-width: 520px;
+    width: 100%;
+    border: 1px solid #e4e7ec;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+}
 
-.unenroll-actions { display: flex; flex-direction: column; gap: 1rem; }
-.btn-unenroll { width: 100%; padding: 1rem 2rem; background: #dc2626; color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s ease; }
-.btn-unenroll:hover { background: #b91c1c; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4); }
-.btn-cancel { width: 100%; padding: 1rem 2rem; background: #f1f5f9; color: #475569; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; transition: all 0.2s ease; }
-.btn-cancel:hover { background: #e2e8f0; }
+.unenroll-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+    width: 68px;
+    height: 68px;
+    background: #fff6df;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #b7791f;
+    font-size: 2rem;
+    margin-bottom: 1.2rem;
+}
+
+.unenroll-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #182033;
+    margin: 0 0 0.5rem 0;
+}
+
+.subject-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #182033;
+    margin: 0 0 0.25rem 0;
+}
+
+.subject-code {
+    font-size: 0.875rem;
+    color: #667085;
+    margin: 0;
+}
+
+.unenroll-warning {
+    background: #fff5f5;
+    border: 1px solid #ffd6d1;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.unenroll-warning > p:first-child {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #a83225;
+    margin: 0 0 1rem 0;
+}
+
+.warning-text {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #a83225;
+    margin: 0 0 0.5rem 0;
+}
+
+.unenroll-warning ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #8b2b22;
+    font-size: 0.875rem;
+}
+
+.unenroll-warning li {
+    margin-bottom: 0.45rem;
+}
+
+.unenroll-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-unenroll,
+.btn-cancel {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-unenroll {
+    background: #c24132;
+    color: #fff;
+    border: 1px solid #c24132;
+}
+
+.btn-unenroll:hover {
+    background: #a83225;
+    border-color: #a83225;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(194, 65, 50, 0.18);
+}
+
+.btn-cancel {
+    background: #f7f9fc;
+    color: #182033;
+    border: 1px solid #e4e7ec;
+}
+
+.btn-cancel:hover {
+    background: #edf4ff;
+    color: #2f6fed;
+    border-color: #d7e6ff;
+}
+
+@media (max-width: 768px) {
+    .unenroll-container {
+        padding: 1.25rem;
+    }
+}
 </style>

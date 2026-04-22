@@ -1,9 +1,13 @@
 <div class="student-dashboard">
-    <div class="page-header">
+    <div class="page-header student-hero">
         <div>
+            <span class="page-eyebrow">Learning overview</span>
             <h1 class="page-title">Welcome, <?= htmlspecialchars($this->session->userdata('first_name') ?: 'Student') ?></h1>
             <p class="page-subtitle">Track your learning progress and access your courses</p>
         </div>
+        <a href="<?= site_url('student/subjects') ?>" class="hero-action" aria-label="Browse subjects" title="Browse subjects">
+            <i class="bi bi-compass"></i>
+        </a>
     </div>
 
     <div class="dashboard-stats">
@@ -26,7 +30,7 @@
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon stat-icon-purple">
+            <div class="stat-icon stat-icon-gold">
                 <i class="bi bi-clock-fill"></i>
             </div>
             <div class="stat-content">
@@ -41,17 +45,20 @@
         <?php if (!empty($enrolled_subjects)): ?>
             <div class="courses-grid">
                 <?php foreach ($enrolled_subjects as $subject): ?>
+                    <?php $system_type = strtolower($subject->system_type ?: 'general'); ?>
                     <div class="course-card">
-                        <?php if (!empty($subject->cover_photo)): ?>
-                            <div class="course-cover">
+                        <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
+                            <?php if (!empty($subject->cover_photo)): ?>
                                 <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject->name) ?>">
-                            </div>
-                        <?php endif; ?>
+                            <?php else: ?>
+                                <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
+                            <?php endif; ?>
+                        </div>
                         <div class="course-body">
-                            <div class="course-code"><?= $subject->code ?></div>
+                            <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>
                             <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
                             <div class="course-meta">
-                                <span class="course-badge <?= $subject->system_type ?>"><?= strtoupper($subject->system_type) ?></span>
+                                <span class="course-badge <?= htmlspecialchars($system_type) ?>"><?= htmlspecialchars(strtoupper($system_type)) ?></span>
                                 <?php if (!empty($subject->section_name)): ?>
                                     <span class="course-section">
                                         <i class="bi bi-people-fill"></i> <?= htmlspecialchars($subject->section_name) ?>
@@ -59,7 +66,7 @@
                                 <?php endif; ?>
                             </div>
                             <a href="<?= site_url('student/content/' . $subject->id) ?>" class="btn-continue">
-                                Continue Learning <i class="bi bi-arrow-right"></i>
+                                Open Course <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
                     </div>
@@ -84,17 +91,20 @@
         <h2 class="section-title">Available Courses</h2>
         <div class="courses-grid">
             <?php foreach ($available_subjects as $subject): ?>
+                <?php $system_type = strtolower($subject->system_type ?: 'general'); ?>
                 <div class="course-card course-card-available">
-                    <?php if (!empty($subject->cover_photo)): ?>
-                        <div class="course-cover">
+                    <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
+                        <?php if (!empty($subject->cover_photo)): ?>
                             <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject->name) ?>">
-                        </div>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
+                        <?php endif; ?>
+                    </div>
                     <div class="course-body">
-                        <div class="course-code"><?= $subject->code ?></div>
+                        <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>
                         <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
                         <div class="course-meta">
-                            <span class="course-badge <?= $subject->system_type ?>"><?= strtoupper($subject->system_type) ?></span>
+                            <span class="course-badge <?= htmlspecialchars($system_type) ?>"><?= htmlspecialchars(strtoupper($system_type)) ?></span>
                         </div>
                         <?php if ($subject->requires_key): ?>
                             <a href="<?= site_url('student/enroll/' . $subject->id) ?>" class="btn-enroll">
@@ -115,48 +125,93 @@
 
 <style>
 .student-dashboard {
-    padding: 1.5rem 0;
+    padding: 0.5rem 0 1.5rem;
 }
 
 .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.student-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0 0.5rem;
+}
+
+.page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0.45rem;
+    color: #2f6fed;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0;
 }
 
 .page-title {
-    font-size: 1.75rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    color: #1e293b;
-    margin: 0 0 0.5rem 0;
+    color: #182033;
+    margin: 0 0 0.35rem 0;
 }
 
 .page-subtitle {
-    color: #64748b;
+    color: #667085;
     margin: 0;
     font-size: 0.95rem;
+}
+
+.hero-action {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #edf4ff;
+    color: #2f6fed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid #d7e6ff;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.hero-action i {
+    font-size: 1.15rem;
+}
+
+.hero-action:hover {
+    background: #2f6fed;
+    color: #fff;
+    border-color: #2f6fed;
+    transform: translateY(-1px);
 }
 
 .dashboard-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .stat-card {
     background: #fff;
-    border-radius: 16px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 1.25rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #e4e7ec;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
 }
 
 .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -164,18 +219,18 @@
 }
 
 .stat-icon-blue {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #edf4ff;
+    color: #2f6fed;
 }
 
 .stat-icon-green {
-    background: #dcfce7;
-    color: #166534;
+    background: #e9f8f0;
+    color: #0f8b5f;
 }
 
-.stat-icon-purple {
-    background: #ede9fe;
-    color: #6d28d9;
+.stat-icon-gold {
+    background: #fff6df;
+    color: #b7791f;
 }
 
 .stat-content {
@@ -185,49 +240,51 @@
 .stat-value {
     font-size: 2rem;
     font-weight: 700;
-    color: #1e293b;
+    color: #182033;
     line-height: 1;
     margin-bottom: 0.25rem;
 }
 
 .stat-label {
-    color: #64748b;
+    color: #667085;
     font-size: 0.875rem;
 }
 
 .dashboard-section {
-    margin-bottom: 3rem;
+    margin-bottom: 2.25rem;
 }
 
 .section-title {
     font-size: 1.25rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin: 0 0 1.5rem 0;
+    font-weight: 700;
+    color: #182033;
+    margin: 0 0 1rem 0;
 }
 
 .courses-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
 }
 
 .course-card {
     background: #fff;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    border: 1px solid #e4e7ec;
     overflow: hidden;
-    transition: all 0.3s;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
 }
 
 .course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(24, 32, 51, 0.08);
 }
 
 .course-cover {
-    height: 160px;
+    height: 150px;
     overflow: hidden;
+    background: #edf4ff;
 }
 
 .course-cover img {
@@ -236,22 +293,43 @@
     object-fit: cover;
 }
 
+.course-cover-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2f6fed;
+    background: #eef6f2;
+}
+
+.course-cover-fallback span {
+    max-width: 78%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(47, 111, 237, 0.14);
+    color: #182033;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
 .course-body {
     padding: 1.25rem;
 }
 
 .course-code {
-    color: #6366f1;
+    color: #2f6fed;
     font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    letter-spacing: 0;
     margin-bottom: 0.5rem;
 }
 
 .course-name {
     font-size: 1.125rem;
-    font-weight: 600;
-    color: #1e293b;
+    font-weight: 700;
+    color: #182033;
     margin: 0 0 1rem 0;
     line-height: 1.4;
 }
@@ -264,107 +342,122 @@
 }
 
 .course-badge {
-    padding: 0.25rem 0.625rem;
-    border-radius: 6px;
+    padding: 0.28rem 0.65rem;
+    border-radius: 10px;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .course-badge.deped {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #edf4ff;
+    color: #2f6fed;
 }
 
 .course-badge.ched {
-    background: #fef3c7;
-    color: #92400e;
+    background: #fff6df;
+    color: #9a6700;
+}
+
+.course-badge.tesda {
+    background: #e9f8f0;
+    color: #0f8b5f;
+}
+
+.course-badge.general {
+    background: #eef2f7;
+    color: #475467;
 }
 
 .course-section {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    color: #64748b;
+    color: #667085;
     font-size: 0.85rem;
 }
 
-.btn-continue, .btn-enroll {
+.btn-continue,
+.btn-enroll {
     width: 100%;
     padding: 0.75rem 1rem;
-    border-radius: 10px;
+    border-radius: 12px;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     transition: all 0.2s;
-    border: none;
     cursor: pointer;
 }
 
 .btn-continue {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: #2f6fed;
     color: #fff;
+    border: 1px solid #2f6fed;
 }
 
 .btn-continue:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 20px rgba(47, 111, 237, 0.2);
+    color: #fff;
 }
 
 .btn-enroll {
-    background: #f1f5f9;
-    color: #1e293b;
+    background: #f7f9fc;
+    color: #182033;
+    border: 1px solid #e4e7ec;
 }
 
 .btn-enroll:hover {
-    background: #e2e8f0;
+    background: #edf4ff;
+    color: #2f6fed;
+    border-color: #d7e6ff;
 }
 
 .empty-state {
     text-align: center;
-    padding: 4rem 2rem;
-    background: #f8fafc;
-    border-radius: 16px;
-    border: 2px dashed #e2e8f0;
+    padding: 3rem 2rem;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px dashed #cfd6e3;
 }
 
 .empty-icon {
-    width: 80px;
-    height: 80px;
-    background: #e2e8f0;
-    border-radius: 50%;
+    width: 72px;
+    height: 72px;
+    background: #edf4ff;
+    border-radius: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .empty-icon i {
     font-size: 2rem;
-    color: #64748b;
+    color: #2f6fed;
 }
 
 .empty-state h3 {
     font-size: 1.25rem;
-    color: #1e293b;
+    color: #182033;
     margin: 0 0 0.5rem 0;
 }
 
 .empty-state p {
-    color: #64748b;
+    color: #667085;
     margin: 0 0 1.5rem 0;
 }
 
 .btn-primary-modern {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: #2f6fed;
     color: #fff;
     padding: 0.625rem 1.25rem;
-    border-radius: 10px;
+    border-radius: 12px;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
     display: inline-flex;
     align-items: center;
@@ -376,10 +469,16 @@
 
 .btn-primary-modern:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 20px rgba(47, 111, 237, 0.2);
+    color: #fff;
 }
 
 @media (max-width: 768px) {
+    .student-hero {
+        align-items: flex-start;
+        padding: 0;
+    }
+
     .dashboard-stats {
         grid-template-columns: 1fr;
     }
