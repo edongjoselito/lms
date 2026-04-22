@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/favicon.ico') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -197,6 +198,7 @@
 </head>
 
 <body>
+    <?= render_notifications() ?>
     <div class="forgot-container">
         <div class="forgot-card">
             <div class="forgot-header">
@@ -206,20 +208,6 @@
                 <h1>Forgot Password</h1>
                 <p class="subtitle">Enter your email address and we'll send you instructions to reset your password.</p>
             </div>
-
-            <?php if ($this->session->flashdata('error')): ?>
-                <div class="alert-custom">
-                    <i class="bi bi-exclamation-circle-fill"></i>
-                    <?= $this->session->flashdata('error') ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($this->session->flashdata('success')): ?>
-                <div class="alert-success-custom">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <?= $this->session->flashdata('success') ?>
-                </div>
-            <?php endif; ?>
 
             <form action="<?= site_url('auth/forgot_password') ?>" method="post" autocomplete="off">
                 <div class="form-floating position-relative">

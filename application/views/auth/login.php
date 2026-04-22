@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/apklogo.png') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -293,6 +294,7 @@
     </style>
 </head>
 <body>
+    <?= render_notifications() ?>
     <div class="login-wrapper">
         <div class="login-left">
             <div class="login-left-content">
@@ -330,13 +332,6 @@
                     <h2>Welcome Back</h2>
                     <p class="subtitle">Sign in to continue</p>
                 </div>
-
-                <?php if ($this->session->flashdata('error')): ?>
-                    <div class="alert-custom">
-                        <i class="bi bi-exclamation-circle-fill"></i>
-                        <?= $this->session->flashdata('error') ?>
-                    </div>
-                <?php endif; ?>
 
                 <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
                     <div class="form-floating position-relative">

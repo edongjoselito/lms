@@ -563,6 +563,19 @@ function markLessonComplete(lessonId) {
     .then(data => {
         if (data.success) {
             location.reload();
+            return;
+        }
+
+        toast.error(data.message || 'Failed to mark lesson as complete.');
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Complete';
+            btn.disabled = false;
+        }
+    }).catch(() => {
+        toast.error('Failed to mark lesson as complete.');
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Mark Complete';
+            btn.disabled = false;
         }
     });
 }

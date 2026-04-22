@@ -7,6 +7,7 @@
     <title><?= isset($title) ? $title . ' - ' : '' ?>LMS Admin</title>
     <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/favicon.ico') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         :root {
@@ -32,7 +33,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: var(--body-bg);
             color: var(--text-primary);
             min-height: 100vh;
@@ -712,15 +713,4 @@
                     </a>
                 </div>
             <?php endif; ?>
-            <?php if ($this->session->flashdata('success')): ?>
-                <div class="alert alert-modern alert-success-modern mb-3">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <?= $this->session->flashdata('success') ?>
-                </div>
-            <?php endif; ?>
-            <?php if ($this->session->flashdata('error')): ?>
-                <div class="alert alert-modern alert-danger-modern mb-3">
-                    <i class="bi bi-exclamation-circle-fill"></i>
-                    <?= $this->session->flashdata('error') ?>
-                </div>
-            <?php endif; ?>
+            <?= render_notifications() ?>

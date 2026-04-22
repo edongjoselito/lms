@@ -77,7 +77,7 @@ class Auth extends CI_Controller {
 
             redirect('dashboard');
         } else {
-            $this->session->set_flashdata('error', 'Invalid email or password.');
+            notify_error('Invalid email or password.');
             redirect('auth');
         }
     }
@@ -179,9 +179,9 @@ class Auth extends CI_Controller {
             if ($user) {
                 // For now, just show a success message
                 // In production, you would send an email with a reset link
-                $this->session->set_flashdata('success', 'Password reset instructions have been sent to your email.');
+                notify_success('Password reset instructions have been sent to your email.');
             } else {
-                $this->session->set_flashdata('error', 'Email not found.');
+                notify_error('Email not found.');
             }
             redirect('auth/forgot_password');
         }

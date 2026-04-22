@@ -340,19 +340,29 @@ class Student extends MY_Controller {
     public function mark_lesson($subject_id, $lesson_id)
     {
         $this->require_student();
+        $this->output->set_content_type('application/json');
         
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
         
         if (!$student) {
-            echo json_encode(array('success' => false));
+            $this->output->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Failed to get student profile. Please contact administrator.',
+                'type' => 'error'
+            )));
             return;
         }
         
         // Mark lesson as complete
         $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
+        notify_success('Lesson marked as complete.');
         
-        echo json_encode(array('success' => true));
+        $this->output->set_output(json_encode(array(
+            'success' => true,
+            'message' => 'Lesson marked as complete.',
+            'type' => 'success'
+        )));
     }
 
     public function unenroll($subject_id)
