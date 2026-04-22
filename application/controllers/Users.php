@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Users extends Admin_Controller {
+class Users extends Admin_Controller
+{
 
     public function __construct()
     {
@@ -15,9 +16,22 @@ class Users extends Admin_Controller {
         if ($this->school_id) {
             $filters['school_id'] = $this->school_id;
         }
+
+        // Pagination
+        $per_page = 15;
+        $page = $this->input->get('page') ? (int)$this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $total_users = $this->User_model->count_all($filters);
+        $users = $this->User_model->get_all($filters, $per_page, $offset);
+
         $data['title'] = 'Manage Users';
-        $data['users'] = $this->User_model->get_all($filters);
+        $data['users'] = $users;
         $data['roles'] = $this->User_model->get_roles();
+        $data['total_users'] = $total_users;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['total_pages'] = ceil($total_users / $per_page);
         $this->render('users/index', $data);
     }
 
@@ -27,7 +41,7 @@ class Users extends Admin_Controller {
         $data['user'] = null;
         // Filter roles to show teacher, school_admin, student, registrar, and course_creator
         $all_roles = $this->User_model->get_roles();
-        $data['roles'] = array_filter($all_roles, function($role) {
+        $data['roles'] = array_filter($all_roles, function ($role) {
             return in_array($role->slug, array('teacher', 'school_admin', 'student', 'registrar', 'course_creator'));
         });
 

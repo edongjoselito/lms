@@ -663,16 +663,22 @@
             </div>
             <div class="topbar-right">
                 <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
+                    <?php
+                    $is_school_select_page = ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'select');
+                    $has_selected_school = (bool) $this->session->userdata('school_id');
+                    ?>
                     <!-- Search Bar -->
                     <div class="search-bar">
                         <i class="bi bi-search"></i>
                         <input type="text" placeholder="Search schools or admins..." />
                     </div>
                     <!-- Switch School Button -->
-                    <a href="<?= site_url('schools/select') ?>" class="btn-switch-school">
-                        <i class="bi bi-arrow-left-right"></i>
-                        Switch School
-                    </a>
+                    <?php if ($has_selected_school && !$is_school_select_page): ?>
+                        <a href="<?= site_url('schools/select') ?>" class="btn-switch-school">
+                            <i class="bi bi-arrow-left-right"></i>
+                            Switch School
+                        </a>
+                    <?php endif; ?>
                     <!-- Notification Icon -->
                     <button type="button" class="topbar-icon-btn" title="Notifications">
                         <i class="bi bi-bell"></i>

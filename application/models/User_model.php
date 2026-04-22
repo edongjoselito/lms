@@ -1,17 +1,18 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 #[\AllowDynamicProperties]
-class User_model extends CI_Model {
+class User_model extends CI_Model
+{
 
     public function authenticate($email, $password)
     {
         $user = $this->db->select('users.*, roles.slug as role_slug, roles.name as role_name')
-                         ->join('roles', 'roles.id = users.role_id')
-                         ->where('users.email', $email)
-                         ->where('users.status', 1)
-                         ->get('users')
-                         ->row();
+            ->join('roles', 'roles.id = users.role_id')
+            ->where('users.email', $email)
+            ->where('users.status', 1)
+            ->get('users')
+            ->row();
 
         if ($user && password_verify($password, $user->password)) {
             return $user;
@@ -24,7 +25,7 @@ class User_model extends CI_Model {
         $this->db->where('id', $user_id)->update('users', array('last_login' => date('Y-m-d H:i:s')));
     }
 
-    public function get_all($filters = array())
+    public function get_all($filters = array(), $limit = null, $offset = 0)
     {
         $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug, schools.name as school_name');
         $this->db->join('roles', 'roles.id = users.role_id');
@@ -38,17 +39,21 @@ class User_model extends CI_Model {
         if (!empty($filters['school_id'])) {
             $this->db->where('users.school_id', $filters['school_id']);
         }
-        return $this->db->order_by('users.created_at', 'DESC')->get('users')->result();
+        $this->db->order_by('users.created_at', 'DESC');
+        if ($limit !== null) {
+            $this->db->limit($limit, $offset);
+        }
+        return $this->db->get('users')->result();
     }
 
     public function get($id)
     {
         return $this->db->select('users.*, roles.name as role_name, roles.slug as role_slug, schools.name as school_name')
-                        ->join('roles', 'roles.id = users.role_id')
-                        ->join('schools', 'schools.id = users.school_id', 'left')
-                        ->where('users.id', $id)
-                        ->get('users')
-                        ->row();
+            ->join('roles', 'roles.id = users.role_id')
+            ->join('schools', 'schools.id = users.school_id', 'left')
+            ->where('users.id', $id)
+            ->get('users')
+            ->row();
     }
 
     public function create($data)
@@ -119,9 +124,13 @@ class User_model extends CI_Model {
         return $this->db->where('id', $id)->get('roles')->row();
     }
 
-    public function count_all()
+    public function count_all($filters = array())
     {
-        return $this->db->count_all('users');
+        $this->db->join('roles', 'roles.id = users.role_id');
+        if (!empty($filters['school_id'])) {
+            $this->db->where('users.school_id', $filters['school_id']);
+        }
+        return $this->db->count_all_results('users');
     }
 
     public function count_by_role($role_slug, $school_id = null)

@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Schools extends MY_Controller {
+class Schools extends MY_Controller
+{
 
     public function __construct()
     {
@@ -18,8 +19,41 @@ class Schools extends MY_Controller {
         foreach ($schools as &$s) {
             $s->stats = $this->School_model->get_school_stats($s->id);
         }
+
+        // Dashboard metrics
+        $total_schools = count($schools);
+        $active_schools = 0;
+        $inactive_schools = 0;
+        $school_types = array('deped' => 0, 'ched' => 0, 'tesda' => 0, 'both' => 0, 'basic' => 0, 'college' => 0, 'tech_voc' => 0);
+
+        foreach ($schools as $s) {
+            if ($s->status) {
+                $active_schools++;
+            } else {
+                $inactive_schools++;
+            }
+
+            $type = isset($s->type) ? $s->type : 'deped';
+            if (isset($school_types[$type])) {
+                $school_types[$type]++;
+            }
+        }
+
+        // Calculate total students across all schools
+        $total_students = 0;
+        foreach ($schools as $s) {
+            $total_students += isset($s->stats->students) ? $s->stats->students : 0;
+        }
+
         $data['title'] = 'Schools';
         $data['schools'] = $schools;
+        $data['total_schools'] = $total_schools;
+        $data['active_schools'] = $active_schools;
+        $data['inactive_schools'] = $inactive_schools;
+        $data['school_types'] = $school_types;
+        $data['total_students'] = $total_students;
+        $data['recent_schools'] = array_slice($schools, 0, 5);
+
         $this->render('schools/index', $data);
     }
 
@@ -53,7 +87,7 @@ class Schools extends MY_Controller {
             if ($school_admin_role) {
                 $school_name = $this->input->post('name', TRUE);
                 $school_email = $this->input->post('email', TRUE);
-                
+
                 // Generate email if not provided
                 if (empty($school_email)) {
                     $school_email = 'admin@' . strtolower(preg_replace('/[^a-z0-9]/', '', $school_name)) . '.lms';
@@ -79,13 +113,13 @@ class Schools extends MY_Controller {
                 $this->email->from($this->config->item('smtp_user'), 'LMS Portal');
                 $this->email->to($school_email);
                 $this->email->subject('Your LMS School Admin Account');
-                
+
                 $message = $this->load->view('emails/school_admin_password', array(
                     'school_name' => $school_name,
                     'email' => $school_email,
                     'password' => $default_password
                 ), true);
-                
+
                 $this->email->message($message);
                 $this->email->send();
             }
@@ -94,7 +128,7 @@ class Schools extends MY_Controller {
             $this->Audit_model->log('create', 'school', $school_id, $d['name'], 'Created school: ' . $d['name'] . ' (' . $d['type'] . ')');
 
             $this->session->set_flashdata('success', 'School created successfully. A school admin account has been created automatically.');
-            redirect('schools');
+            redirect('schools/select');
         }
 
         $data['title'] = 'Add School';
@@ -136,6 +170,14 @@ class Schools extends MY_Controller {
     public function select()
     {
         $this->require_role(array('super_admin'));
+
+        if ($this->session->userdata('school_id')) {
+            $this->session->unset_userdata('school_id');
+            $this->session->unset_userdata('school_name');
+            $this->school_id = null;
+            $this->current_school = null;
+        }
+
         $data['title'] = 'Select School';
         $data['schools'] = $this->School_model->get_all();
         $this->render('schools/select', $data);
@@ -143,32 +185,40 @@ class Schools extends MY_Controller {
 
     public function switch_school($id)
     {
-        // Super admin can switch to any school
-        if ($this->is_super_admin()) {
-            $school = $this->School_model->get($id);
-            if ($school) {
-                $this->session->set_userdata('school_id', $school->id);
-                $this->session->set_userdata('school_name', $school->name);
-                $this->session->set_flashdata('success', 'Switched to: ' . $school->name);
-            }
+        $this->require_role(array('super_admin'));
+
+        $school_id = (int) $id;
+        $school = $school_id ? $this->School_model->get($school_id) : null;
+
+        if (!$school) {
+            $this->session->set_flashdata('error', 'School not found.');
+            redirect('schools/select');
         }
+
+        $this->session->set_userdata(array(
+            'school_id' => (int) $school->id,
+            'school_name' => $school->name,
+        ));
+        $this->session->set_flashdata('success', 'Switched to: ' . htmlspecialchars($school->name, ENT_QUOTES, 'UTF-8'));
+
         redirect('dashboard');
     }
 
     public function switch_to_platform()
     {
-        if ($this->is_super_admin()) {
-            $this->session->unset_userdata('school_id');
-            $this->session->unset_userdata('school_name');
-            $this->session->set_flashdata('success', 'Switched to platform view.');
-        }
+        $this->require_role(array('super_admin'));
+
+        $this->session->unset_userdata('school_id');
+        $this->session->unset_userdata('school_name');
+        $this->session->set_flashdata('success', 'Switched to platform view.');
+
         redirect('schools');
     }
 
     public function migrate_grade_levels()
     {
         $this->require_login();
-        
+
         try {
             // Check if school_id column exists
             $checkColumn = $this->db->query("SHOW COLUMNS FROM grade_levels LIKE 'school_id'");
@@ -179,27 +229,26 @@ class Schools extends MY_Controller {
             } else {
                 $this->session->set_flashdata('info', 'school_id column already exists in grade_levels table.');
             }
-            
+
             // Update existing records
             $this->db->query("UPDATE `grade_levels` SET `school_id` = 1 WHERE `school_id` IS NULL OR `school_id` = 0");
-            
+
             // Add index if it doesn't exist
             $checkIndex = $this->db->query("SHOW INDEX FROM grade_levels WHERE Key_name = 'idx_school_id'");
             if ($checkIndex->num_rows() == 0) {
                 $this->db->query("ALTER TABLE `grade_levels` ADD INDEX `idx_school_id` (`school_id`)");
             }
-            
         } catch (Exception $e) {
             $this->session->set_flashdata('error', 'Migration failed: ' . $e->getMessage());
         }
-        
+
         redirect('schools');
     }
 
     public function migrate_unified_academic_programs()
     {
         $this->require_login();
-        
+
         try {
             // Step 1: Create the unified academic_programs table
             $this->db->query("
@@ -223,7 +272,7 @@ class Schools extends MY_Controller {
                   KEY `idx_type` (`type`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
-            
+
             // Step 2: Migrate grade_levels data
             $this->db->query("
                 INSERT INTO `academic_programs` (`school_id`, `name`, `code`, `description`, `type`, `category`, `level_order`, `status`)
@@ -239,7 +288,7 @@ class Schools extends MY_Controller {
                 FROM `grade_levels`
                 ON DUPLICATE KEY UPDATE id=id
             ");
-            
+
             // Step 3: Migrate programs data
             $this->db->query("
                 INSERT INTO `academic_programs` (`school_id`, `name`, `code`, `description`, `type`, `degree_type`, `total_units`, `years_to_complete`, `status`, `created_at`)
@@ -257,13 +306,13 @@ class Schools extends MY_Controller {
                 FROM `programs`
                 ON DUPLICATE KEY UPDATE id=id
             ");
-            
+
             // Step 4: Add academic_program_id column to subjects
             $checkColumn = $this->db->query("SHOW COLUMNS FROM subjects LIKE 'academic_program_id'");
             if ($checkColumn->num_rows() == 0) {
                 $this->db->query("ALTER TABLE `subjects` ADD COLUMN `academic_program_id` int(11) UNSIGNED DEFAULT NULL AFTER `id`");
             }
-            
+
             // Migrate grade_level references
             $this->db->query("
                 UPDATE `subjects` s
@@ -272,7 +321,7 @@ class Schools extends MY_Controller {
                 SET s.academic_program_id = ap.id
                 WHERE s.grade_level_id IS NOT NULL
             ");
-            
+
             // Migrate program references
             $this->db->query("
                 UPDATE `subjects` s
@@ -281,13 +330,12 @@ class Schools extends MY_Controller {
                 SET s.academic_program_id = ap.id
                 WHERE s.program_id IS NOT NULL
             ");
-            
+
             $this->session->set_flashdata('success', 'Unified academic_programs migration completed successfully.');
-            
         } catch (Exception $e) {
             $this->session->set_flashdata('error', 'Migration failed: ' . $e->getMessage());
         }
-        
+
         redirect('schools');
     }
 
@@ -302,7 +350,7 @@ class Schools extends MY_Controller {
                 SET s.school_id = COALESCE(p.school_id, gl.school_id, 1)
                 WHERE s.school_id IS NULL OR s.school_id = 0
             ");
-            
+
             echo "Subjects updated with school_id successfully.";
         } catch (Exception $e) {
             echo "Migration failed: " . $e->getMessage();
@@ -314,7 +362,7 @@ class Schools extends MY_Controller {
         $this->require_role(array('super_admin'));
         $school = $this->School_model->get($id);
         $school_name = $school ? $school->name : 'Unknown';
-        
+
         $this->School_model->delete($id);
 
         // Audit log
@@ -327,12 +375,12 @@ class Schools extends MY_Controller {
     public function download_template()
     {
         $this->require_role(array('super_admin'));
-        
+
         $template = "name,school_id_number,type,address,contact_number,email,division,region\n";
         $template .= "Sample Elementary School,SES-001,basic,123 Sample St,1234567890,sample@school.com,NCR,NCR\n";
         $template .= "Sample College,SC-001,college,456 College Ave,0987654321,college@school.edu,NCR,NCR\n";
         $template .= "Sample Tech-Voc,STV-001,tech_voc,789 Vocational Rd,1122334455,techvoc@school.tv,NCR,NCR\n";
-        
+
         header('Content-Type: text/csv');
         header('Content-Disposition: attachment; filename="schools_template.csv"');
         echo $template;
@@ -342,41 +390,41 @@ class Schools extends MY_Controller {
     public function bulk_upload()
     {
         $this->require_role(array('super_admin'));
-        
+
         if ($this->input->method() === 'post' && !empty($_FILES['csv_file']['name'])) {
             $file = $_FILES['csv_file']['tmp_name'];
-            
+
             if (($handle = fopen($file, 'r')) !== FALSE) {
                 $headers = fgetcsv($handle);
                 $row = 0;
                 $success_count = 0;
                 $error_count = 0;
                 $errors = array();
-                
+
                 while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
                     $row++;
-                    
+
                     if ($row == 1) continue; // Skip header row
-                    
+
                     // Validate required fields
                     if (empty($data[0])) {
                         $errors[] = "Row $row: School name is required";
                         $error_count++;
                         continue;
                     }
-                    
+
                     if (empty($data[1])) {
                         $errors[] = "Row $row: School ID number is required";
                         $error_count++;
                         continue;
                     }
-                    
+
                     if (empty($data[2]) || !in_array($data[2], array('basic', 'college', 'tech_voc', 'both'))) {
                         $errors[] = "Row $row: Invalid school type. Must be: basic, college, tech_voc, or both";
                         $error_count++;
                         continue;
                     }
-                    
+
                     // Check if school_id_number already exists
                     $existing = $this->School_model->get_by_school_id_number($data[1]);
                     if ($existing) {
@@ -384,7 +432,7 @@ class Schools extends MY_Controller {
                         $error_count++;
                         continue;
                     }
-                    
+
                     // Create school
                     $school_data = array(
                         'name'             => $data[0],
@@ -396,9 +444,9 @@ class Schools extends MY_Controller {
                         'division'         => isset($data[6]) ? $data[6] : '',
                         'region'           => isset($data[7]) ? $data[7] : '',
                     );
-                    
+
                     $school_id = $this->School_model->create($school_data);
-                    
+
                     if ($school_id) {
                         // Create default school year
                         $this->db->insert('school_years', array(
@@ -407,15 +455,15 @@ class Schools extends MY_Controller {
                             'year_end'   => date('Y') + 1,
                             'is_active'  => 1,
                         ));
-                        
+
                         // Create school admin user account
                         $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
                         if ($school_admin_role) {
                             $school_name = $data[0];
                             $school_email = isset($data[5]) && !empty($data[5]) ? $data[5] : 'admin@' . strtolower(preg_replace('/[^a-z0-9]/', '', $school_name)) . '.lms';
-                            
+
                             $default_password = strtolower(str_replace(' ', '', $school_name)) . '123';
-                            
+
                             $this->db->insert('users', array(
                                 'first_name' => 'School',
                                 'last_name'  => 'Admin',
@@ -427,26 +475,26 @@ class Schools extends MY_Controller {
                                 'created_at' => date('Y-m-d H:i:s'),
                             ));
                         }
-                        
+
                         // Audit log
                         $this->Audit_model->log('create', 'school', $school_id, $school_data['name'], 'Bulk imported school: ' . $school_data['name']);
-                        
+
                         $success_count++;
                     } else {
                         $error_count++;
                         $errors[] = "Row $row: Failed to create school";
                     }
                 }
-                
+
                 fclose($handle);
-                
+
                 $this->session->set_flashdata('success', "Bulk upload complete. Successfully imported $success_count schools. $error_count errors.");
                 if (!empty($errors)) {
                     $this->session->set_flashdata('errors', $errors);
                 }
             }
         }
-        
+
         redirect('schools');
     }
 }

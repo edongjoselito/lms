@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Audit extends Admin_Controller {
+class Audit extends Admin_Controller
+{
 
     public function __construct()
     {
@@ -16,9 +17,20 @@ class Audit extends Admin_Controller {
             $filters['school_id'] = $this->school_id;
         }
 
+        // Pagination
+        $per_page = 20;
+        $page = $this->input->get('page') ? (int)$this->input->get('page') : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $total_logs = $this->Audit_model->count_all($this->school_id);
+        $logs = $this->Audit_model->get_all($per_page, $offset, $this->school_id);
+
         $data['title'] = 'Audit Logs';
-        $data['logs'] = $this->Audit_model->get_all(100, 0, $this->school_id);
-        $data['total_logs'] = $this->Audit_model->count_all($this->school_id);
+        $data['logs'] = $logs;
+        $data['total_logs'] = $total_logs;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['total_pages'] = ceil($total_logs / $per_page);
         $this->render('audit/index', $data);
     }
 

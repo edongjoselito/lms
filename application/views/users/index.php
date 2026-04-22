@@ -1,3 +1,11 @@
+<!-- Hero Section -->
+<div class="dashboard-hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Manage Users</h1>
+        <p class="hero-subtitle">View and manage all user accounts in the system</p>
+    </div>
+</div>
+
 <div class="data-table">
     <div class="table-header">
         <h5><i class="bi bi-people-fill me-2"></i>All Users</h5>
@@ -36,7 +44,7 @@
                             <td style="color:#64748b;"><?= htmlspecialchars($user->email) ?></td>
                             <td style="color:#64748b;font-size:0.85rem;"><?= isset($user->school_name) && $user->school_name ? htmlspecialchars($user->school_name) : '<span style="color:#cbd5e1;">—</span>' ?></td>
                             <td>
-                                <span class="badge-role <?= (in_array($user->role_slug, array('super_admin','school_admin'))) ? 'badge-admin' : 'badge-user' ?>">
+                                <span class="badge-role <?= (in_array($user->role_slug, array('super_admin', 'school_admin'))) ? 'badge-admin' : 'badge-user' ?>">
                                     <?= $user->role_name ?>
                                 </span>
                             </td>
@@ -73,4 +81,138 @@
             </tbody>
         </table>
     </div>
+    <!-- Pagination -->
+    <?php if ($total_pages > 1): ?>
+        <div class="table-footer">
+            <span class="pagination-info">Showing <?= (($current_page - 1) * $per_page) + 1 ?> - <?= min($current_page * $per_page, $total_users) ?> of <?= $total_users ?> users</span>
+            <div class="pagination">
+                <?php if ($current_page > 1): ?>
+                    <a href="<?= site_url('users?page=' . ($current_page - 1)) ?>" class="btn-pagination">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                <?php else: ?>
+                    <button class="btn-pagination" disabled><i class="bi bi-chevron-left"></i> Previous</button>
+                <?php endif; ?>
+
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <?php if ($i == $current_page): ?>
+                        <span class="pagination-page active"><?= $i ?></span>
+                    <?php else: ?>
+                        <a href="<?= site_url('users?page=' . $i) ?>" class="pagination-page"><?= $i ?></a>
+                    <?php endif; ?>
+                <?php endfor; ?>
+
+                <?php if ($current_page < $total_pages): ?>
+                    <a href="<?= site_url('users?page=' . ($current_page + 1)) ?>" class="btn-pagination">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                <?php else: ?>
+                    <button class="btn-pagination" disabled>Next <i class="bi bi-chevron-right"></i></button>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php else: ?>
+        <div class="table-footer">
+            <span class="pagination-info">Showing <?= count($users) ?> of <?= $total_users ?> users</span>
+        </div>
+    <?php endif; ?>
 </div>
+
+<style>
+    .dashboard-hero {
+        margin-bottom: 2rem;
+    }
+
+    .hero-content {
+        padding: 0.5rem 0;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+    }
+
+    .hero-subtitle {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .data-table {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+
+    .table-footer {
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .pagination-info {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .btn-pagination {
+        padding: 0.4rem 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #475569;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-pagination:hover:not(:disabled) {
+        border-color: #0d9488;
+        color: #0d9488;
+    }
+
+    .btn-pagination:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-page {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #475569;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .pagination-page:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    .pagination-page.active {
+        background: #0d9488;
+        color: white;
+    }
+</style>
