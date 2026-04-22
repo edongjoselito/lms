@@ -13,7 +13,7 @@ class Subjects extends MY_Controller {
 
     public function index()
     {
-        $filters = array();
+        $filters = array('school_id' => $this->school_id);
         if ($this->input->get('program_id')) {
             $filters['program_id'] = $this->input->get('program_id');
         }
@@ -26,8 +26,8 @@ class Subjects extends MY_Controller {
         
         $data['title'] = 'Subjects';
         $data['subjects'] = $this->Academic_model->get_subjects($filters);
-        $data['programs'] = $this->Academic_model->get_programs();
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
         $data['filter_program'] = $this->input->get('program_id');
         $data['filter_grade_level'] = $this->input->get('grade_level_id');
         $data['filter_semester'] = $this->input->get('semester_type');
@@ -46,15 +46,15 @@ class Subjects extends MY_Controller {
                 $semester_type = null;
             }
             
+            $description = $this->input->post('description');
+            
             $d = array(
                 'code'            => $this->input->post('code', TRUE),
-                'description'     => $this->input->post('description', TRUE),
+                'description'     => $description,
                 'program_id'      => $program_id,
                 'grade_level_id'  => $grade_level_id,
                 'semester_type'   => $semester_type,
-                'units'           => $this->input->post('units'),
-                'lec_hours'       => $this->input->post('lec_hours'),
-                'lab_hours'       => $this->input->post('lab_hours'),
+                'school_id'       => $this->school_id,
                 'status'          => 1,
             );
             $subject_id = $this->Academic_model->create_subject($d);
@@ -68,8 +68,8 @@ class Subjects extends MY_Controller {
         
         $data['title'] = 'Add Subject';
         $data['subject'] = null;
-        $data['programs'] = $this->Academic_model->get_programs();
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
         $this->render('subjects/form', $data);
     }
 
@@ -90,13 +90,10 @@ class Subjects extends MY_Controller {
             
             $d = array(
                 'code'            => $this->input->post('code', TRUE),
-                'description'     => $this->input->post('description', TRUE),
+                'description'     => $this->input->post('description'),
                 'program_id'      => $program_id,
                 'grade_level_id'  => $grade_level_id,
                 'semester_type'   => $semester_type,
-                'units'           => $this->input->post('units'),
-                'lec_hours'       => $this->input->post('lec_hours'),
-                'lab_hours'       => $this->input->post('lab_hours'),
             );
             $this->Academic_model->update_subject($id, $d);
             
@@ -108,8 +105,8 @@ class Subjects extends MY_Controller {
         }
         
         $data['title'] = 'Edit Subject';
-        $data['programs'] = $this->Academic_model->get_programs();
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
         $this->render('subjects/form', $data);
     }
 

@@ -49,7 +49,7 @@ class Academic extends Admin_Controller {
     public function grade_levels()
     {
         $data['title'] = 'Grade Levels (K-12)';
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
         $this->render('academic/grade_levels', $data);
     }
 
@@ -61,6 +61,7 @@ class Academic extends Admin_Controller {
                 'name'         => $this->input->post('name', TRUE),
                 'category'     => $this->input->post('category', TRUE),
                 'level_order'  => $this->input->post('level_order'),
+                'school_id'    => $this->school_id,
                 'status'       => 1,
             );
             $this->db->insert('grade_levels', $d);
@@ -195,24 +196,36 @@ class Academic extends Admin_Controller {
     // ---- Programs (CHED) ----
     public function programs()
     {
-        $data['title'] = 'Programs (CHED)';
-        $data['programs'] = $this->Academic_model->get_programs();
+        $data['title'] = 'Programs';
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $this->render('academic/programs', $data);
     }
 
     public function create_program()
     {
         if ($this->input->method() === 'post') {
+            $type = $this->input->post('type', TRUE);
+            
             $d = array(
                 'name'              => $this->input->post('name', TRUE),
                 'code'              => $this->input->post('code', TRUE),
                 'description'       => $this->input->post('description', TRUE),
-                'degree_type'       => $this->input->post('degree_type', TRUE),
-                'total_units'       => $this->input->post('total_units'),
-                'years_to_complete' => $this->input->post('years_to_complete'),
+                'type'              => $type,
+                'school_id'         => $this->school_id,
             );
-            $this->Academic_model->create_program($d);
-            $this->session->set_flashdata('success', 'Program created.');
+            
+            // Add type-specific fields
+            if ($type === 'program') {
+                $d['degree_type'] = $this->input->post('degree_type', TRUE);
+                $d['total_units'] = $this->input->post('total_units');
+                $d['years_to_complete'] = $this->input->post('years_to_complete');
+            } elseif ($type === 'grade_level') {
+                $d['category'] = $this->input->post('category', TRUE);
+                $d['level_order'] = $this->input->post('level_order');
+            }
+            
+            $this->Academic_model->create_academic_program($d);
+            $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level created.' : 'Program created.');
             redirect('academic/programs');
         }
         $data['title'] = 'Add Program';
@@ -222,22 +235,34 @@ class Academic extends Admin_Controller {
 
     public function edit_program($id)
     {
-        $data['program'] = $this->Academic_model->get_program($id);
+        $data['program'] = $this->Academic_model->get_academic_program($id);
         if (!$data['program']) show_404();
 
         if ($this->input->method() === 'post') {
+            $type = $this->input->post('type', TRUE);
+            
             $d = array(
                 'name'              => $this->input->post('name', TRUE),
                 'code'              => $this->input->post('code', TRUE),
                 'description'       => $this->input->post('description', TRUE),
-                'degree_type'       => $this->input->post('degree_type', TRUE),
-                'total_units'       => $this->input->post('total_units'),
-                'years_to_complete' => $this->input->post('years_to_complete'),
+                'type'              => $type,
             );
-            $this->Academic_model->update_program($id, $d);
-            $this->session->set_flashdata('success', 'Program updated.');
+            
+            // Add type-specific fields
+            if ($type === 'program') {
+                $d['degree_type'] = $this->input->post('degree_type', TRUE);
+                $d['total_units'] = $this->input->post('total_units');
+                $d['years_to_complete'] = $this->input->post('years_to_complete');
+            } elseif ($type === 'grade_level') {
+                $d['category'] = $this->input->post('category', TRUE);
+                $d['level_order'] = $this->input->post('level_order');
+            }
+            
+            $this->Academic_model->update_academic_program($id, $d);
+            $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level updated.' : 'Program updated.');
             redirect('academic/programs');
         }
+
         $data['title'] = 'Edit Program';
         $this->render('academic/program_form', $data);
     }
@@ -343,14 +368,14 @@ class Academic extends Admin_Controller {
     // ---- Subjects ----
     public function subjects()
     {
-        $filters = array();
+        $filters = array('school_id' => $this->school_id);
         if ($this->input->get('system_type')) {
             $filters['system_type'] = $this->input->get('system_type');
         }
         $data['title'] = 'Subjects';
         $data['subjects'] = $this->Academic_model->get_subjects($filters);
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $data['learning_areas'] = $this->Academic_model->get_learning_areas();
         $data['filter_type'] = $this->input->get('system_type');
         $this->render('academic/subjects', $data);
@@ -372,6 +397,7 @@ class Academic extends Admin_Controller {
                 'units'           => $this->input->post('units') ?: NULL,
                 'lec_hours'       => $this->input->post('lec_hours') ?: NULL,
                 'lab_hours'       => $this->input->post('lab_hours') ?: NULL,
+                'school_id'       => $this->school_id,
             );
             $this->Academic_model->create_subject($d);
             $this->session->set_flashdata('success', 'Subject created.');
@@ -379,8 +405,8 @@ class Academic extends Admin_Controller {
         }
         $data['title'] = 'Add Subject';
         $data['subject'] = null;
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $data['learning_areas'] = $this->Academic_model->get_learning_areas();
         $data['strands'] = $this->Academic_model->get_strands();
         $this->render('academic/subject_form', $data);

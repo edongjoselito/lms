@@ -17,6 +17,7 @@
                         <select class="form-select" name="system_type" id="systemType" required>
                             <option value="deped" <?= ($subject && $subject->system_type == 'deped') ? 'selected' : '' ?>>DepEd (K-12)</option>
                             <option value="ched" <?= ($subject && $subject->system_type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
+                            <option value="tesda" <?= ($subject && $subject->system_type == 'tesda') ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
                         </select>
                     </div>
                     <div class="col-md-4">

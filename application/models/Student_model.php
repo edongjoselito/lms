@@ -47,7 +47,10 @@ class Student_model extends CI_Model {
 
         $this->db->select('subjects.*');
         $this->db->from('subjects');
+        $this->db->group_start();
         $this->db->where('school_id', $student->school_id);
+        $this->db->or_where('school_id IS NULL', null, false);
+        $this->db->group_end();
 
         if (!empty($filters['system_type'])) {
             $this->db->where('system_type', $filters['system_type']);
@@ -104,7 +107,9 @@ class Student_model extends CI_Model {
         $this->db->join('modules m', 'm.id = l.module_id');
         $this->db->where('lc.student_id', $student_id);
         $this->db->where('m.subject_id', $subject_id);
-        
+        $this->db->where('m.is_published', 1);
+        $this->db->where('l.is_published', 1);
+
         $result = $this->db->get()->result();
         return array_column($result, 'lesson_id');
     }
@@ -114,19 +119,37 @@ class Student_model extends CI_Model {
         $this->db->from('lessons l');
         $this->db->join('modules m', 'm.id = l.module_id');
         $this->db->where('m.subject_id', $subject_id);
+        $this->db->where('m.is_published', 1);
+        $this->db->where('l.is_published', 1);
         return $this->db->count_all_results();
     }
 
     public function remove_lesson_completions($student_id, $subject_id)
     {
-        $this->db->where('student_id', $student_id);
-        $this->db->where_in('lesson_id', 
-            $this->db->select('l.id')
-                 ->from('lessons l')
-                 ->join('modules m', 'm.id = l.module_id')
-                 ->where('m.subject_id', $subject_id)
-                 ->get_compiled_select()
-        );
-        return $this->db->delete('lesson_completions');
+        $lesson_ids = $this->db->select('l.id')
+                              ->from('lessons l')
+                              ->join('modules m', 'm.id = l.module_id')
+                              ->where('m.subject_id', $subject_id)
+                              ->get()
+                              ->result_array();
+        $lesson_ids = array_column($lesson_ids, 'id');
+
+        if (!empty($lesson_ids)) {
+            $this->db->where('student_id', $student_id);
+            $this->db->where_in('lesson_id', $lesson_ids);
+            return $this->db->delete('lesson_completions');
+        }
+        return true;
+    }
+
+    public function get_enrolled_subjects($student_id)
+    {
+        return $this->db->select('s.*')
+                        ->from('subjects s')
+                        ->join('course_enrollments ce', 'ce.course_id = s.id AND ce.user_id = (SELECT user_id FROM students WHERE id = ' . $this->db->escape($student_id) . ')')
+                        ->where('ce.status', 'active')
+                        ->where('ce.role', 'student')
+                        ->get()
+                        ->result();
     }
 }

@@ -14,20 +14,18 @@ class Student extends MY_Controller {
     {
         $student = $this->Student_model->get_student_by_user_id($user_id);
         
+        $user = $this->db->where('id', $user_id)->get('users')->row();
+        $school_id = $user->school_id ?: 1;
+        
         if (!$student) {
-            $user = $this->db->where('id', $user_id)->get('users')->row();
-            // Get the first school_id from subjects to ensure student can access content
-            $subject_school = $this->db->select('school_id')->limit(1)->get('subjects')->row();
-            $school_id = $subject_school ? $subject_school->school_id : ($user->school_id ?: 1);
-            
+            // Use the user's school_id, default to 1 if not set
             $student_id = $this->Student_model->create_student($user_id, $school_id);
             $student = $this->Student_model->get_student($student_id);
         } else {
-            // Force update student's school_id to match the first subject's school_id
-            $subject_school = $this->db->select('school_id')->limit(1)->get('subjects')->row();
-            if ($subject_school) {
-                $this->Student_model->update_student_school_id($student->id, $subject_school->school_id);
-                $student->school_id = $subject_school->school_id;
+            // Update student's school_id to match user's school_id if different
+            if ($student->school_id != $school_id) {
+                $this->db->where('id', $student->id)->update('students', array('school_id' => $school_id));
+                $student->school_id = $school_id;
             }
         }
         
@@ -82,19 +80,22 @@ class Student extends MY_Controller {
             $subject->requires_key = false;
         }
         unset($subject);
-        
+
+        // Get enrolled subjects
+        $enrolled_subjects = $this->Student_model->get_enrolled_subjects($student->id);
+
         // Group subjects
         $grouped = array('General' => array(
             'program_code' => 'General',
             'program_name' => 'All Subjects',
             'subjects' => $subjects
         ));
-        
+
         $data['title'] = 'Subjects';
         $data['subjects'] = $grouped;
-        $data['enrolled_subjects'] = array();
+        $data['enrolled_subjects'] = $enrolled_subjects;
         $data['filter_type'] = $this->input->get('system_type');
-        
+
         $this->render('student/subjects', $data);
     }
 
@@ -119,16 +120,46 @@ class Student extends MY_Controller {
         if ($this->input->method() === 'post') {
             $enrollment_key = $this->input->post('enrollment_key', TRUE);
             
-            // For now, allow any enrollment since we don't have enrollment keys set up
-            // Mark the first lesson as complete to indicate enrollment
-            $modules = $this->Student_model->get_modules_by_subject($subject_id);
-            if (!empty($modules)) {
-                $lessons = $this->Student_model->get_lessons($modules[0]->id);
-                if (!empty($lessons)) {
-                    $this->Student_model->mark_lesson_completed($student->id, $lessons[0]->id);
+            // Get sections for this subject to check enrollment keys
+            $this->load->model('Academic_model');
+            $sections = $this->Academic_model->get_subject_sections($subject_id);
+            
+            $requires_key = false;
+            $key_valid = false;
+            
+            foreach ($sections as $section) {
+                if (!empty($section->enrollment_key)) {
+                    $requires_key = true;
+                    if ($enrollment_key === $section->enrollment_key) {
+                        $key_valid = true;
+                        break;
+                    }
                 }
             }
             
+            // If enrollment key is required but not provided or invalid
+            if ($requires_key && !$key_valid) {
+                $this->session->set_flashdata('error', 'Invalid enrollment key. Please contact your instructor for the correct key.');
+                redirect('student/enroll/' . $subject_id);
+                return;
+            }
+
+            // Create enrollment record
+            $existing_enrollment = $this->db->where('user_id', $user_id)
+                                             ->where('course_id', $subject_id)
+                                             ->where('role', 'student')
+                                             ->get('course_enrollments')
+                                             ->row();
+
+            if (!$existing_enrollment) {
+                $this->db->insert('course_enrollments', array(
+                    'user_id' => $user_id,
+                    'course_id' => $subject_id,
+                    'role' => 'student',
+                    'status' => 'active'
+                ));
+            }
+
             $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject->name));
             redirect('student/content/' . $subject_id);
         }
@@ -159,9 +190,26 @@ class Student extends MY_Controller {
         if (!$subject) {
             show_404();
         }
-        
+
+        // Check if student is enrolled in this course
+        $enrollment = $this->db->where('user_id', $user_id)
+                                ->where('course_id', $subject_id)
+                                ->where('role', 'student')
+                                ->where('status', 'active')
+                                ->get('course_enrollments')
+                                ->row();
+
+        if (!$enrollment) {
+            $this->session->set_flashdata('error', 'You need to enroll in this course first.');
+            redirect('student/enroll/' . $subject_id);
+        }
+
         // Get modules for this subject
         $modules = $this->Student_model->get_modules_by_subject($subject_id);
+        
+        // Debug: Check module order
+        log_message('debug', 'Modules for subject ' . $subject_id . ': ' . json_encode($modules));
+        
         foreach ($modules as $key => &$module) {
             $module->lessons = $this->Student_model->get_lessons($module->id);
         }
@@ -200,15 +248,28 @@ class Student extends MY_Controller {
             show_404();
         }
         
-        // Check if student is enrolled (has any lesson completions for this subject)
-        $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
-        if (empty($completed_lesson_ids)) {
+        // Check if student is enrolled in this course
+        $enrollment = $this->db->where('user_id', $user_id)
+                                ->where('course_id', $subject_id)
+                                ->where('role', 'student')
+                                ->where('status', 'active')
+                                ->get('course_enrollments')
+                                ->row();
+
+        if (!$enrollment) {
             $this->session->set_flashdata('error', 'You need to enroll in this course first.');
             redirect('student/enroll/' . $subject_id);
         }
+
+        $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
         
         // Get lesson details
-        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        $lesson = $this->db->select('l.*, m.title as module_title')
+                        ->from('lessons l')
+                        ->join('modules m', 'm.id = l.module_id')
+                        ->where('l.id', $lesson_id)
+                        ->get()
+                        ->row();
         if (!$lesson) {
             show_404();
         }
@@ -226,12 +287,32 @@ class Student extends MY_Controller {
         }
         
         $is_completed = in_array($lesson_id, $completed_lesson_ids);
-        
+
+        // Auto-mark lesson as complete when opened
+        if (!$is_completed) {
+            $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
+            $is_completed = true;
+        }
+
+        // Get previous and next lessons
+        $previous_lesson = null;
+        $next_lesson = null;
+
+        if ($lesson_index > 0) {
+            $previous_lesson = $module_lessons[$lesson_index - 1];
+        }
+
+        if ($lesson_index < count($module_lessons) - 1) {
+            $next_lesson = $module_lessons[$lesson_index + 1];
+        }
+
         $data['title'] = $lesson->title;
         $data['subject'] = $subject;
         $data['lesson'] = $lesson;
         $data['is_completed'] = $is_completed;
-        
+        $data['previous_lesson'] = $previous_lesson;
+        $data['next_lesson'] = $next_lesson;
+
         $this->render('student/lesson', $data);
     }
 

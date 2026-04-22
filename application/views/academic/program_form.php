@@ -1,5 +1,5 @@
-<div class="row justify-content-center">
-    <div class="col-lg-7">
+<div class="row">
+    <div class="col-12">
         <div class="mb-3">
             <a href="<?= site_url('academic/programs') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Programs
@@ -17,7 +17,7 @@
                         <input type="text" class="form-control" name="code" value="<?= ($program) ? htmlspecialchars($program->code) : '' ?>" required placeholder="BSIT">
                     </div>
                     <div class="col-md-9">
-                        <label class="form-label">Program Name</label>
+                        <label class="form-label">Name</label>
                         <input type="text" class="form-control" name="name" value="<?= ($program) ? htmlspecialchars($program->name) : '' ?>" required>
                     </div>
                     <div class="col-12">
@@ -25,20 +25,51 @@
                         <textarea class="form-control" name="description" rows="2"><?= ($program) ? htmlspecialchars($program->description) : '' ?></textarea>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Degree Type</label>
-                        <select class="form-select" name="degree_type" required>
-                            <?php foreach (array('bachelor','master','doctorate','diploma','certificate') as $dt): ?>
-                                <option value="<?= $dt ?>" <?= ($program && $program->degree_type == $dt) ? 'selected' : '' ?>><?= ucfirst($dt) ?></option>
-                            <?php endforeach; ?>
+                        <label class="form-label">Type</label>
+                        <select class="form-select" name="type" id="programType" required onchange="toggleProgramFields()">
+                            <option value="program" <?= ($program && (isset($program->type) && $program->type == 'program' || !isset($program->type))) ? 'selected' : '' ?>>Program (CHED)</option>
+                            <option value="grade_level" <?= ($program && isset($program->type) && $program->type == 'grade_level') ? 'selected' : '' ?>>Grade Level (DepEd)</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Total Units</label>
-                        <input type="number" step="0.5" class="form-control" name="total_units" value="<?= ($program) ? $program->total_units : '150' ?>">
+                    
+                    <!-- Program-specific fields -->
+                    <div id="programFields" class="col-12">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Degree Type</label>
+                                <select class="form-select" name="degree_type">
+                                    <?php foreach (array('bachelor','master','doctorate','diploma','certificate') as $dt): ?>
+                                        <option value="<?= $dt ?>" <?= ($program && isset($program->degree_type) && $program->degree_type == $dt) ? 'selected' : '' ?>><?= ucfirst($dt) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Units</label>
+                                <input type="number" step="0.5" class="form-control" name="total_units" value="<?= ($program && isset($program->total_units)) ? $program->total_units : '150' ?>">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Years to Complete</label>
+                                <input type="number" class="form-control" name="years_to_complete" value="<?= ($program && isset($program->years_to_complete)) ? $program->years_to_complete : '4' ?>">
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Years to Complete</label>
-                        <input type="number" class="form-control" name="years_to_complete" value="<?= ($program) ? $program->years_to_complete : '4' ?>">
+                    
+                    <!-- Grade Level-specific fields -->
+                    <div id="gradeLevelFields" class="col-12" style="display:none;">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Category</label>
+                                <select class="form-select" name="category">
+                                    <option value="elementary" <?= ($program && isset($program->category) && $program->category == 'elementary') ? 'selected' : '' ?>>Elementary</option>
+                                    <option value="junior_high" <?= ($program && isset($program->category) && $program->category == 'junior_high') ? 'selected' : '' ?>>Junior High</option>
+                                    <option value="senior_high" <?= ($program && isset($program->category) && $program->category == 'senior_high') ? 'selected' : '' ?>>Senior High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Level Order</label>
+                                <input type="number" class="form-control" name="level_order" value="<?= ($program && isset($program->level_order)) ? $program->level_order : '0' ?>">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="mt-4 pt-3" style="border-top:1px solid #e2e8f0;">
@@ -49,3 +80,24 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleProgramFields() {
+    var type = document.getElementById('programType').value;
+    var programFields = document.getElementById('programFields');
+    var gradeLevelFields = document.getElementById('gradeLevelFields');
+    
+    if (type === 'grade_level') {
+        programFields.style.display = 'none';
+        gradeLevelFields.style.display = 'block';
+    } else {
+        programFields.style.display = 'block';
+        gradeLevelFields.style.display = 'none';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleProgramFields();
+});
+</script>

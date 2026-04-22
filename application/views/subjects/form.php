@@ -20,19 +20,13 @@
                                value="<?= ($subject) ? htmlspecialchars($subject->code) : '' ?>" required
                                placeholder="e.g. CS101">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-9">
                         <label class="form-label">Description</label>
-                        <input type="text" class="form-control" name="description"
-                               value="<?= ($subject) ? htmlspecialchars($subject->description) : '' ?>"
-                               placeholder="Subject description...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Units</label>
-                        <input type="number" class="form-control" name="units"
-                               value="<?= ($subject) ? $subject->units : '' ?>" required min="0">
+                        <textarea class="form-control" name="description" rows="1"
+                                  placeholder="Subject description..."><?= ($subject) ? htmlspecialchars($subject->description) : '' ?></textarea>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Program (CHED)</label>
+                        <label class="form-label">Program</label>
                         <select class="form-select" name="program_id" id="programSelect">
                             <option value="">Select Program</option>
                             <?php foreach ($programs as $p): ?>
@@ -43,7 +37,7 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Grade Level (DepEd)</label>
+                        <label class="form-label">Grade Level</label>
                         <select class="form-select" name="grade_level_id" id="gradeLevelSelect">
                             <option value="">Select Grade Level</option>
                             <?php foreach ($grade_levels as $gl): ?>
@@ -57,24 +51,9 @@
                         <label class="form-label">Semester</label>
                         <select class="form-select" name="semester_type" id="semesterSelect">
                             <option value="">Select Semester</option>
-                            <option value="First" <?= ($subject && $subject->semester_type == 'First') ? 'selected' : '' ?>>First Semester</option>
-                            <option value="Second" <?= ($subject && $subject->semester_type == 'Second') ? 'selected' : '' ?>>Second Semester</option>
+                            <option value="1st_sem" <?= ($subject && $subject->semester_type == '1st_sem') ? 'selected' : '' ?>>First Semester</option>
+                            <option value="2nd_sem" <?= ($subject && $subject->semester_type == '2nd_sem') ? 'selected' : '' ?>>Second Semester</option>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Lec Hours</label>
-                        <input type="number" class="form-control" name="lec_hours"
-                               value="<?= ($subject) ? $subject->lec_hours : '' ?>" min="0">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Lab Hours</label>
-                        <input type="number" class="form-control" name="lab_hours"
-                               value="<?= ($subject) ? $subject->lab_hours : '' ?>" min="0">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3"
-                                  placeholder="Subject description..."><?= ($subject) ? htmlspecialchars($subject->description) : '' ?></textarea>
                     </div>
                 </div>
 

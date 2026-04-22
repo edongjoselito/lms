@@ -59,10 +59,13 @@ class Academic_model extends CI_Model {
     }
 
     // ---- Grade Levels (DepEd) ----
-    public function get_grade_levels($category = null)
+    public function get_grade_levels($category = null, $school_id = null)
     {
         if ($category) {
             $this->db->where('category', $category);
+        }
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
         }
         return $this->db->where('status', 1)->order_by('level_order', 'ASC')->get('grade_levels')->result();
     }
@@ -99,29 +102,93 @@ class Academic_model extends CI_Model {
     }
 
     // ---- Programs (CHED) ----
-    public function get_programs()
+    public function get_programs($school_id = null)
     {
-        return $this->db->where('status', 1)->get('programs')->result();
+        $this->db->where('status', 1);
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        // Use academic_programs table if it exists, otherwise fall back to programs
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->db->order_by('type, level_order, name')->get('academic_programs')->result();
+        }
+        return $this->db->get('programs')->result();
     }
 
     public function get_program($id)
     {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->db->where('id', $id)->get('academic_programs')->row();
+        }
+        return $this->db->where('id', $id)->get('programs')->row();
+    }
+
+    public function get_academic_program($id)
+    {
+        // Check if academic_programs table exists, if not use programs table
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->db->where('id', $id)->get('academic_programs')->row();
+        }
         return $this->db->where('id', $id)->get('programs')->row();
     }
 
     public function create_program($data)
     {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->create_academic_program($data);
+        }
         $this->db->insert('programs', $data);
+        return $this->db->insert_id();
+    }
+
+    public function create_academic_program($data)
+    {
+        // Check if academic_programs table exists, if not use programs table
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            $this->db->insert('academic_programs', $data);
+        } else {
+            // Fall back to programs table for compatibility
+            $legacyData = $data;
+            unset($legacyData['type'], $legacyData['category'], $legacyData['level_order']);
+            $this->db->insert('programs', $legacyData);
+        }
         return $this->db->insert_id();
     }
 
     public function update_program($id, $data)
     {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->update_academic_program($id, $data);
+        }
         return $this->db->where('id', $id)->update('programs', $data);
+    }
+
+    public function update_academic_program($id, $data)
+    {
+        // Check if academic_programs table exists, if not use programs table
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->db->where('id', $id)->update('academic_programs', $data);
+        } else {
+            // Fall back to programs table for compatibility
+            $legacyData = $data;
+            unset($legacyData['type'], $legacyData['category'], $legacyData['level_order']);
+            return $this->db->where('id', $id)->update('programs', $legacyData);
+        }
     }
 
     public function delete_program($id)
     {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            return $this->db->where('id', $id)->delete('academic_programs');
+        }
         return $this->db->where('id', $id)->delete('programs');
     }
 
@@ -134,6 +201,9 @@ class Academic_model extends CI_Model {
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
         $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
 
+        if (!empty($filters['school_id'])) {
+            $this->db->where('subjects.school_id', $filters['school_id']);
+        }
         if (!empty($filters['system_type'])) {
             $this->db->where('subjects.system_type', $filters['system_type']);
         }
@@ -301,6 +371,36 @@ class Academic_model extends CI_Model {
                         ->where('class_programs.status', 1)
                         ->order_by('sections.name', 'ASC')
                         ->get('class_programs')
+                        ->result();
+    }
+
+    public function get_subject_section($section_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+                        ->join('sections', 'sections.id = class_programs.section_id')
+                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+                        ->join('programs', 'programs.id = sections.program_id', 'left')
+                        ->where('class_programs.id', $section_id)
+                        ->where('class_programs.status', 1)
+                        ->get('class_programs')
+                        ->row();
+    }
+
+    public function get_section_students($section_id)
+    {
+        $section = $this->get_subject_section($section_id);
+        if (!$section) {
+            return array();
+        }
+
+        return $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE)
+                        ->join('enrollments', 'enrollments.section_id = sections.id')
+                        ->join('students', 'students.id = enrollments.student_id')
+                        ->join('users', 'users.id = students.user_id')
+                        ->where('sections.id', $section->section_id)
+                        ->where('enrollments.status', 'active')
+                        ->get('sections')
                         ->result();
     }
 

@@ -9,6 +9,7 @@
                 <a href="<?= site_url('student/subjects') ?>" class="filter-tab <?= empty($filter_type) ? 'active' : '' ?>">All</a>
                 <a href="<?= site_url('student/subjects?system_type=deped') ?>" class="filter-tab <?= ($filter_type == 'deped') ? 'active' : '' ?>">DepEd</a>
                 <a href="<?= site_url('student/subjects?system_type=ched') ?>" class="filter-tab <?= ($filter_type == 'ched') ? 'active' : '' ?>">CHED</a>
+                <a href="<?= site_url('student/subjects?system_type=tesda') ?>" class="filter-tab <?= ($filter_type == 'tesda') ? 'active' : '' ?>">TESDA</a>
             </div>
         </div>
     </div>
@@ -38,7 +39,11 @@
                                         <span><?= $s->units ?: '-' ?> Units</span>
                                     </div>
                                 </div>
-                                <a href="<?= site_url('student/content/' . $s->id) ?>" class="btn-action">View Course</a>
+                                <?php if ($is_enrolled): ?>
+                                    <a href="<?= site_url('student/content/' . $s->id) ?>" class="btn-action">View Course</a>
+                                <?php else: ?>
+                                    <a href="<?= site_url('student/enroll/' . $s->id) ?>" class="btn-action btn-enroll">Enroll</a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

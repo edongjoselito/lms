@@ -21,6 +21,7 @@
                         <select class="form-select" name="system_type" id="secSystemType" required>
                             <option value="deped" <?= (isset($section) && $section && $section->system_type == 'deped') ? 'selected' : '' ?>>DepEd (K-12)</option>
                             <option value="ched" <?= (isset($section) && $section && $section->system_type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
+                            <option value="tesda" <?= (isset($section) && $section && $section->system_type == 'tesda') ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
                         </select>
                     </div>
                     <div class="col-md-6" id="secGradeField">

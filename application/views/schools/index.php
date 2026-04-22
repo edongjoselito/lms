@@ -9,9 +9,25 @@
 <div class="data-table">
     <div class="table-header">
         <h5><i class="bi bi-building me-2"></i>Schools</h5>
-        <a href="<?= site_url('schools/create') ?>" class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Add School
-        </a>
+        <div class="d-flex gap-2">
+            <a href="<?= site_url('schools/download_template') ?>" class="btn btn-outline-secondary" style="border-radius:8px;font-size:0.85rem;">
+                <i class="bi bi-download me-1"></i> Download Template
+            </a>
+            <a href="<?= site_url('schools/create') ?>" class="btn-primary-custom">
+                <i class="bi bi-plus-lg"></i> Add School
+            </a>
+        </div>
+    </div>
+    <div class="table-header" style="background:#f8fafc;padding:1rem;border-bottom:1px solid #e2e8f0;">
+        <form action="<?= site_url('schools/bulk_upload') ?>" method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+            <label class="mb-0" style="font-weight:600;font-size:0.85rem;color:#475569;">
+                <i class="bi bi-upload me-1"></i> Bulk Upload (CSV):
+            </label>
+            <input type="file" name="csv_file" accept=".csv" class="form-control form-control-sm" style="width:auto;" required>
+            <button type="submit" class="btn btn-success" style="border-radius:8px;font-size:0.85rem;">
+                <i class="bi bi-cloud-upload me-1"></i> Upload
+            </button>
+        </form>
     </div>
     <div class="table-responsive">
         <table class="table">

@@ -592,26 +592,10 @@
 
             <?php if ($rs === 'school_admin'): ?>
             <div class="nav-section-title">Academic Setup</div>
-            <?php
-            // Get school type from database
-            $school_type = null;
-            if ($this->session->userdata('school_id')) {
-                $school = $this->db->where('id', $this->session->userdata('school_id'))->get('schools')->row();
-                $school_type = $school ? $school->type : null;
-            }
-            ?>
-            <?php if ($school_type === 'deped' || $school_type === 'both'): ?>
-            <a href="<?= site_url('academic/grade_levels') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'grade_levels') ? 'active' : '' ?>">
-                <i class="bi bi-list-ol"></i>
-                <span>Grade Levels</span>
-            </a>
-            <?php endif; ?>
-            <?php if ($school_type === 'ched' || $school_type === 'both'): ?>
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
                 <i class="bi bi-mortarboard-fill"></i>
                 <span>Programs</span>
             </a>
-            <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($rs === 'student'): ?>

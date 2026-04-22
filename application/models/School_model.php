@@ -14,6 +14,11 @@ class School_model extends CI_Model {
         return $this->db->where('id', $id)->get('schools')->row();
     }
 
+    public function get_by_school_id_number($school_id_number)
+    {
+        return $this->db->where('school_id_number', $school_id_number)->get('schools')->row();
+    }
+
     public function create($data)
     {
         $this->db->insert('schools', $data);

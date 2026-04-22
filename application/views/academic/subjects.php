@@ -9,6 +9,7 @@
                 <a href="<?= site_url('academic/subjects') ?>" class="filter-tab <?= empty($filter_type) ? 'active' : '' ?>">All</a>
                 <a href="<?= site_url('academic/subjects?system_type=deped') ?>" class="filter-tab <?= ($filter_type == 'deped') ? 'active' : '' ?>">DepEd</a>
                 <a href="<?= site_url('academic/subjects?system_type=ched') ?>" class="filter-tab <?= ($filter_type == 'ched') ? 'active' : '' ?>">CHED</a>
+                <a href="<?= site_url('academic/subjects?system_type=tesda') ?>" class="filter-tab <?= ($filter_type == 'tesda') ? 'active' : '' ?>">TESDA</a>
             </div>
             <a href="<?= site_url('academic/create_subject') ?>" class="btn-primary-modern">
                 <i class="bi bi-plus-lg"></i> Add Subject

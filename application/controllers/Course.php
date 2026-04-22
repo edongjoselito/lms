@@ -600,6 +600,45 @@ class Course extends MY_Controller {
         redirect('course/content/' . $subject_id . '?edit=1');
     }
 
+    public function section_students($section_id)
+    {
+        $this->require_course_manager();
+        $section = $this->Academic_model->get_subject_section($section_id);
+        if (!$section) show_404();
+
+        $data['title'] = 'Enrolled Students: ' . $section->section_name;
+        $data['section'] = $section;
+        $data['students'] = $this->Academic_model->get_section_students($section_id);
+
+        $this->render('course/section_students', $data);
+    }
+
+    public function section_progress($section_id)
+    {
+        $this->require_course_manager();
+        $section = $this->Academic_model->get_subject_section($section_id);
+        if (!$section) show_404();
+
+        $data['title'] = 'Section Progress: ' . $section->section_name;
+        $data['section'] = $section;
+        $data['students'] = $this->Academic_model->get_section_students($section_id);
+
+        $this->render('course/section_progress', $data);
+    }
+
+    public function section_attendance($section_id)
+    {
+        $this->require_course_manager();
+        $section = $this->Academic_model->get_subject_section($section_id);
+        if (!$section) show_404();
+
+        $data['title'] = 'Section Attendance: ' . $section->section_name;
+        $data['section'] = $section;
+        $data['students'] = $this->Academic_model->get_section_students($section_id);
+
+        $this->render('course/section_attendance', $data);
+    }
+
     public function edit_subject_section($subject_id)
     {
         $this->require_course_manager();
@@ -733,11 +772,32 @@ class Course extends MY_Controller {
         if ($this->input->method() === 'post') {
             $order = $this->Lesson_model->get_next_order('lessons', 'module_id', $module_id);
             $content_type = $this->input->post('content_type', TRUE);
+
+            // Handle file upload
+            $file_path = '';
+            if (isset($_FILES['file_upload']) && $_FILES['file_upload']['error'] === UPLOAD_ERR_OK) {
+                $config['upload_path'] = './uploads/lessons/';
+                $config['allowed_types'] = 'pdf';
+                $config['max_size'] = 10240; // 10MB
+                $config['file_name'] = uniqid() . '_' . $_FILES['file_upload']['name'];
+
+                if (!is_dir($config['upload_path'])) {
+                    mkdir($config['upload_path'], 0755, true);
+                }
+
+                $this->load->library('upload', $config);
+                if ($this->upload->do_upload('file_upload')) {
+                    $upload_data = $this->upload->data();
+                    $file_path = base_url('uploads/lessons/' . $upload_data['file_name']);
+                }
+            }
+
             $data = array(
                 'module_id'       => $module_id,
                 'title'           => $this->input->post('title', TRUE),
-                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $this->input->post('file_url', TRUE), $this->input->post('link_url', TRUE)),
+                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
                 'content_type'    => $content_type,
+                'file_path'       => $file_path,
                 'order_num'       => $order,
                 'is_published'    => $this->input->post('is_published') ? 1 : 0,
             );
@@ -757,10 +817,35 @@ class Course extends MY_Controller {
         
         if ($this->input->method() === 'post') {
             $content_type = $this->input->post('content_type', TRUE);
+
+            // Handle file upload
+            $file_path = $lesson->file_path;
+            log_message('debug', 'File upload check: ' . print_r(isset($_FILES['file_upload']) ? $_FILES['file_upload'] : 'No file', true));
+            if (isset($_FILES['file_upload']) && $_FILES['file_upload']['error'] === UPLOAD_ERR_OK) {
+                $config['upload_path'] = './uploads/lessons/';
+                $config['allowed_types'] = 'pdf';
+                $config['max_size'] = 10240; // 10MB
+                $config['file_name'] = uniqid() . '_' . $_FILES['file_upload']['name'];
+
+                if (!is_dir($config['upload_path'])) {
+                    mkdir($config['upload_path'], 0755, true);
+                }
+
+                $this->load->library('upload', $config);
+                if ($this->upload->do_upload('file_upload')) {
+                    $upload_data = $this->upload->data();
+                    $file_path = base_url('uploads/lessons/' . $upload_data['file_name']);
+                    log_message('debug', 'File uploaded successfully: ' . $file_path);
+                } else {
+                    log_message('debug', 'File upload error: ' . $this->upload->display_errors());
+                }
+            }
+
             $data = array(
                 'title'           => $this->input->post('title', TRUE),
-                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $this->input->post('file_url', TRUE), $this->input->post('link_url', TRUE)),
+                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
                 'content_type'    => $content_type,
+                'file_path'       => $file_path,
                 'is_published'    => $this->input->post('is_published') ? 1 : 0,
             );
             $this->Lesson_model->update_lesson($lesson_id, $data);

@@ -14,18 +14,19 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">School Name</label>
-                        <input type="text" class="form-control" name="name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required placeholder="e.g. ABC National High School">
+                        <input type="text" class="form-control" name="name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">School ID Number</label>
-                        <input type="text" class="form-control" name="school_id_number" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>" placeholder="DepEd / CHED ID">
+                        <input type="text" class="form-control" name="school_id_number" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Type</label>
                         <select class="form-select" name="type" required>
                             <option value="deped" <?= ($school && $school->type == 'deped') ? 'selected' : '' ?>>DepEd (K-12)</option>
                             <option value="ched" <?= ($school && $school->type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
-                            <option value="both" <?= ($school && $school->type == 'both') ? 'selected' : '' ?>>Both</option>
+                            <option value="tesda" <?= ($school && $school->type == 'tesda') ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
+                            <option value="both" <?= ($school && $school->type == 'both') ? 'selected' : '' ?>>All (K-12, CHED, TESDA)</option>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -38,11 +39,11 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Division</label>
-                        <input type="text" class="form-control" name="division" value="<?= ($school) ? htmlspecialchars($school->division) : '' ?>" placeholder="e.g. SDO Cavite">
+                        <input type="text" class="form-control" name="division" value="<?= ($school) ? htmlspecialchars($school->division) : '' ?>" >
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Region</label>
-                        <input type="text" class="form-control" name="region" value="<?= ($school) ? htmlspecialchars($school->region) : '' ?>" placeholder="e.g. Region IV-A">
+                        <input type="text" class="form-control" name="region" value="<?= ($school) ? htmlspecialchars($school->region) : '' ?>" >
                     </div>
                     <div class="col-12">
                         <label class="form-label">Address</label>

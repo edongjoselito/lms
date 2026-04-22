@@ -134,6 +134,7 @@
 .subject-badge { display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; background: rgba(255,255,255,0.2); }
 .subject-badge.deped { background: #dbeafe; color: #1e40af; }
 .subject-badge.ched { background: #fef3c7; color: #92400e; }
+.subject-badge.tesda { background: #dcfce7; color: #166534; }
 .subject-title { font-size: 2rem; font-weight: 700; margin: 0 0 0.75rem 0; line-height: 1.2; }
 .subject-meta { display: flex; gap: 1.5rem; margin: 0; font-size: 0.9rem; opacity: 0.9; }
 .subject-meta span { display: inline-flex; align-items: center; gap: 0.5rem; }

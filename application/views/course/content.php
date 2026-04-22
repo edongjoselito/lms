@@ -331,7 +331,7 @@ $is_student_mode = $student_content_view;
                                         $lesson_editor_content = ($item->content_type === 'video') ? course_lesson_notes_content($item->content ?? '') : ($item->content ?? '');
                                         ?>
                                         <div class="collapse item-edit-panel" id="editLesson<?= $item->id ?>">
-                                            <form action="<?= site_url('course/edit_lesson/' . $item->id) ?>" method="post" class="module-add-form">
+                                            <form action="<?= site_url('course/edit_lesson/' . $item->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
                                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                                     <div>
                                                         <h6 class="mb-1"><i class="bi bi-pencil me-2"></i>Edit Lesson</h6>
@@ -366,12 +366,9 @@ $is_student_mode = $student_content_view;
                                                     </div>
                                                     <div class="col-12 lesson-file-fields">
                                                         <div class="file-lesson-box" style="padding:1rem;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;">
-                                                            <label class="form-label">File URL</label>
-                                                            <div class="input-group">
-                                                                <span class="input-group-text"><i class="bi bi-file-earmark"></i></span>
-                                                                <input type="url" class="form-control lesson-file-url" name="file_url" value="<?= htmlspecialchars(course_lesson_file_url($item->content ?? ''), ENT_QUOTES, 'UTF-8') ?>" placeholder="Enter the file URL (PDF, DOC, image, etc.)">
-                                                            </div>
-                                                            <div class="form-text">Enter the URL where the file is hosted (cloud storage, CDN, etc.).</div>
+                                                            <label class="form-label">Upload PDF File</label>
+                                                            <input type="file" class="form-control lesson-file-upload" name="file_upload" accept=".pdf,application/pdf">
+                                                            <div class="form-text">Select a PDF file to upload.</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-12 lesson-link-fields">
@@ -455,7 +452,7 @@ $is_student_mode = $student_content_view;
                     <?php if ($edit_mode): ?>
                         <div class="module-add-panels border-top" id="moduleAddPanels<?= $module->id ?>">
                             <div class="collapse" id="addLesson<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
-                                <form action="<?= site_url('course/create_lesson/' . $module->id) ?>" method="post" class="module-add-form">
+                                <form action="<?= site_url('course/create_lesson/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                         <div>
                                             <h6 class="mb-1"><i class="bi bi-file-text me-2"></i>Add Lesson</h6>
@@ -490,12 +487,9 @@ $is_student_mode = $student_content_view;
                                         </div>
                                         <div class="col-12 lesson-file-fields">
                                             <div class="file-lesson-box" style="padding:1rem;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;">
-                                                <label class="form-label">File URL</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-file-earmark"></i></span>
-                                                    <input type="url" class="form-control lesson-file-url" name="file_url" placeholder="Enter the file URL (PDF, DOC, image, etc.)">
-                                                </div>
-                                                <div class="form-text">Enter the URL where the file is hosted (cloud storage, CDN, etc.).</div>
+                                                <label class="form-label">Upload PDF File</label>
+                                                <input type="file" class="form-control lesson-file-upload" name="file_upload" accept=".pdf,application/pdf">
+                                                <div class="form-text">Select a PDF file to upload.</div>
                                             </div>
                                         </div>
                                         <div class="col-12 lesson-link-fields">
@@ -592,9 +586,9 @@ $is_student_mode = $student_content_view;
                     <div class="section-key-list">
                         <?php foreach ($subject_sections as $section_access): ?>
                             <?php $has_key = trim((string) ($section_access->enrollment_key ?? '')) !== ''; ?>
-                            <div class="section-key-item" id="sectionItem<?= $section_access->id ?>" 
-                             data-id="<?= $section_access->id ?>" 
-                             data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>" 
+                            <div class="section-key-item" id="sectionItem<?= $section_access->id ?>"
+                             data-id="<?= $section_access->id ?>"
+                             data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>"
                              data-enrollment-key="<?= htmlspecialchars($section_access->enrollment_key ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                 <div>
                                     <strong><?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?></strong>
@@ -603,6 +597,15 @@ $is_student_mode = $student_content_view;
                                     </span>
                                 </div>
                                 <div>
+                                    <a href="<?= site_url('course/section_students/' . $section_access->id) ?>" class="btn btn-sm btn-link p-0 me-2" title="View Enrolled Students">
+                                        <i class="bi bi-people"></i>
+                                    </a>
+                                    <a href="<?= site_url('course/section_progress/' . $section_access->id) ?>" class="btn btn-sm btn-link p-0 me-2" title="View Progress">
+                                        <i class="bi bi-graph-up"></i>
+                                    </a>
+                                    <a href="<?= site_url('course/section_attendance/' . $section_access->id) ?>" class="btn btn-sm btn-link p-0 me-2" title="View Attendance">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </a>
                                     <button class="btn btn-sm btn-link p-0 me-2" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -702,9 +705,9 @@ $is_student_mode = $student_content_view;
                 <hr>
                 <?php endif; ?>
                 <div class="mb-3">
-                    <label class="form-label">Upload New Cover Photo</label>
-                    <input type="file" class="form-control" name="cover_photo" accept="image/*" required>
-                    <div class="form-text">Recommended size: 1200x400px. Supported formats: JPG, PNG, GIF, WebP.</div>
+                    <label class="form-label">Upload PDF File</label>
+                    <input type="file" class="form-control" name="cover_photo" accept=".pdf,application/pdf" required>
+                    <div class="form-text">Supported format: PDF only.</div>
                 </div>
             </div>
             <div class="modal-footer">
