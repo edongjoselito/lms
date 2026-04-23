@@ -75,7 +75,7 @@ class User_model extends CI_Model
 
     public function update_profile($user_id, $data)
     {
-        $allowed_fields = array('first_name', 'last_name', 'email');
+        $allowed_fields = array('first_name', 'last_name', 'email', 'avatar');
         $update_data = array();
         foreach ($allowed_fields as $field) {
             if (isset($data[$field])) {

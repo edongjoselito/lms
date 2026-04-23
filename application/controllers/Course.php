@@ -11,12 +11,17 @@ class Course extends MY_Controller {
             !($this->is_student_mode && in_array($this->original_role_slug, array('course_creator', 'teacher')))) {
             show_error('You do not have permission to access this page.', 403);
         }
-        $this->load->model(array('Academic_model', 'User_model', 'Lesson_model', 'Student_model'));
+        $this->load->model(array('Academic_model', 'User_model', 'Lesson_model', 'Student_model', 'Quiz_model'));
     }
 
     private function is_student_content_view()
     {
         return $this->role_slug === 'student' || $this->is_student_mode;
+    }
+
+    private function should_filter_unpublished_content()
+    {
+        return $this->is_student_content_view() && $this->original_role_slug === 'student';
     }
 
     private function require_course_manager()
@@ -107,6 +112,7 @@ class Course extends MY_Controller {
         }
 
         $student_content_view = $this->is_student_content_view();
+        $filter_unpublished = $this->should_filter_unpublished_content();
         $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
         $has_subject_access = $this->has_subject_access($subject_id);
@@ -114,7 +120,7 @@ class Course extends MY_Controller {
         // Get modules for this subject with lessons and activities
         $modules = $has_subject_access ? $this->Lesson_model->get_modules_by_subject($subject_id) : array();
         foreach ($modules as $key => &$module) {
-            if ($student_content_view && !$module->is_published) {
+            if ($filter_unpublished && !$module->is_published) {
                 unset($modules[$key]);
                 continue;
             }
@@ -122,7 +128,7 @@ class Course extends MY_Controller {
             $module->lessons = $this->Lesson_model->get_lessons($module->id);
             $module->activities = $this->Lesson_model->get_activities($module->id);
 
-            if ($student_content_view) {
+            if ($filter_unpublished) {
                 $module->lessons = array_values(array_filter($module->lessons, function($lesson) {
                     return !empty($lesson->is_published);
                 }));
@@ -130,6 +136,22 @@ class Course extends MY_Controller {
                     return !empty($activity->is_published);
                 }));
             }
+
+            foreach ($module->activities as $activity_key => &$activity) {
+                if ($activity->type !== 'quiz') {
+                    continue;
+                }
+
+                $activity->quiz = $this->Quiz_model->get_quiz_by_activity($activity->id);
+                if ($filter_unpublished && (!$activity->quiz || empty($activity->quiz->is_published))) {
+                    unset($module->activities[$activity_key]);
+                    continue;
+                }
+
+                $activity->question_count = $activity->quiz ? $this->Quiz_model->count_questions($activity->quiz->id) : 0;
+            }
+            unset($activity);
+            $module->activities = array_values($module->activities);
         }
         unset($module);
         $modules = array_values($modules);
@@ -141,7 +163,7 @@ class Course extends MY_Controller {
             $completed_lesson_ids = $this->get_current_completed_lesson_ids($subject_id);
             $progress_percent = $this->get_current_subject_progress_percent($subject_id);
 
-            foreach ($this->Lesson_model->get_subject_lesson_ids($subject_id, true) as $lesson_id) {
+            foreach ($this->Lesson_model->get_subject_lesson_ids($subject_id, $filter_unpublished) as $lesson_id) {
                 if ($this->is_current_lesson_accessible($lesson_id, $subject_id)) {
                     $accessible_lesson_ids[] = (int) $lesson_id;
                 }
@@ -169,11 +191,12 @@ class Course extends MY_Controller {
         $items = array();
         $modules = $this->Lesson_model->get_modules_by_subject($subject_id);
         $completed_lesson_ids = $this->get_current_completed_lesson_ids($subject_id);
+        $filter_unpublished = $this->should_filter_unpublished_content();
 
         foreach ($modules as $module) {
             $module_items = array();
             foreach ($this->Lesson_model->get_lessons($module->id) as $lesson) {
-                if ($this->is_student_content_view() && (!$module->is_published || !$lesson->is_published)) {
+                if ($filter_unpublished && (!$module->is_published || !$lesson->is_published)) {
                     continue;
                 }
 
@@ -190,7 +213,12 @@ class Course extends MY_Controller {
             }
 
             foreach ($this->Lesson_model->get_activities($module->id) as $activity) {
-                if ($this->is_student_content_view() && (!$module->is_published || !$activity->is_published)) {
+                if ($filter_unpublished && (!$module->is_published || !$activity->is_published)) {
+                    continue;
+                }
+
+                $quiz = $activity->type === 'quiz' ? $this->Quiz_model->get_quiz_by_activity($activity->id) : null;
+                if ($filter_unpublished && $activity->type === 'quiz' && (!$quiz || empty($quiz->is_published))) {
                     continue;
                 }
 
@@ -200,7 +228,7 @@ class Course extends MY_Controller {
                     'title' => $activity->title,
                     'module_title' => $module->title,
                     'order_num' => $activity->order_num,
-                    'url' => site_url('course/activity/' . $activity->id),
+                    'url' => site_url('course/' . ($activity->type === 'quiz' ? 'assessment' : 'activity') . '/' . $activity->id),
                     'is_completed' => false,
                     'is_accessible' => true,
                 );
@@ -252,7 +280,7 @@ class Course extends MY_Controller {
         }
 
         if ($this->use_preview_progress()) {
-            $subject_lesson_ids = $this->Lesson_model->get_subject_lesson_ids($subject_id, true);
+            $subject_lesson_ids = $this->Lesson_model->get_subject_lesson_ids($subject_id, $this->should_filter_unpublished_content());
             return array_values(array_intersect($subject_lesson_ids, $this->get_preview_completed_lesson_ids()));
         }
 
@@ -261,7 +289,7 @@ class Course extends MY_Controller {
 
     private function get_current_subject_progress_percent($subject_id)
     {
-        $total = $this->Lesson_model->get_subject_lesson_ids($subject_id, true);
+        $total = $this->Lesson_model->get_subject_lesson_ids($subject_id, $this->should_filter_unpublished_content());
         if (empty($total)) return 0;
 
         $completed = $this->get_current_completed_lesson_ids($subject_id);
@@ -274,7 +302,7 @@ class Course extends MY_Controller {
             return true;
         }
 
-        $ordered = $this->Lesson_model->get_subject_lesson_ids($subject_id, true);
+        $ordered = $this->Lesson_model->get_subject_lesson_ids($subject_id, $this->should_filter_unpublished_content());
         $completed = $this->get_current_completed_lesson_ids($subject_id);
 
         foreach ($ordered as $lid) {
@@ -378,6 +406,89 @@ class Course extends MY_Controller {
         return '<div class="lesson-video-embed lesson-video-source mb-3" data-video-url="' . $escaped_url . '"><a href="' . $escaped_url . '" target="_blank" rel="noopener" class="btn btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>Open Video</a></div>';
     }
 
+    private function get_lesson_file_markup($file_url)
+    {
+        $file_url = trim((string) $file_url);
+        if ($file_url === '') {
+            return '';
+        }
+
+        $escaped_url = htmlspecialchars($file_url, ENT_QUOTES, 'UTF-8');
+        $markup = '<div class="lesson-file-embed mb-3" data-file-url="' . $escaped_url . '">';
+        $markup .= '<div class="lesson-file-toolbar mb-2"><a href="' . $escaped_url . '" target="_blank" rel="noopener" class="btn btn-outline-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Open PDF</a></div>';
+
+        if (preg_match('/\.pdf(\?.*)?$/i', $file_url)) {
+            $markup .= '<div class="ratio ratio-4x3 lesson-file-preview"><iframe src="' . $escaped_url . '" title="PDF preview" loading="lazy"></iframe></div>';
+        }
+
+        $markup .= '</div>';
+        return $markup;
+    }
+
+    private function normalize_lesson_content_type($content_type)
+    {
+        $content_type = strtolower(trim((string) $content_type));
+        return in_array($content_type, array('text', 'page', 'video', 'file', 'link')) ? $content_type : 'text';
+    }
+
+    private function get_upload_error_message($error_code)
+    {
+        $messages = array(
+            UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the server upload limit.',
+            UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the form upload limit.',
+            UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE    => 'Please select a PDF file to upload.',
+            UPLOAD_ERR_NO_TMP_DIR => 'The server is missing a temporary upload folder.',
+            UPLOAD_ERR_CANT_WRITE => 'The server could not write the uploaded file.',
+            UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+        );
+
+        return isset($messages[$error_code]) ? $messages[$error_code] : 'The file could not be uploaded.';
+    }
+
+    private function upload_lesson_file()
+    {
+        if (empty($_FILES['file_upload']['name'])) {
+            return array('success' => false, 'path' => '', 'error' => 'Please select a PDF file to upload.');
+        }
+
+        if ($_FILES['file_upload']['error'] !== UPLOAD_ERR_OK) {
+            return array('success' => false, 'path' => '', 'error' => $this->get_upload_error_message($_FILES['file_upload']['error']));
+        }
+
+        $upload_path = FCPATH . 'uploads/lessons/';
+        if (!is_dir($upload_path)) {
+            mkdir($upload_path, 0777, true);
+        }
+        if (!is_writable($upload_path)) {
+            @chmod($upload_path, 0777);
+        }
+        if (!is_writable($upload_path)) {
+            return array('success' => false, 'path' => '', 'error' => 'The lessons upload folder is not writable.');
+        }
+
+        $config = array(
+            'upload_path'   => $upload_path,
+            'allowed_types' => 'pdf',
+            'max_size'      => 10240,
+            'encrypt_name'  => true,
+        );
+
+        $this->load->library('upload');
+        $this->upload->initialize($config, true);
+
+        if (!$this->upload->do_upload('file_upload')) {
+            return array('success' => false, 'path' => '', 'error' => $this->upload->display_errors('', ''));
+        }
+
+        $upload_data = $this->upload->data();
+        return array(
+            'success' => true,
+            'path'    => base_url('uploads/lessons/' . $upload_data['file_name']),
+            'error'   => '',
+        );
+    }
+
     private function build_lesson_content($content_type, $content, $video_url = '', $file_url = '', $link_url = '')
     {
         if ($content_type === 'video') {
@@ -395,12 +506,10 @@ class Course extends MY_Controller {
         }
 
         if ($content_type === 'file') {
-            $escaped_url = htmlspecialchars(trim((string) $file_url), ENT_QUOTES, 'UTF-8');
-            if ($escaped_url === '') {
+            $file_markup = $this->get_lesson_file_markup($file_url);
+            if ($file_markup === '') {
                 return $content;
             }
-
-            $file_markup = '<div class="lesson-file-embed mb-3" data-file-url="' . $escaped_url . '"><a href="' . $escaped_url . '" target="_blank" rel="noopener" class="btn btn-outline-primary"><i class="bi bi-file-earmark me-1"></i>Download/View File</a></div>';
 
             $description = trim((string) $content);
             if ($description !== '') {
@@ -445,7 +554,7 @@ class Course extends MY_Controller {
             show_404();
         }
 
-        if ($this->is_student_content_view() && (!$module->is_published || !$lesson->is_published)) {
+        if ($this->should_filter_unpublished_content() && (!$module->is_published || !$lesson->is_published)) {
             show_404();
         }
 
@@ -501,7 +610,7 @@ class Course extends MY_Controller {
         $module = $this->Lesson_model->get_module($lesson->module_id);
         if (!$module) show_404();
 
-        if ($this->is_student_content_view() && (!$module->is_published || !$lesson->is_published)) {
+        if ($this->should_filter_unpublished_content() && (!$module->is_published || !$lesson->is_published)) {
             show_404();
         }
 
@@ -535,12 +644,16 @@ class Course extends MY_Controller {
             show_404();
         }
 
+        if ($activity->type === 'quiz') {
+            redirect('course/assessment/' . $activity->id);
+        }
+
         $module = $this->Lesson_model->get_module($activity->module_id);
         if (!$module) {
             show_404();
         }
 
-        if ($this->is_student_content_view() && (!$module->is_published || !$activity->is_published)) {
+        if ($this->should_filter_unpublished_content() && (!$module->is_published || !$activity->is_published)) {
             show_404();
         }
 
@@ -815,25 +928,16 @@ class Course extends MY_Controller {
         
         if ($this->input->method() === 'post') {
             $order = $this->Lesson_model->get_next_order('lessons', 'module_id', $module_id);
-            $content_type = $this->input->post('content_type', TRUE);
+            $content_type = $this->normalize_lesson_content_type($this->input->post('content_type', TRUE));
 
-            // Handle file upload
             $file_path = '';
-            if (isset($_FILES['file_upload']) && $_FILES['file_upload']['error'] === UPLOAD_ERR_OK) {
-                $config['upload_path'] = './uploads/lessons/';
-                $config['allowed_types'] = 'pdf';
-                $config['max_size'] = 10240; // 10MB
-                $config['file_name'] = uniqid() . '_' . $_FILES['file_upload']['name'];
-
-                if (!is_dir($config['upload_path'])) {
-                    mkdir($config['upload_path'], 0755, true);
+            if ($content_type === 'file') {
+                $upload_result = $this->upload_lesson_file();
+                if (!$upload_result['success']) {
+                    $this->session->set_flashdata('error', $upload_result['error']);
+                    redirect('course/content/' . $module->subject_id . '?edit=1');
                 }
-
-                $this->load->library('upload', $config);
-                if ($this->upload->do_upload('file_upload')) {
-                    $upload_data = $this->upload->data();
-                    $file_path = base_url('uploads/lessons/' . $upload_data['file_name']);
-                }
+                $file_path = $upload_result['path'];
             }
 
             $data = array(
@@ -860,28 +964,20 @@ class Course extends MY_Controller {
         $module = $this->Lesson_model->get_module($lesson->module_id);
         
         if ($this->input->method() === 'post') {
-            $content_type = $this->input->post('content_type', TRUE);
+            $content_type = $this->normalize_lesson_content_type($this->input->post('content_type', TRUE));
 
-            // Handle file upload
             $file_path = $lesson->file_path;
-            log_message('debug', 'File upload check: ' . print_r(isset($_FILES['file_upload']) ? $_FILES['file_upload'] : 'No file', true));
-            if (isset($_FILES['file_upload']) && $_FILES['file_upload']['error'] === UPLOAD_ERR_OK) {
-                $config['upload_path'] = './uploads/lessons/';
-                $config['allowed_types'] = 'pdf';
-                $config['max_size'] = 10240; // 10MB
-                $config['file_name'] = uniqid() . '_' . $_FILES['file_upload']['name'];
-
-                if (!is_dir($config['upload_path'])) {
-                    mkdir($config['upload_path'], 0755, true);
-                }
-
-                $this->load->library('upload', $config);
-                if ($this->upload->do_upload('file_upload')) {
-                    $upload_data = $this->upload->data();
-                    $file_path = base_url('uploads/lessons/' . $upload_data['file_name']);
-                    log_message('debug', 'File uploaded successfully: ' . $file_path);
-                } else {
-                    log_message('debug', 'File upload error: ' . $this->upload->display_errors());
+            if ($content_type === 'file') {
+                if (isset($_FILES['file_upload']) && !empty($_FILES['file_upload']['name'])) {
+                    $upload_result = $this->upload_lesson_file();
+                    if (!$upload_result['success']) {
+                        $this->session->set_flashdata('error', $upload_result['error']);
+                        redirect('course/content/' . $module->subject_id . '?edit=1');
+                    }
+                    $file_path = $upload_result['path'];
+                } elseif (trim((string) $file_path) === '') {
+                    $this->session->set_flashdata('error', 'Please select a PDF file to upload.');
+                    redirect('course/content/' . $module->subject_id . '?edit=1');
                 }
             }
 
@@ -919,16 +1015,63 @@ class Course extends MY_Controller {
         if (!$module) show_404();
         
         if ($this->input->method() === 'post') {
+            $type = $this->input->post('type', TRUE);
+            $type = in_array($type, array('assignment', 'quiz', 'forum', 'resource', 'page', 'label')) ? $type : 'page';
             $order = $this->Lesson_model->get_next_order('activities', 'module_id', $module_id);
             $data = array(
                 'module_id'     => $module_id,
-                'type'          => $this->input->post('type', TRUE),
+                'type'          => $type,
                 'title'         => $this->input->post('title', TRUE),
                 'content'       => $this->input->post('content'),
                 'settings'      => json_encode($this->input->post('settings') ?: []),
                 'order_num'     => $order,
                 'is_published'  => $this->input->post('is_published') ? 1 : 0,
             );
+
+            if ($type === 'quiz') {
+                $subject = $this->Academic_model->get_subject($module->subject_id);
+                if (!$subject) show_404();
+
+                $this->db->trans_start();
+                $activity_id = $this->Lesson_model->create_activity($data);
+                $quiz_id = $this->Quiz_model->create_quiz(array(
+                    'course_id'          => $subject->id,
+                    'class_program_id'   => $module->class_program_id ?: null,
+                    'school_id'          => $this->school_id,
+                    'title'              => $data['title'],
+                    'description'        => $data['content'],
+                    'quiz_type'          => 'quiz',
+                    'component_id'       => $activity_id,
+                    'total_points'       => 0,
+                    'time_limit_minutes' => null,
+                    'max_attempts'       => 1,
+                    'shuffle_questions'  => 0,
+                    'show_results'       => 1,
+                    'is_published'       => $data['is_published'],
+                    'created_by'         => $this->current_user ? $this->current_user->id : null,
+                ));
+                $this->Lesson_model->update_activity($activity_id, array(
+                    'settings' => json_encode(array('quiz_id' => $quiz_id)),
+                ));
+                $this->db->trans_complete();
+
+                if (!$this->db->trans_status()) {
+                    $this->session->set_flashdata('error', 'Quiz activity could not be created.');
+                    redirect('course/content/' . $module->subject_id . '?edit=1');
+                }
+
+                $import = $this->import_assessment_questions_from_upload($quiz_id);
+                if (!$import['success']) {
+                    $this->session->set_flashdata('warning', 'Quiz activity created, but import failed: ' . $import['message']);
+                } elseif ($import['count'] > 0) {
+                    $this->session->set_flashdata('success', 'Quiz activity created. ' . $import['message']);
+                } else {
+                    $this->session->set_flashdata('success', 'Quiz activity created successfully.');
+                }
+
+                redirect('course/assessment/' . $activity_id);
+            }
+
             $this->Lesson_model->create_activity($data);
             $this->session->set_flashdata('success', 'Activity created successfully.');
         }
@@ -957,6 +1100,839 @@ class Course extends MY_Controller {
         redirect('course/content/' . $module->subject_id . '?edit=1');
     }
 
+    // ---- Assessment Management ----
+    private function get_assessment_context_by_activity($activity_id)
+    {
+        $activity = $this->Lesson_model->get_activity($activity_id);
+        if (!$activity || $activity->type !== 'quiz') {
+            return null;
+        }
+
+        $module = $this->Lesson_model->get_module($activity->module_id);
+        if (!$module) {
+            return null;
+        }
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) {
+            return null;
+        }
+
+        return array(
+            'activity' => $activity,
+            'module'   => $module,
+            'subject'  => $subject,
+            'quiz'     => $this->Quiz_model->get_quiz_by_activity($activity->id),
+        );
+    }
+
+    private function get_assessment_context_by_quiz($quiz_id)
+    {
+        $quiz = $this->Quiz_model->get_quiz($quiz_id);
+        if (!$quiz || empty($quiz->component_id)) {
+            return null;
+        }
+
+        $context = $this->get_assessment_context_by_activity($quiz->component_id);
+        if (!$context) {
+            return null;
+        }
+
+        $context['quiz'] = $quiz;
+        return $context;
+    }
+
+    private function get_or_create_quiz_for_activity($activity, $module, $subject)
+    {
+        $quiz = $this->Quiz_model->get_quiz_by_activity($activity->id);
+        if ($quiz) {
+            return $quiz;
+        }
+
+        $quiz_id = $this->Quiz_model->create_quiz(array(
+            'course_id'          => $subject->id,
+            'class_program_id'   => $module->class_program_id ?: null,
+            'school_id'          => $this->school_id,
+            'title'              => $activity->title,
+            'description'        => $activity->content,
+            'quiz_type'          => 'quiz',
+            'component_id'       => $activity->id,
+            'total_points'       => 0,
+            'time_limit_minutes' => null,
+            'max_attempts'       => 1,
+            'shuffle_questions'  => 0,
+            'show_results'       => 1,
+            'is_published'       => $activity->is_published ? 1 : 0,
+            'created_by'         => $this->current_user ? $this->current_user->id : null,
+        ));
+
+        $this->Lesson_model->update_activity($activity->id, array(
+            'settings' => json_encode(array('quiz_id' => $quiz_id)),
+        ));
+
+        return $this->Quiz_model->get_quiz($quiz_id);
+    }
+
+    private function clean_import_text($value)
+    {
+        $value = html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8');
+        $value = trim(strip_tags($value));
+        return preg_replace('/\s+/', ' ', $value);
+    }
+
+    private function parse_gift_answer_tokens($answer_text)
+    {
+        $tokens = array();
+        $marker = null;
+        $buffer = '';
+        $escaped = false;
+        $length = strlen($answer_text);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $answer_text[$i];
+
+            if ($escaped) {
+                $buffer .= $char;
+                $escaped = false;
+                continue;
+            }
+
+            if ($char === '\\') {
+                $escaped = true;
+                continue;
+            }
+
+            if ($char === '=' || $char === '~') {
+                if ($marker !== null) {
+                    $tokens[] = array('marker' => $marker, 'text' => $buffer);
+                }
+                $marker = $char;
+                $buffer = '';
+                continue;
+            }
+
+            $buffer .= $char;
+        }
+
+        if ($marker !== null) {
+            $tokens[] = array('marker' => $marker, 'text' => $buffer);
+        }
+
+        foreach ($tokens as &$token) {
+            $token['text'] = preg_replace('/#.*/', '', $token['text']);
+            $token['text'] = $this->clean_import_text($token['text']);
+        }
+        unset($token);
+
+        return array_values(array_filter($tokens, function($token) {
+            return $token['text'] !== '';
+        }));
+    }
+
+    private function parse_gift_questions($content)
+    {
+        $content = str_replace(array("\r\n", "\r"), "\n", trim($content));
+        $blocks = preg_split("/\n\s*\n/", $content);
+        $questions = array();
+        $errors = array();
+
+        foreach ($blocks as $index => $block) {
+            $block = trim(preg_replace('/^\s*\/\/.*$/m', '', $block));
+            if ($block === '') {
+                continue;
+            }
+
+            if (!preg_match('/^(.*?)\{(.*)\}\s*$/s', $block, $matches)) {
+                $errors[] = 'GIFT item #' . ($index + 1) . ' was skipped because it has no answer block.';
+                continue;
+            }
+
+            $question_text = trim($matches[1]);
+            if (preg_match('/^\s*::.*?::(.*)$/s', $question_text, $title_match)) {
+                $question_text = trim($title_match[1]);
+            }
+            $question_text = $this->clean_import_text($question_text);
+            $answer_text = trim($matches[2]);
+
+            if ($question_text === '') {
+                $errors[] = 'GIFT item #' . ($index + 1) . ' was skipped because the question text is empty.';
+                continue;
+            }
+
+            if ($answer_text === '') {
+                $questions[] = array(
+                    'question_type' => 'essay',
+                    'question_text' => $question_text,
+                    'points'        => 1,
+                    'choices'       => array(),
+                );
+                continue;
+            }
+
+            if (preg_match('/^(TRUE|FALSE|T|F)$/i', $answer_text, $tf_match)) {
+                $correct_true = strtoupper($tf_match[1][0]) === 'T';
+                $questions[] = array(
+                    'question_type' => 'true_false',
+                    'question_text' => $question_text,
+                    'points'        => 1,
+                    'choices'       => array(
+                        array('text' => 'True', 'is_correct' => $correct_true ? 1 : 0),
+                        array('text' => 'False', 'is_correct' => $correct_true ? 0 : 1),
+                    ),
+                );
+                continue;
+            }
+
+            $tokens = $this->parse_gift_answer_tokens($answer_text);
+            if (empty($tokens)) {
+                $errors[] = 'GIFT item #' . ($index + 1) . ' was skipped because no valid answers were found.';
+                continue;
+            }
+
+            $has_wrong_choice = false;
+            foreach ($tokens as $token) {
+                if ($token['marker'] === '~') {
+                    $has_wrong_choice = true;
+                    break;
+                }
+            }
+
+            if ($has_wrong_choice) {
+                $choices = array();
+                foreach ($tokens as $token) {
+                    $choices[] = array(
+                        'text'       => $token['text'],
+                        'is_correct' => $token['marker'] === '=' ? 1 : 0,
+                    );
+                }
+
+                $questions[] = array(
+                    'question_type' => 'multiple_choice',
+                    'question_text' => $question_text,
+                    'points'        => 1,
+                    'choices'       => $choices,
+                );
+            } else {
+                $choices = array();
+                foreach ($tokens as $token) {
+                    if ($token['marker'] === '=') {
+                        $choices[] = array('text' => $token['text'], 'is_correct' => 1);
+                    }
+                }
+
+                $questions[] = array(
+                    'question_type' => 'identification',
+                    'question_text' => $question_text,
+                    'points'        => 1,
+                    'choices'       => $choices,
+                );
+            }
+        }
+
+        return array('questions' => $questions, 'errors' => $errors);
+    }
+
+    private function parse_moodle_xml_questions($content)
+    {
+        if (!class_exists('SimpleXMLElement')) {
+            return array('questions' => array(), 'errors' => array('SimpleXML is not enabled on this server.'));
+        }
+
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($content, 'SimpleXMLElement', LIBXML_NONET | LIBXML_NOCDATA);
+        if (!$xml) {
+            return array('questions' => array(), 'errors' => array('Invalid Moodle XML file.'));
+        }
+
+        $questions = array();
+        $errors = array();
+        foreach ($xml->question as $index => $node) {
+            $type = strtolower((string) $node['type']);
+            if ($type === 'category') {
+                continue;
+            }
+
+            $question_text = $this->clean_import_text((string) $node->questiontext->text);
+            if ($question_text === '') {
+                $question_text = $this->clean_import_text((string) $node->name->text);
+            }
+
+            if ($question_text === '') {
+                $errors[] = 'XML question #' . ($index + 1) . ' was skipped because the question text is empty.';
+                continue;
+            }
+
+            $points = (float) $node->defaultgrade;
+            if ($points <= 0) {
+                $points = 1;
+            }
+
+            if ($type === 'multichoice') {
+                $choices = array();
+                foreach ($node->answer as $answer) {
+                    $choice_text = $this->clean_import_text((string) $answer->text);
+                    if ($choice_text === '') {
+                        continue;
+                    }
+                    $choices[] = array(
+                        'text'       => $choice_text,
+                        'is_correct' => ((float) $answer['fraction']) > 0 ? 1 : 0,
+                    );
+                }
+
+                if (count($choices) < 2) {
+                    $errors[] = 'XML multiple choice question #' . ($index + 1) . ' was skipped because it has fewer than two choices.';
+                    continue;
+                }
+
+                $questions[] = array(
+                    'question_type' => 'multiple_choice',
+                    'question_text' => $question_text,
+                    'points'        => $points,
+                    'choices'       => $choices,
+                );
+            } elseif ($type === 'truefalse') {
+                $correct_true = true;
+                foreach ($node->answer as $answer) {
+                    if (((float) $answer['fraction']) > 0) {
+                        $correct_true = strtolower($this->clean_import_text((string) $answer->text)) === 'true';
+                        break;
+                    }
+                }
+
+                $questions[] = array(
+                    'question_type' => 'true_false',
+                    'question_text' => $question_text,
+                    'points'        => $points,
+                    'choices'       => array(
+                        array('text' => 'True', 'is_correct' => $correct_true ? 1 : 0),
+                        array('text' => 'False', 'is_correct' => $correct_true ? 0 : 1),
+                    ),
+                );
+            } elseif ($type === 'shortanswer') {
+                $choices = array();
+                foreach ($node->answer as $answer) {
+                    if (((float) $answer['fraction']) <= 0) {
+                        continue;
+                    }
+                    $answer_text = $this->clean_import_text((string) $answer->text);
+                    if ($answer_text !== '') {
+                        $choices[] = array('text' => $answer_text, 'is_correct' => 1);
+                    }
+                }
+
+                if (empty($choices)) {
+                    $errors[] = 'XML short answer question #' . ($index + 1) . ' was skipped because it has no correct answer.';
+                    continue;
+                }
+
+                $questions[] = array(
+                    'question_type' => 'identification',
+                    'question_text' => $question_text,
+                    'points'        => $points,
+                    'choices'       => $choices,
+                );
+            } elseif ($type === 'essay') {
+                $questions[] = array(
+                    'question_type' => 'essay',
+                    'question_text' => $question_text,
+                    'points'        => $points,
+                    'choices'       => array(),
+                );
+            } else {
+                $errors[] = 'XML question #' . ($index + 1) . ' was skipped because type "' . $type . '" is not supported.';
+            }
+        }
+
+        return array('questions' => $questions, 'errors' => $errors);
+    }
+
+    private function save_imported_questions($quiz_id, $questions)
+    {
+        if (empty($questions)) {
+            return 0;
+        }
+
+        $this->db->trans_start();
+        $order = $this->Quiz_model->get_next_question_order($quiz_id);
+        foreach ($questions as $question) {
+            $question_id = $this->Quiz_model->create_question(array(
+                'quiz_id'       => $quiz_id,
+                'question_type' => $question['question_type'],
+                'question_text' => $question['question_text'],
+                'points'        => $question['points'],
+                'order_num'     => $order++,
+            ));
+
+            if (!empty($question['choices'])) {
+                $this->Quiz_model->save_choices($question_id, $question['choices']);
+            }
+        }
+        $this->Quiz_model->recalculate_total_points($quiz_id);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status() ? count($questions) : 0;
+    }
+
+    private function import_assessment_questions_from_upload($quiz_id)
+    {
+        if (empty($_FILES['question_file']['name'])) {
+            return array('success' => true, 'count' => 0, 'message' => '');
+        }
+
+        if ($_FILES['question_file']['error'] !== UPLOAD_ERR_OK) {
+            return array('success' => false, 'count' => 0, 'message' => 'Question file upload failed.');
+        }
+
+        if ($_FILES['question_file']['size'] > 2097152) {
+            return array('success' => false, 'count' => 0, 'message' => 'Question file must be 2MB or smaller.');
+        }
+
+        $extension = strtolower(pathinfo($_FILES['question_file']['name'], PATHINFO_EXTENSION));
+        if (!in_array($extension, array('gift', 'txt', 'xml'))) {
+            return array('success' => false, 'count' => 0, 'message' => 'Only GIFT, TXT, and XML files are allowed.');
+        }
+
+        $content = file_get_contents($_FILES['question_file']['tmp_name']);
+        if (trim((string) $content) === '') {
+            return array('success' => false, 'count' => 0, 'message' => 'Question file is empty.');
+        }
+
+        $format = strtolower($this->input->post('import_format', TRUE));
+        if (!in_array($format, array('gift', 'xml'))) {
+            $format = $extension === 'xml' ? 'xml' : 'gift';
+        }
+
+        $parsed = $format === 'xml'
+            ? $this->parse_moodle_xml_questions($content)
+            : $this->parse_gift_questions($content);
+
+        if (empty($parsed['questions'])) {
+            $message = 'No supported questions were found.';
+            if (!empty($parsed['errors'])) {
+                $message .= ' ' . implode(' ', array_slice($parsed['errors'], 0, 3));
+            }
+            return array('success' => false, 'count' => 0, 'message' => $message);
+        }
+
+        $count = $this->save_imported_questions($quiz_id, $parsed['questions']);
+        if ($count < 1) {
+            return array('success' => false, 'count' => 0, 'message' => 'Questions could not be saved.');
+        }
+
+        $message = $count . ' question' . ($count === 1 ? '' : 's') . ' imported.';
+        if (!empty($parsed['errors'])) {
+            $message .= ' Skipped: ' . implode(' ', array_slice($parsed['errors'], 0, 3));
+        }
+
+        return array('success' => true, 'count' => $count, 'message' => $message);
+    }
+
+    private function assessment_availability_error($quiz)
+    {
+        $now = date('Y-m-d H:i:s');
+        if (!empty($quiz->available_from) && $quiz->available_from > $now) {
+            return 'This assessment is not yet available.';
+        }
+        if (!empty($quiz->available_until) && $quiz->available_until < $now) {
+            return 'This assessment is already closed.';
+        }
+        return '';
+    }
+
+    private function normalize_assessment_datetime($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d H:i:s', $timestamp) : null;
+    }
+
+    public function create_assessment($module_id)
+    {
+        $this->require_course_manager();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->input->method() === 'post') {
+            $title = trim($this->input->post('title', TRUE));
+            if ($title === '') {
+                $this->session->set_flashdata('error', 'Assessment title is required.');
+                redirect('course/content/' . $module->subject_id . '?edit=1');
+            }
+
+            $quiz_type = $this->input->post('quiz_type', TRUE);
+            $quiz_type = in_array($quiz_type, array('quiz', 'exam')) ? $quiz_type : 'quiz';
+            $is_published = $this->input->post('is_published') ? 1 : 0;
+            $max_attempts = max(1, (int) $this->input->post('max_attempts', TRUE));
+            $time_limit = (int) $this->input->post('time_limit_minutes', TRUE);
+            $time_limit = $time_limit > 0 ? $time_limit : null;
+
+            $this->db->trans_start();
+            $activity_id = $this->Lesson_model->create_activity(array(
+                'module_id'    => $module_id,
+                'type'         => 'quiz',
+                'title'        => $title,
+                'content'      => $this->input->post('description'),
+                'settings'     => json_encode(array()),
+                'order_num'    => $this->Lesson_model->get_next_order('activities', 'module_id', $module_id),
+                'is_published' => $is_published,
+            ));
+
+            $quiz_id = $this->Quiz_model->create_quiz(array(
+                'course_id'          => $subject->id,
+                'class_program_id'   => $module->class_program_id ?: null,
+                'school_id'          => $this->school_id,
+                'title'              => $title,
+                'description'        => $this->input->post('description'),
+                'quiz_type'          => $quiz_type,
+                'component_id'       => $activity_id,
+                'total_points'       => 0,
+                'time_limit_minutes' => $time_limit,
+                'max_attempts'       => $max_attempts,
+                'shuffle_questions'  => $this->input->post('shuffle_questions') ? 1 : 0,
+                'show_results'       => $this->input->post('show_results') ? 1 : 0,
+                'available_from'     => $this->normalize_assessment_datetime($this->input->post('available_from', TRUE)),
+                'available_until'    => $this->normalize_assessment_datetime($this->input->post('available_until', TRUE)),
+                'is_published'       => $is_published,
+                'created_by'         => $this->current_user ? $this->current_user->id : null,
+            ));
+
+            $this->Lesson_model->update_activity($activity_id, array(
+                'settings' => json_encode(array('quiz_id' => $quiz_id)),
+            ));
+            $this->db->trans_complete();
+
+            if (!$this->db->trans_status()) {
+                $this->session->set_flashdata('error', 'Assessment could not be created.');
+                redirect('course/content/' . $module->subject_id . '?edit=1');
+            }
+
+            $import = $this->import_assessment_questions_from_upload($quiz_id);
+            if (!$import['success']) {
+                $this->session->set_flashdata('warning', 'Assessment created, but import failed: ' . $import['message']);
+            } elseif ($import['count'] > 0) {
+                $this->session->set_flashdata('success', 'Assessment created. ' . $import['message']);
+            } else {
+                $this->session->set_flashdata('success', 'Assessment created successfully.');
+            }
+
+            redirect('course/assessment/' . $activity_id);
+        }
+
+        redirect('course/content/' . $module->subject_id . '?edit=1');
+    }
+
+    public function edit_assessment($quiz_id)
+    {
+        $this->require_course_manager();
+        $context = $this->get_assessment_context_by_quiz($quiz_id);
+        if (!$context) show_404();
+
+        if ($this->input->method() === 'post') {
+            $title = trim($this->input->post('title', TRUE));
+            if ($title === '') {
+                $this->session->set_flashdata('error', 'Assessment title is required.');
+                redirect('course/assessment/' . $context['activity']->id);
+            }
+
+            $quiz_type = $this->input->post('quiz_type', TRUE);
+            $quiz_type = in_array($quiz_type, array('quiz', 'exam')) ? $quiz_type : 'quiz';
+            $is_published = $this->input->post('is_published') ? 1 : 0;
+            $max_attempts = max(1, (int) $this->input->post('max_attempts', TRUE));
+            $time_limit = (int) $this->input->post('time_limit_minutes', TRUE);
+            $time_limit = $time_limit > 0 ? $time_limit : null;
+
+            $this->Lesson_model->update_activity($context['activity']->id, array(
+                'title'        => $title,
+                'content'      => $this->input->post('description'),
+                'is_published' => $is_published,
+            ));
+
+            $this->Quiz_model->update_quiz($quiz_id, array(
+                'title'              => $title,
+                'description'        => $this->input->post('description'),
+                'quiz_type'          => $quiz_type,
+                'time_limit_minutes' => $time_limit,
+                'max_attempts'       => $max_attempts,
+                'shuffle_questions'  => $this->input->post('shuffle_questions') ? 1 : 0,
+                'show_results'       => $this->input->post('show_results') ? 1 : 0,
+                'available_from'     => $this->normalize_assessment_datetime($this->input->post('available_from', TRUE)),
+                'available_until'    => $this->normalize_assessment_datetime($this->input->post('available_until', TRUE)),
+                'is_published'       => $is_published,
+            ));
+
+            $this->session->set_flashdata('success', 'Assessment updated successfully.');
+        }
+
+        redirect('course/assessment/' . $context['activity']->id);
+    }
+
+    public function upload_assessment_questions($quiz_id)
+    {
+        $this->require_course_manager();
+        $context = $this->get_assessment_context_by_quiz($quiz_id);
+        if (!$context) show_404();
+
+        if ($this->input->method() === 'post') {
+            $import = $this->import_assessment_questions_from_upload($quiz_id);
+            $this->session->set_flashdata($import['success'] ? 'success' : 'error', $import['message']);
+        }
+
+        redirect('course/assessment/' . $context['activity']->id);
+    }
+
+    public function delete_assessment_question($question_id)
+    {
+        $this->require_course_manager();
+        $question = $this->Quiz_model->get_question($question_id);
+        if (!$question) show_404();
+
+        $context = $this->get_assessment_context_by_quiz($question->quiz_id);
+        if (!$context) show_404();
+
+        $this->Quiz_model->delete_question($question_id);
+        $this->Quiz_model->recalculate_total_points($question->quiz_id);
+        $this->session->set_flashdata('success', 'Question deleted successfully.');
+        redirect('course/assessment/' . $context['activity']->id);
+    }
+
+    public function assessment($activity_id = null)
+    {
+        if (!$activity_id) {
+            redirect('subjects');
+        }
+
+        $context = $this->get_assessment_context_by_activity($activity_id);
+        if (!$context) show_404();
+
+        $activity = $context['activity'];
+        $module = $context['module'];
+        $subject = $context['subject'];
+        $quiz = $context['quiz'];
+
+        if ($this->is_student_content_view()) {
+            if (!$module->is_published || !$activity->is_published || !$quiz || !$quiz->is_published) {
+                show_404();
+            }
+
+            if (!$this->has_subject_access($subject->id)) {
+                $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
+                redirect('course/content/' . $subject->id);
+            }
+
+            $questions_count = $this->Quiz_model->count_questions($quiz->id);
+            $attempts = $this->Quiz_model->get_student_attempts($quiz->id, $this->current_user->id);
+            $in_progress_attempt = $this->Quiz_model->get_in_progress_attempt($quiz->id, $this->current_user->id);
+            $availability_error = $this->assessment_availability_error($quiz);
+            $max_attempts = max(1, (int) $quiz->max_attempts);
+            $can_start = $questions_count > 0 && !$availability_error && (!$in_progress_attempt && count($attempts) < $max_attempts);
+
+            $data['title'] = 'Assessment: ' . $quiz->title;
+            $data['subject'] = $subject;
+            $data['module'] = $module;
+            $data['activity'] = $activity;
+            $data['quiz'] = $quiz;
+            $data['questions_count'] = $questions_count;
+            $data['attempts'] = $attempts;
+            $data['in_progress_attempt'] = $in_progress_attempt;
+            $data['availability_error'] = $availability_error;
+            $data['can_start'] = $can_start;
+            $data['student_content_view'] = true;
+            $this->render('course/assessment_intro', $data);
+            return;
+        }
+
+        $this->require_course_manager();
+        $quiz = $this->get_or_create_quiz_for_activity($activity, $module, $subject);
+        $questions = $this->Quiz_model->get_questions_with_choices($quiz->id);
+
+        $data['title'] = 'Manage Assessment: ' . $quiz->title;
+        $data['subject'] = $subject;
+        $data['module'] = $module;
+        $data['activity'] = $activity;
+        $data['quiz'] = $quiz;
+        $data['questions'] = $questions;
+        $data['attempts'] = $this->Quiz_model->get_all_attempts($quiz->id);
+        $data['student_content_view'] = false;
+        $this->render('course/assessment_manage', $data);
+    }
+
+    public function start_assessment($quiz_id)
+    {
+        if (!$this->is_student_content_view() || !$this->current_user) {
+            show_error('Assessments can only be taken by students.', 403);
+        }
+
+        $context = $this->get_assessment_context_by_quiz($quiz_id);
+        if (!$context) show_404();
+
+        $quiz = $context['quiz'];
+        $subject = $context['subject'];
+        if (!$context['module']->is_published || !$context['activity']->is_published || !$quiz->is_published) {
+            show_404();
+        }
+
+        if (!$this->has_subject_access($subject->id)) {
+            $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
+            redirect('course/content/' . $subject->id);
+        }
+
+        $availability_error = $this->assessment_availability_error($quiz);
+        if ($availability_error) {
+            $this->session->set_flashdata('error', $availability_error);
+            redirect('course/assessment/' . $context['activity']->id);
+        }
+
+        if ($this->Quiz_model->count_questions($quiz->id) < 1) {
+            $this->session->set_flashdata('error', 'This assessment has no questions yet.');
+            redirect('course/assessment/' . $context['activity']->id);
+        }
+
+        $in_progress = $this->Quiz_model->get_in_progress_attempt($quiz->id, $this->current_user->id);
+        if ($in_progress) {
+            redirect('course/assessment_attempt/' . $in_progress->id);
+        }
+
+        $attempts = $this->Quiz_model->get_student_attempts($quiz->id, $this->current_user->id);
+        if (count($attempts) >= max(1, (int) $quiz->max_attempts)) {
+            $this->session->set_flashdata('error', 'Maximum attempts reached.');
+            redirect('course/assessment/' . $context['activity']->id);
+        }
+
+        $attempt_id = $this->Quiz_model->start_attempt($quiz->id, $this->current_user->id);
+        redirect('course/assessment_attempt/' . $attempt_id);
+    }
+
+    public function assessment_attempt($attempt_id)
+    {
+        if (!$this->is_student_content_view() || !$this->current_user) {
+            show_error('Assessments can only be taken by students.', 403);
+        }
+
+        $attempt = $this->Quiz_model->get_attempt($attempt_id);
+        if (!$attempt || (int) $attempt->student_id !== (int) $this->current_user->id) {
+            show_404();
+        }
+
+        if ($attempt->status !== 'in_progress') {
+            redirect('course/assessment_result/' . $attempt->id);
+        }
+
+        $context = $this->get_assessment_context_by_quiz($attempt->quiz_id);
+        if (!$context) show_404();
+
+        if (!$context['module']->is_published || !$context['activity']->is_published || !$context['quiz']->is_published) {
+            show_404();
+        }
+
+        if (!$this->has_subject_access($context['subject']->id)) {
+            $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
+            redirect('course/content/' . $context['subject']->id);
+        }
+
+        $questions = $this->Quiz_model->get_questions_with_choices($context['quiz']->id);
+        if (!empty($context['quiz']->shuffle_questions)) {
+            shuffle($questions);
+        }
+
+        $data['title'] = 'Take Assessment: ' . $context['quiz']->title;
+        $data['subject'] = $context['subject'];
+        $data['module'] = $context['module'];
+        $data['activity'] = $context['activity'];
+        $data['quiz'] = $context['quiz'];
+        $data['attempt'] = $attempt;
+        $data['questions'] = $questions;
+        $data['answer_map'] = $this->Quiz_model->get_attempt_answers_map($attempt->id);
+        $this->render('course/assessment_attempt', $data);
+    }
+
+    public function submit_assessment($attempt_id)
+    {
+        if (!$this->is_student_content_view() || !$this->current_user) {
+            show_error('Assessments can only be submitted by students.', 403);
+        }
+
+        $attempt = $this->Quiz_model->get_attempt($attempt_id);
+        if (!$attempt || (int) $attempt->student_id !== (int) $this->current_user->id || $attempt->status !== 'in_progress') {
+            show_404();
+        }
+
+        $context = $this->get_assessment_context_by_quiz($attempt->quiz_id);
+        if (!$context) show_404();
+
+        if (!$context['module']->is_published || !$context['activity']->is_published || !$context['quiz']->is_published) {
+            show_404();
+        }
+
+        if (!$this->has_subject_access($context['subject']->id)) {
+            $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
+            redirect('course/content/' . $context['subject']->id);
+        }
+
+        if ($this->input->method() === 'post') {
+            $questions = $this->Quiz_model->get_questions_with_choices($attempt->quiz_id);
+            $posted_answers = $this->input->post('answers') ?: array();
+
+            foreach ($questions as $question) {
+                $answer_value = isset($posted_answers[$question->id]) ? $posted_answers[$question->id] : null;
+                $answer_data = array('answer_text' => null, 'choice_id' => null);
+
+                if ($question->question_type === 'multiple_choice' || $question->question_type === 'true_false') {
+                    $choice_id = (int) $answer_value;
+                    foreach ($question->choices as $choice) {
+                        if ((int) $choice->id === $choice_id) {
+                            $answer_data['choice_id'] = $choice_id;
+                            break;
+                        }
+                    }
+                } else {
+                    $answer_data['answer_text'] = trim((string) $answer_value);
+                }
+
+                if ($answer_data['choice_id'] || $answer_data['answer_text'] !== '') {
+                    $this->Quiz_model->save_answer($attempt->id, $question->id, $answer_data);
+                }
+            }
+
+            $this->Quiz_model->submit_attempt($attempt->id);
+            $this->session->set_flashdata('success', 'Assessment submitted successfully.');
+        }
+
+        redirect('course/assessment_result/' . $attempt->id);
+    }
+
+    public function assessment_result($attempt_id)
+    {
+        $attempt = $this->Quiz_model->get_attempt($attempt_id);
+        if (!$attempt) show_404();
+
+        $context = $this->get_assessment_context_by_quiz($attempt->quiz_id);
+        if (!$context) show_404();
+
+        $is_owner = $this->current_user && (int) $attempt->student_id === (int) $this->current_user->id;
+        if (!$is_owner) {
+            $this->require_course_manager();
+        }
+
+        $data['title'] = 'Assessment Result: ' . $context['quiz']->title;
+        $data['subject'] = $context['subject'];
+        $data['module'] = $context['module'];
+        $data['activity'] = $context['activity'];
+        $data['quiz'] = $context['quiz'];
+        $data['attempt'] = $attempt;
+        $data['questions'] = $this->Quiz_model->get_questions_with_choices($context['quiz']->id);
+        $data['answer_map'] = $this->Quiz_model->get_attempt_answers_map($attempt->id);
+        $data['show_results'] = !$this->is_student_content_view() || !empty($context['quiz']->show_results);
+        $this->render('course/assessment_result', $data);
+    }
+
     public function delete_activity($activity_id)
     {
         $this->require_course_manager();
@@ -966,6 +1942,12 @@ class Course extends MY_Controller {
         $module = $this->Lesson_model->get_module($activity->module_id);
         
         $this->Lesson_model->delete_activity($activity_id);
+        if ($activity->type === 'quiz') {
+            $quiz = $this->Quiz_model->get_quiz_by_activity($activity_id);
+            if ($quiz) {
+                $this->Quiz_model->delete_quiz($quiz->id);
+            }
+        }
         $this->session->set_flashdata('success', 'Activity deleted successfully.');
         redirect('course/content/' . $module->subject_id . '?edit=1');
     }

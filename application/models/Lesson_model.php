@@ -232,7 +232,8 @@ class Lesson_model extends CI_Model {
 
         $rows = $this->db->order_by('modules.order_num', 'ASC')
                          ->order_by('lessons.order_num', 'ASC')
-                         ->get('lessons');
+                         ->get('lessons')
+                         ->result();
         return array_map(function($r) { return (int) $r->id; }, $rows);
     }
 

@@ -169,11 +169,20 @@ if ($rs === 'student') {
 
     <div class="sidebar-footer">
         <div class="sidebar-user">
-            <div class="avatar">
-                <?= strtoupper(substr($this->session->userdata('first_name'), 0, 1) . substr($this->session->userdata('last_name'), 0, 1)) ?>
-            </div>
+            <?php
+            $avatar_path = $this->session->userdata('avatar');
+            $first_name = $this->session->userdata('first_name');
+            $last_name = $this->session->userdata('last_name');
+            ?>
+            <?php if (!empty($avatar_path) && file_exists('./' . $avatar_path)): ?>
+                <img src="<?= base_url($avatar_path) ?>" alt="Avatar" class="avatar avatar--img">
+            <?php else: ?>
+                <div class="avatar">
+                    <?= strtoupper(substr($first_name, 0, 1) . substr($last_name, 0, 1)) ?>
+                </div>
+            <?php endif; ?>
             <div class="user-info">
-                <div class="user-name"><?= $this->session->userdata('first_name') . ' ' . $this->session->userdata('last_name') ?></div>
+                <div class="user-name"><?= $first_name . ' ' . $last_name ?></div>
                 <div class="user-role"><?= $this->session->userdata('role_name') ?></div>
             </div>
         </div>

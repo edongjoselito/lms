@@ -17,77 +17,72 @@ foreach ($subjects as $subject) {
 }
 ?>
 
-<div class="subjects-page">
-    <div class="page-header">
-        <div>
-            <h1 class="page-title">Subjects</h1>
-            <p class="page-subtitle">Manage your learning content and subjects</p>
-        </div>
-        <a href="<?= site_url('subjects/create') ?>" class="btn-add-subject">
+<div class="sl-page">
+    <div class="sl-header">
+        <h1 class="sl-title">Subjects</h1>
+        <a href="<?= site_url('subjects/create') ?>" class="sl-btn-primary">
             <i class="bi bi-plus-lg"></i> Add Subject
         </a>
     </div>
 
-    <form action="<?= site_url('subjects') ?>" method="get" class="filter-bar-compact">
-        <select id="programFilter" name="program_id" class="form-select-sm">
-            <option value="">All Programs</option>
-            <?php foreach ($programs as $program): ?>
-                <option value="<?= $program->id ?>" <?= ($filter_program == $program->id) ? 'selected' : '' ?>>
-                    <?= $program->code ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <select id="gradeLevelFilter" name="grade_level_id" class="form-select-sm">
-            <option value="">All Grade Levels</option>
-            <?php foreach ($grade_levels as $grade_level): ?>
-                <option value="<?= $grade_level->id ?>" <?= ($filter_grade_level == $grade_level->id) ? 'selected' : '' ?>>
-                    <?= $grade_level->name ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-        <select id="semesterFilter" name="semester_type" class="form-select-sm">
-            <option value="">All Semesters</option>
-            <option value="1st_sem" <?= ($filter_semester == '1st_sem') ? 'selected' : '' ?>>1st Sem</option>
-            <option value="2nd_sem" <?= ($filter_semester == '2nd_sem') ? 'selected' : '' ?>>2nd Sem</option>
-        </select>
-        <button type="submit" class="btn-filter-sm">
-            <i class="bi bi-funnel"></i>
-        </button>
-        <a href="<?= site_url('subjects') ?>" class="btn-reset-sm">
-            <i class="bi bi-arrow-counterclockwise"></i>
-        </a>
-    </form>
+    <div class="sl-toolbar">
+        <form action="<?= site_url('subjects') ?>" method="get" class="sl-filters">
+            <select name="program_id" class="sl-select">
+                <option value="">All Programs</option>
+                <?php foreach ($programs as $program): ?>
+                    <option value="<?= $program->id ?>" <?= ($filter_program == $program->id) ? 'selected' : '' ?>>
+                        <?= $program->code ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <select name="grade_level_id" class="sl-select">
+                <option value="">All Grade Levels</option>
+                <?php foreach ($grade_levels as $grade_level): ?>
+                    <option value="<?= $grade_level->id ?>" <?= ($filter_grade_level == $grade_level->id) ? 'selected' : '' ?>>
+                        <?= $grade_level->name ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <select name="semester_type" class="sl-select">
+                <option value="">All Semesters</option>
+                <option value="1st_sem" <?= ($filter_semester == '1st_sem') ? 'selected' : '' ?>>1st Sem</option>
+                <option value="2nd_sem" <?= ($filter_semester == '2nd_sem') ? 'selected' : '' ?>>2nd Sem</option>
+            </select>
+            <button type="submit" class="sl-btn-filter">Filter</button>
+            <a href="<?= site_url('subjects') ?>" class="sl-btn-reset">Reset</a>
+        </form>
 
-    <div class="stats-grid-compact">
-        <div class="stat-item-compact">
-            <span class="stat-label-compact">Total Subjects</span>
-            <strong><?= $total_subjects ?></strong>
-        </div>
-        <div class="stat-item-compact">
-            <span class="stat-label-compact">Total Units</span>
-            <strong><?= rtrim(rtrim(number_format($total_units, 2), '0'), '.') ?></strong>
-        </div>
-        <div class="stat-item-compact">
-            <span class="stat-label-compact">Program Subjects</span>
-            <strong><?= $program_subjects ?></strong>
-        </div>
-        <div class="stat-item-compact">
-            <span class="stat-label-compact">Grade-Level Subjects</span>
-            <strong><?= $grade_subjects ?></strong>
+        <div class="sl-stats">
+            <div class="sl-stat">
+                <span class="sl-stat-value"><?= $total_subjects ?></span>
+                <span class="sl-stat-label">Subjects</span>
+            </div>
+            <div class="sl-stat">
+                <span class="sl-stat-value"><?= rtrim(rtrim(number_format($total_units, 2), '0'), '.') ?></span>
+                <span class="sl-stat-label">Units</span>
+            </div>
+            <div class="sl-stat">
+                <span class="sl-stat-value"><?= $program_subjects ?></span>
+                <span class="sl-stat-label">College</span>
+            </div>
+            <div class="sl-stat">
+                <span class="sl-stat-value"><?= $grade_subjects ?></span>
+                <span class="sl-stat-label">K-12</span>
+            </div>
         </div>
     </div>
 
     <?php if (!empty($subjects)): ?>
-        <div class="data-table">
-            <table class="table">
+        <div class="sl-table-wrap">
+            <table class="sl-table">
                 <thead>
                     <tr>
                         <th>Code</th>
                         <th>Description</th>
-                        <th>Program/Grade Level</th>
+                        <th>Classification</th>
                         <th>Semester</th>
                         <th>Lessons</th>
-                        <th>Actions</th>
+                        <th class="sl-actions-col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,39 +91,32 @@ foreach ($subjects as $subject) {
                         $scope_label = $subject->program_code
                             ? $subject->program_code . ' - ' . $subject->program_name
                             : ($subject->grade_level_name ?: 'Unassigned');
-                        $semester_label = '-';
-                        if ($subject->semester_type === '1st_sem') {
-                            $semester_label = '1st Sem';
-                        } elseif ($subject->semester_type === '2nd_sem') {
-                            $semester_label = '2nd Sem';
-                        }
+                        $semester_label = $subject->semester_type === '1st_sem' ? '1st Sem' : ($subject->semester_type === '2nd_sem' ? '2nd Sem' : '-');
                         $lesson_count = (int) ($subject->lesson_count ?? 0);
                         $has_lessons = $lesson_count > 0;
                         ?>
                         <tr>
-                            <td><span class="code-badge"><?= $subject->code ?></span></td>
+                            <td><span class="sl-code"><?= $subject->code ?></span></td>
                             <td><?= htmlspecialchars($subject->description) ?></td>
                             <td><?= $scope_label ?></td>
                             <td><?= $semester_label ?></td>
                             <td>
                                 <?php if ($has_lessons): ?>
-                                    <span class="lesson-count"><?= $lesson_count ?></span>
+                                    <span class="sl-badge sl-badge--green"><?= $lesson_count ?></span>
                                 <?php else: ?>
-                                    <span class="text-muted">0</span>
+                                    <span class="sl-muted">0</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <div class="table-actions">
-                                    <a href="<?= site_url('course/content/' . $subject->id) ?>" class="btn-action-sm" title="Manage content">
-                                        <i class="bi <?= $has_lessons ? 'bi-folder-check' : 'bi-folder' ?>"></i>
-                                    </a>
-                                    <a href="<?= site_url('subjects/edit/' . $subject->id) ?>" class="btn-action-sm" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="<?= site_url('subjects/delete/' . $subject->id) ?>" class="btn-action-sm btn-delete" title="Delete" onclick="return confirm('Delete this subject?');">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                </div>
+                            <td class="sl-actions-col">
+                                <a href="<?= site_url('course/content/' . $subject->id) ?>" class="sl-icon-btn" title="Content">
+                                    <i class="bi <?= $has_lessons ? 'bi-folder-check' : 'bi-folder' ?>"></i>
+                                </a>
+                                <a href="<?= site_url('subjects/edit/' . $subject->id) ?>" class="sl-icon-btn" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="<?= site_url('subjects/delete/' . $subject->id) ?>" class="sl-icon-btn sl-icon-btn--danger" title="Delete" onclick="return confirm('Delete this subject?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -136,13 +124,11 @@ foreach ($subjects as $subject) {
             </table>
         </div>
     <?php else: ?>
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="bi bi-book"></i>
-            </div>
+        <div class="sl-empty">
+            <div class="sl-empty-icon"><i class="bi bi-book"></i></div>
             <h3>No subjects found</h3>
-            <p>Adjust the filters or add your first subject to get started.</p>
-            <a href="<?= site_url('subjects/create') ?>" class="btn-add-subject">
+            <p>Adjust the filters or add your first subject.</p>
+            <a href="<?= site_url('subjects/create') ?>" class="sl-btn-primary">
                 <i class="bi bi-plus-lg"></i> Add Subject
             </a>
         </div>
@@ -150,53 +136,366 @@ foreach ($subjects as $subject) {
 </div>
 
 <style>
-.subjects-page { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 2rem 1rem; }
-.page-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.page-title { font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0; }
-.page-subtitle { font-size: 1rem; color: #64748b; margin: 0.5rem 0 0 0; }
-.btn-add-subject { padding: 0.875rem 1.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; transition: all 0.2s ease; }
-.btn-add-subject:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+    /* ── Apple-Level Design System ──────────────────────────────────── */
+    .sl-page {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+        padding: 2rem;
+        color: #1d1d1f;
+    }
 
-.filter-bar-compact { display: flex; gap: 0.5rem; align-items: center; padding: 1rem; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1rem; flex-wrap: wrap; }
-.form-select-sm { border-radius: 8px; border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; font-size: 0.85rem; min-width: 150px; }
-.btn-filter-sm { padding: 0.5rem 0.75rem; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; }
-.btn-filter-sm:hover { background: #4f46e5; }
-.btn-reset-sm { padding: 0.5rem 0.75rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; text-decoration: none; }
-.btn-reset-sm:hover { background: #e2e8f0; }
+    /* Header */
+    .sl-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
 
-.stats-grid-compact { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.stat-item-compact { padding: 0.75rem 1rem; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-.stat-label-compact { font-size: 0.75rem; color: #64748b; font-weight: 500; }
-.stat-item-compact strong { font-size: 1.25rem; color: #1e293b; font-weight: 700; margin-top: 0.25rem; }
+    .sl-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
 
-.data-table { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
-.table { margin: 0; }
-.table thead th { background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.875rem 1rem; text-align: left; }
-.table tbody td { padding: 0.875rem 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
-.table tbody tr:last-child td { border-bottom: none; }
-.table tbody tr:hover { background: #f8fafc; }
+    .sl-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        background: #0071e3;
+        color: #fff;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
 
-.code-badge { padding: 0.25rem 0.5rem; background: #eef2ff; color: #3730a3; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-.lesson-count { padding: 0.25rem 0.5rem; background: #dcfce7; color: #166534; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
-.text-muted { color: #94a3b8; }
+    .sl-btn-primary:hover {
+        background: #0077ed;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+    }
 
-.table-actions { display: flex; gap: 0.25rem; }
-.btn-action-sm { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; }
-.btn-action-sm:hover { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
-.btn-action-sm.btn-delete { color: #ef4444; }
-.btn-action-sm.btn-delete:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+    /* Toolbar */
+    .sl-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+    }
 
-.empty-state { text-align: center; padding: 4rem 2rem; background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0; }
-.empty-icon { width: 80px; height: 80px; background: #e2e8f0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
-.empty-icon i { font-size: 2.5rem; color: #64748b; }
-.empty-state h3 { font-size: 1.25rem; color: #1e293b; margin: 0 0 0.5rem 0; }
-.empty-state p { margin: 0 0 1.5rem 0; color: #64748b; }
+    /* Filters */
+    .sl-filters {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
 
-@media (max-width: 768px) {
-    .page-header { flex-direction: column; align-items: stretch; }
-    .filter-bar-compact { flex-direction: column; align-items: stretch; }
-    .form-select-sm { min-width: 100%; }
-    .stats-grid-compact { grid-template-columns: 1fr 1fr; }
-    .table thead th, .table tbody td { padding: 0.5rem; font-size: 0.75rem; }
-}
+    .sl-select {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 10px;
+        font-size: 0.875rem;
+        color: #1d1d1f;
+        background: #fff;
+        min-width: 140px;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%2386868b' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.6rem center;
+        padding-right: 2rem;
+        transition: all 0.2s;
+    }
+
+    .sl-select:focus {
+        outline: none;
+        border-color: #0071e3;
+        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+    }
+
+    .sl-btn-filter {
+        padding: 0.5rem 1rem;
+        background: #1d1d1f;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .sl-btn-filter:hover {
+        background: #000;
+    }
+
+    .sl-btn-reset {
+        padding: 0.5rem 1rem;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        border: 1px solid #d2d2d7;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+
+    .sl-btn-reset:hover {
+        background: #fff;
+        border-color: #86868b;
+    }
+
+    /* Stats */
+    .sl-stats {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 2rem;
+        flex-shrink: 0;
+    }
+
+    .sl-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .sl-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1d1d1f;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .sl-stat-label {
+        font-size: 0.75rem;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    /* Table Card */
+    .sl-table-wrap {
+        background: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .sl-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+    }
+
+    .sl-table thead th {
+        background: #fafafa;
+        padding: 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .sl-table tbody td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        color: #1d1d1f;
+        vertical-align: middle;
+    }
+
+    .sl-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .sl-table tbody tr:hover {
+        background: #fafafa;
+    }
+
+    .sl-code {
+        display: inline-block;
+        padding: 0.375rem 0.625rem;
+        background: #e8f4fd;
+        color: #0071e3;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .sl-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .sl-badge--green {
+        background: #e6f9e6;
+        color: #34c759;
+    }
+
+    .sl-muted {
+        color: #c4c4c4;
+    }
+
+    /* Actions */
+    .sl-actions-col {
+        width: 100px;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .sl-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        color: #86868b;
+        text-decoration: none;
+        transition: all 0.15s;
+        vertical-align: middle;
+    }
+
+    .sl-icon-btn+.sl-icon-btn {
+        margin-left: 0.125rem;
+    }
+
+    .sl-icon-btn:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: #1d1d1f;
+    }
+
+    .sl-icon-btn--danger {
+        color: #ff3b30;
+    }
+
+    .sl-icon-btn--danger:hover {
+        background: #fff2f2;
+        color: #ff3b30;
+    }
+
+    /* Empty State */
+    .sl-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: #fafafa;
+        border-radius: 16px;
+        border: 2px dashed rgba(0, 0, 0, 0.08);
+    }
+
+    .sl-empty-icon {
+        width: 72px;
+        height: 72px;
+        background: #f5f5f7;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+    }
+
+    .sl-empty-icon i {
+        font-size: 2rem;
+        color: #86868b;
+    }
+
+    .sl-empty h3 {
+        font-size: 1.25rem;
+        color: #1d1d1f;
+        margin: 0 0 0.5rem 0;
+        font-weight: 600;
+    }
+
+    .sl-empty p {
+        color: #86868b;
+        margin: 0 0 1.5rem 0;
+        font-size: 0.9375rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .sl-toolbar {
+            flex-wrap: wrap;
+        }
+
+        .sl-stats {
+            width: 100%;
+            justify-content: center;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .sl-page {
+            padding: 1rem;
+        }
+
+        .sl-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sl-btn-primary {
+            justify-content: center;
+        }
+
+        .sl-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sl-select {
+            width: 100%;
+        }
+
+        .sl-stats {
+            gap: 1.5rem;
+        }
+
+        .sl-table thead th,
+        .sl-table tbody td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .sl-actions-col {
+            width: auto;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .sl-stats {
+            gap: 1rem;
+        }
+
+        .sl-stat-value {
+            font-size: 1.25rem;
+        }
+    }
 </style>

@@ -7,6 +7,10 @@ $completed_count = count($completed_lesson_ids);
 $subject_title = trim($subject->description ?: $subject->name);
 $subject_title = $subject_title !== '' ? $subject_title : 'Course content';
 $subject_system_type = strtolower($subject->system_type ?: 'general');
+$total_activities = 0;
+foreach ($modules as $module) {
+    $total_activities += count($module->activities ?? array());
+}
 ?>
 <div class="student-content-page">
     <a href="<?= site_url('student') ?>" class="course-back">
@@ -20,6 +24,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
             <p class="subject-meta">
                 <span><i class="bi bi-collection"></i> <?= count($modules) ?> Modules</span>
                 <span><i class="bi bi-book"></i> <?= $total_lessons ?> Lessons</span>
+                <span><i class="bi bi-ui-checks"></i> <?= $total_activities ?> Activities</span>
             </p>
         </div>
         <div class="header-actions">
@@ -61,19 +66,50 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                             <h2 class="module-title"><?= htmlspecialchars($module->title) ?></h2>
                             <p class="module-meta">
                                 <span><i class="bi bi-file-text"></i> <?= count($module->lessons) ?> Lessons</span>
+                                <span><i class="bi bi-ui-checks"></i> <?= count($module->activities ?? array()) ?> Activities</span>
                             </p>
                         </div>
                     </div>
-                    
-                    <?php if (!empty($module->lessons)): ?>
+
+                    <?php
+                    $module_items = array();
+                    foreach ($module->lessons as $lesson) {
+                        $lesson->item_type = 'lesson';
+                        $module_items[] = $lesson;
+                    }
+                    foreach (($module->activities ?? array()) as $activity) {
+                        $activity->item_type = 'activity';
+                        $module_items[] = $activity;
+                    }
+                    usort($module_items, function($a, $b) {
+                        return $a->order_num - $b->order_num;
+                    });
+                    ?>
+
+                    <?php if (!empty($module_items)): ?>
                         <div class="lessons-list">
-                            <?php 
-                            foreach ($module->lessons as $lesson): 
-                                $lesson_id = (int) $lesson->id;
-                                $is_completed = in_array($lesson_id, $completed_lesson_ids, true);
-                                $is_locked = !in_array($lesson_id, $accessible_lesson_ids, true);
-                                $lesson_excerpt = trim(substr(strip_tags($lesson->content), 0, 120));
-                                $lesson_excerpt = $lesson_excerpt !== '' ? $lesson_excerpt . '...' : 'Lesson content';
+                            <?php foreach ($module_items as $item): ?>
+                            <?php
+                                $is_lesson_item = $item->item_type === 'lesson';
+                                $is_quiz_item = !$is_lesson_item && $item->type === 'quiz';
+                                $item_id = (int) $item->id;
+                                $is_completed = $is_lesson_item && in_array($item_id, $completed_lesson_ids, true);
+                                $is_locked = $is_lesson_item && !in_array($item_id, $accessible_lesson_ids, true);
+                                $item_excerpt = trim(substr(strip_tags($item->content), 0, 120));
+                                $item_excerpt = $item_excerpt !== '' ? $item_excerpt . '...' : ($is_quiz_item ? 'Assessment' : 'Activity');
+                                $item_url = $is_lesson_item
+                                    ? site_url('student/lesson/' . $subject->id . '/' . $item->id)
+                                    : site_url('course/' . ($is_quiz_item ? 'assessment' : 'activity') . '/' . $item->id);
+                                $lesson_badges = array(
+                                    'text'  => array('icon' => 'bi-file-text', 'label' => 'Lesson'),
+                                    'page'  => array('icon' => 'bi-file-earmark-text', 'label' => 'Page'),
+                                    'video' => array('icon' => 'bi-play-btn', 'label' => 'Video Lesson'),
+                                    'file'  => array('icon' => 'bi-file-earmark-pdf', 'label' => 'File Lesson'),
+                                    'link'  => array('icon' => 'bi-link-45deg', 'label' => 'Link Lesson'),
+                                );
+                                $lesson_badge = $is_lesson_item ? ($lesson_badges[$item->content_type ?? 'text'] ?? $lesson_badges['text']) : null;
+                                $item_icon = $is_lesson_item ? $lesson_badge['icon'] : ($is_quiz_item ? 'bi-ui-checks' : 'bi-lightning');
+                                $item_badge = $is_lesson_item ? $lesson_badge['label'] : ($is_quiz_item ? 'Assessment' : ucfirst($item->type));
                             ?>
                                 <?php if ($is_locked): ?>
                                     <div class="lesson-card locked">
@@ -81,26 +117,36 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                             <i class="bi bi-lock"></i>
                                         </div>
                                         <div class="lesson-content">
-                                            <h3 class="lesson-title"><?= htmlspecialchars($lesson->title) ?></h3>
-                                            <p class="lesson-desc"><?= htmlspecialchars($lesson_excerpt) ?></p>
+                                            <h3 class="lesson-title"><?= htmlspecialchars($item->title) ?></h3>
+                                            <p class="lesson-desc"><?= htmlspecialchars($item_excerpt) ?></p>
                                             <span class="locked-badge">
                                                 <i class="bi bi-lock"></i> Complete previous lesson first
                                             </span>
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <a href="<?= site_url('student/lesson/' . $subject->id . '/' . $lesson->id) ?>" class="lesson-card <?= $is_completed ? 'completed' : '' ?>">
+                                    <a href="<?= $item_url ?>" class="lesson-card <?= $is_completed ? 'completed' : '' ?> <?= $is_quiz_item ? 'assessment' : '' ?>">
                                         <div class="lesson-icon">
-                                            <i class="bi bi-file-text"></i>
+                                            <i class="bi <?= $item_icon ?>"></i>
                                         </div>
                                         <div class="lesson-content">
-                                            <h3 class="lesson-title"><?= htmlspecialchars($lesson->title) ?></h3>
-                                            <p class="lesson-desc"><?= htmlspecialchars($lesson_excerpt) ?></p>
+                                            <h3 class="lesson-title"><?= htmlspecialchars($item->title) ?></h3>
+                                            <p class="lesson-desc"><?= htmlspecialchars($item_excerpt) ?></p>
+                                            <span class="content-type-badge">
+                                                <?= htmlspecialchars($item_badge) ?>
+                                                <?php if ($is_quiz_item): ?>
+                                                    &middot; <?= (int) ($item->question_count ?? 0) ?> Questions
+                                                <?php endif; ?>
+                                            </span>
                                         </div>
                                         <div class="lesson-actions">
                                             <?php if ($is_completed): ?>
                                                 <span class="completed-badge">
                                                     <i class="bi bi-check-circle"></i> Completed
+                                                </span>
+                                            <?php elseif ($is_quiz_item): ?>
+                                                <span class="view-badge">
+                                                    <i class="bi bi-pencil-square"></i> Take
                                                 </span>
                                             <?php else: ?>
                                                 <span class="view-badge">
@@ -115,7 +161,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                     <?php else: ?>
                         <div class="no-lessons">
                             <i class="bi bi-inbox"></i>
-                            <p>No lessons in this module yet</p>
+                            <p>No content in this module yet</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -381,6 +427,11 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     border-color: #cfeede;
 }
 
+.lesson-card.assessment .lesson-icon {
+    background: #fff6df;
+    color: #9a6700;
+}
+
 .lesson-card.locked {
     background: #f7f8fa;
     border-color: #e4e7ec;
@@ -428,6 +479,17 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     font-size: 0.85rem;
     color: #667085;
     line-height: 1.45;
+}
+
+.content-type-badge {
+    display: inline-flex;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+    background: #eef2f7;
+    color: #475467;
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
 .lesson-actions {

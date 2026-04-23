@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Auth extends CI_Controller {
+class Auth extends CI_Controller
+{
 
     public function __construct()
     {
@@ -38,6 +39,7 @@ class Auth extends CI_Controller {
                 'last_name'  => $user->last_name,
                 'email'      => $user->email,
                 'school_id'  => $user->school_id,
+                'avatar'     => $user->avatar,
                 'logged_in'  => TRUE
             );
 
@@ -121,9 +123,9 @@ class Auth extends CI_Controller {
 
         // Check if there's already an attendance record for today with course_id=0
         $existing = $this->db->where('user_id', $user_id)
-                             ->where('course_id', 0)
-                             ->where('date', $today)
-                             ->get('attendance')->row();
+            ->where('course_id', 0)
+            ->where('date', $today)
+            ->get('attendance')->row();
 
         if ($existing) {
             // Update existing record with new login time
@@ -151,11 +153,11 @@ class Auth extends CI_Controller {
 
         // Find today's attendance record without logout time
         $att = $this->db->where('user_id', $user_id)
-                        ->where('date', $today)
-                        ->where('logout_time IS NULL')
-                        ->order_by('id', 'DESC')
-                        ->limit(1)
-                        ->get('attendance')->row();
+            ->where('date', $today)
+            ->where('logout_time IS NULL')
+            ->order_by('id', 'DESC')
+            ->limit(1)
+            ->get('attendance')->row();
 
         if ($att && $att->login_time) {
             $login = strtotime($att->login_time);
