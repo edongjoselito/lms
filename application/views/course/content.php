@@ -34,6 +34,7 @@ if (!function_exists('course_lesson_notes_content')) {
     {
         $content = (string) $content;
         $content = preg_replace('/<div class="lesson-video-embed[^"]*"[^>]*>.*?<\/div>\s*/is', '', $content);
+        $content = preg_replace('/<div class="lesson-file-embed[^"]*"[^>]*>.*?<div class="ratio[^"]*lesson-file-preview[^"]*"[^>]*>.*?<\/div>\s*<\/div>\s*/is', '', $content);
         $content = preg_replace('/<div class="lesson-file-embed[^"]*"[^>]*>.*?<\/div>\s*/is', '', $content);
         $content = preg_replace('/<div class="lesson-link-embed[^"]*"[^>]*>.*?<\/div>\s*/is', '', $content);
         $content = preg_replace('/^<div class="lesson-video-notes">\s*/i', '', $content);
@@ -146,7 +147,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         </svg>
                         Add Module
                     </button>
-                <?php else: ?>
+                <?php elseif (empty($is_student_mode) && isset($original_role_slug) && in_array($original_role_slug, array('course_creator', 'super_admin', 'school_admin'))): ?>
                     <a href="<?= site_url('course/content/' . $subject->id . '?edit=1') ?>" class="cc-btn cc-btn--primary">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="2" />
@@ -230,6 +231,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="#editModule<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-pencil me-2"></i>Edit Module</a></li>
                                         <li><a class="dropdown-item" href="#addLesson<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-file-text me-2"></i>Add Lesson</a></li>
+                                        <li><a class="dropdown-item" href="#addAssessment<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-ui-checks me-2"></i>Add Assessment</a></li>
                                         <li><a class="dropdown-item" href="#addActivity<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-lightning me-2"></i>Add Activity</a></li>
                                         <li>
                                             <hr class="dropdown-divider">
@@ -306,6 +308,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                             <a href="#addLesson<?= $module->id ?>" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="addLesson<?= $module->id ?>">
                                                 <i class="bi bi-file-text me-1"></i>Add Lesson
                                             </a>
+                                            <a href="#addAssessment<?= $module->id ?>" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="addAssessment<?= $module->id ?>">
+                                                <i class="bi bi-ui-checks me-1"></i>Add Assessment
+                                            </a>
                                             <a href="#addActivity<?= $module->id ?>" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="addActivity<?= $module->id ?>">
                                                 <i class="bi bi-lightning me-1"></i>Add Activity
                                             </a>
@@ -317,9 +322,10 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                     <?php foreach ($all_items as $item): ?>
                                         <?php
                                         $is_lesson_item = $item->item_type === 'lesson';
+                                        $is_quiz_item = !$is_lesson_item && $item->type === 'quiz';
                                         $is_completed_lesson = $is_lesson_item && in_array((int) $item->id, $completed_lesson_ids ?? array());
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
-                                        $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : 'activity') . '/' . $item->id);
+                                        $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
                                         ?>
                                         <div class="list-group-item p-3 d-flex align-items-center justify-content-between <?= (!$item->is_published && $edit_mode) ? 'bg-light' : '' ?>">
                                             <?php if ($is_accessible_lesson): ?>
@@ -328,14 +334,24 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                     <span class="content-item-link content-item-locked d-flex align-items-center flex-grow-1">
                                                     <?php endif; ?>
                                                     <?php if ($is_lesson_item): ?>
-                                                        <?php $is_video_lesson = !empty($item->content_type) && $item->content_type === 'video'; ?>
-                                                        <div class="activity-icon me-3" style="width:40px;height:40px;border-radius:8px;background:<?= $is_video_lesson ? '#fee2e2' : '#dbeafe' ?>;display:flex;align-items:center;justify-content:center;color:<?= $is_video_lesson ? '#b91c1c' : '#1e40af' ?>;">
-                                                            <i class="bi <?= !$is_accessible_lesson ? 'bi-lock-fill' : ($is_video_lesson ? 'bi-play-btn' : 'bi-file-text') ?>"></i>
+                                                        <?php
+                                                        $lesson_type = !empty($item->content_type) ? $item->content_type : 'text';
+                                                        $lesson_icons = array(
+                                                            'text'  => array('icon' => 'bi-file-text', 'color' => '#dbeafe', 'icon_color' => '#1e40af', 'label' => 'Lesson'),
+                                                            'page'  => array('icon' => 'bi-file-earmark-text', 'color' => '#f3f4f6', 'icon_color' => '#374151', 'label' => 'Page'),
+                                                            'video' => array('icon' => 'bi-play-btn', 'color' => '#fee2e2', 'icon_color' => '#b91c1c', 'label' => 'Video Lesson'),
+                                                            'file'  => array('icon' => 'bi-file-earmark-pdf', 'color' => '#eff6ff', 'icon_color' => '#1d4ed8', 'label' => 'File Lesson'),
+                                                            'link'  => array('icon' => 'bi-link-45deg', 'color' => '#f0fdf4', 'icon_color' => '#15803d', 'label' => 'Link Lesson'),
+                                                        );
+                                                        $lesson_icon_info = $lesson_icons[$lesson_type] ?? $lesson_icons['text'];
+                                                        ?>
+                                                        <div class="activity-icon me-3" style="width:40px;height:40px;border-radius:8px;background:<?= $lesson_icon_info['color'] ?>;display:flex;align-items:center;justify-content:center;color:<?= $lesson_icon_info['icon_color'] ?>;">
+                                                            <i class="bi <?= !$is_accessible_lesson ? 'bi-lock-fill' : $lesson_icon_info['icon'] ?>"></i>
                                                         </div>
                                                         <div>
                                                             <h6 class="mb-1"><?= $item->title ?></h6>
                                                             <small class="text-muted">
-                                                                <span class="badge bg-light text-dark border"><?= $is_video_lesson ? 'Video Lesson' : 'Lesson' ?></span>
+                                                                <span class="badge bg-light text-dark border"><?= $lesson_icon_info['label'] ?></span>
                                                                 <?php if ($is_completed_lesson): ?>
                                                                     <span class="ms-1 badge bg-success"><i class="bi bi-check2 me-1"></i>Completed</span>
                                                                 <?php elseif (!$is_accessible_lesson): ?>
@@ -368,6 +384,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                             <h6 class="mb-1"><?= $item->title ?></h6>
                                                             <small class="text-muted">
                                                                 <span class="badge bg-light text-dark border"><?= $icon_info['label'] ?></span>
+                                                                <?php if ($is_quiz_item): ?>
+                                                                    <span class="ms-1"><i class="bi bi-list-check"></i> <?= (int) ($item->question_count ?? 0) ?> Questions</span>
+                                                                <?php endif; ?>
                                                                 <?php if (!$item->is_published): ?>
                                                                     <span class="ms-1 badge bg-secondary">Hidden</span>
                                                                 <?php endif; ?>
@@ -390,6 +409,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                         <?php if ($item->item_type === 'lesson'): ?>
                                                             <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                             <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                        <?php elseif ($is_quiz_item): ?>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-ui-checks me-2"></i>Manage Questions</a></li>
+                                                            <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this assessment and all attempts?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                         <?php else: ?>
                                                             <li><a class="dropdown-item" href="#editActivity<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editActivity<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                             <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this activity?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
@@ -402,7 +424,11 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                         <?php if ($item->item_type === 'lesson' && $edit_mode): ?>
                                             <?php
                                             $lesson_video_url = course_lesson_video_url($item->content ?? '');
-                                            $lesson_editor_content = ($item->content_type === 'video') ? course_lesson_notes_content($item->content ?? '') : ($item->content ?? '');
+                                            $lesson_file_url = course_lesson_file_url($item->content ?? '');
+                                            if ($lesson_file_url === '' && !empty($item->file_path)) {
+                                                $lesson_file_url = $item->file_path;
+                                            }
+                                            $lesson_editor_content = in_array($item->content_type, array('video', 'file', 'link')) ? course_lesson_notes_content($item->content ?? '') : ($item->content ?? '');
                                             ?>
                                             <div class="collapse item-edit-panel" id="editLesson<?= $item->id ?>">
                                                 <form action="<?= site_url('course/edit_lesson/' . $item->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
@@ -422,6 +448,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                             <label class="form-label">Content Type</label>
                                                             <select class="form-select lesson-content-type" name="content_type">
                                                                 <option value="text" <?= $item->content_type == 'text' ? 'selected' : '' ?>>Text/HTML</option>
+                                                                <option value="page" <?= $item->content_type == 'page' ? 'selected' : '' ?>>Page</option>
                                                                 <option value="video" <?= $item->content_type == 'video' ? 'selected' : '' ?>>Video</option>
                                                                 <option value="file" <?= $item->content_type == 'file' ? 'selected' : '' ?>>File</option>
                                                                 <option value="link" <?= $item->content_type == 'link' ? 'selected' : '' ?>>External Link</option>
@@ -442,7 +469,14 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                             <div class="file-lesson-box" style="padding:1rem;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;">
                                                                 <label class="form-label">Upload PDF File</label>
                                                                 <input type="file" class="form-control lesson-file-upload" name="file_upload" accept=".pdf,application/pdf">
-                                                                <div class="form-text">Select a PDF file to upload.</div>
+                                                                <?php if (!empty($lesson_file_url)): ?>
+                                                                    <div class="mt-2">
+                                                                        <a href="<?= htmlspecialchars($lesson_file_url, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                                                            <i class="bi bi-file-earmark-pdf me-1"></i>Current PDF
+                                                                        </a>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                                <div class="form-text">Select a new PDF only if you want to replace the current file.</div>
                                                             </div>
                                                         </div>
                                                         <div class="col-12 lesson-link-fields">
@@ -474,7 +508,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                             </div>
                                         <?php endif; ?>
 
-                                        <?php if ($item->item_type === 'activity' && $edit_mode): ?>
+                                        <?php if ($item->item_type === 'activity' && empty($is_quiz_item) && $edit_mode): ?>
                                             <div class="collapse item-edit-panel" id="editActivity<?= $item->id ?>">
                                                 <form action="<?= site_url('course/edit_activity/' . $item->id) ?>" method="post" class="module-add-form">
                                                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -489,7 +523,6 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                             <label class="form-label">Type</label>
                                                             <select class="form-select" name="type">
                                                                 <option value="assignment" <?= $item->type == 'assignment' ? 'selected' : '' ?>>Assignment</option>
-                                                                <option value="quiz" <?= $item->type == 'quiz' ? 'selected' : '' ?>>Quiz</option>
                                                                 <option value="forum" <?= $item->type == 'forum' ? 'selected' : '' ?>>Forum</option>
                                                                 <option value="resource" <?= $item->type == 'resource' ? 'selected' : '' ?>>Resource</option>
                                                                 <option value="page" <?= $item->type == 'page' ? 'selected' : '' ?>>Page</option>
@@ -543,6 +576,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                 <label class="form-label">Content Type</label>
                                                 <select class="form-select lesson-content-type" name="content_type">
                                                     <option value="text">Text/HTML</option>
+                                                    <option value="page">Page</option>
                                                     <option value="video">Video</option>
                                                     <option value="file">File</option>
                                                     <option value="link">External Link</option>
@@ -594,8 +628,85 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                     </form>
                                 </div>
 
+                                <div class="collapse" id="addAssessment<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
+                                    <form action="<?= site_url('course/create_assessment/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h6 class="mb-1"><i class="bi bi-ui-checks me-2"></i>Add Assessment</h6>
+                                                <p class="text-muted mb-0 small">Upload a GIFT or Moodle XML question bank for "<?= htmlspecialchars($module->title, ENT_QUOTES, 'UTF-8') ?>".</p>
+                                            </div>
+                                            <a href="#addAssessment<?= $module->id ?>" class="btn-close" data-bs-toggle="collapse" role="button" aria-label="Close"></a>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Title</label>
+                                                <input type="text" class="form-control" name="title" required placeholder="e.g., Midterm Exam">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Type</label>
+                                                <select class="form-select" name="quiz_type">
+                                                    <option value="quiz">Quiz</option>
+                                                    <option value="exam">Exam</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Max Attempts</label>
+                                                <input type="number" class="form-control" name="max_attempts" min="1" value="1">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Time Limit</label>
+                                                <input type="number" class="form-control" name="time_limit_minutes" min="0" placeholder="Minutes">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Available From</label>
+                                                <input type="datetime-local" class="form-control" name="available_from">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Available Until</label>
+                                                <input type="datetime-local" class="form-control" name="available_until">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Description / Instructions</label>
+                                                <textarea class="form-control wysiwyg-content" name="description" rows="3" placeholder="Enter assessment instructions..."></textarea>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Question Format</label>
+                                                <select class="form-select" name="import_format">
+                                                    <option value="gift">GIFT</option>
+                                                    <option value="xml">Moodle XML</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <label class="form-label">Question File</label>
+                                                <input type="file" class="form-control" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml">
+                                                <div class="form-text">Supported question types: multiple choice, true/false, identification, and essay.</div>
+                                            </div>
+                                            <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="is_published" value="1" id="pubAssessment<?= $module->id ?>">
+                                                        <label class="form-check-label" for="pubAssessment<?= $module->id ?>">Publish immediately</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="shuffle_questions" value="1" id="shuffleAssessment<?= $module->id ?>">
+                                                        <label class="form-check-label" for="shuffleAssessment<?= $module->id ?>">Shuffle questions</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="show_results" value="1" id="showAssessmentResults<?= $module->id ?>" checked>
+                                                        <label class="form-check-label" for="showAssessmentResults<?= $module->id ?>">Show results</label>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <a href="#addAssessment<?= $module->id ?>" class="btn btn-secondary" data-bs-toggle="collapse" role="button">Cancel</a>
+                                                    <button type="submit" class="btn btn-primary">Add Assessment</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
                                 <div class="collapse" id="addActivity<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
-                                    <form action="<?= site_url('course/create_activity/' . $module->id) ?>" method="post" class="module-add-form">
+                                    <form action="<?= site_url('course/create_activity/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                             <div>
                                                 <h6 class="mb-1"><i class="bi bi-lightning me-2"></i>Add Activity</h6>
@@ -608,7 +719,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                 <label class="form-label">Activity Type</label>
                                                 <select class="form-select" name="type">
                                                     <option value="assignment">Assignment - Student submission task</option>
-                                                    <option value="quiz">Quiz - Assessment with questions</option>
+                                                    <option value="quiz">Quiz - Upload GIFT/XML questions</option>
                                                     <option value="forum">Forum - Discussion board</option>
                                                     <option value="resource">Resource - File or link</option>
                                                     <option value="page">Page - Standalone content</option>
@@ -622,6 +733,24 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                             <div class="col-12">
                                                 <label class="form-label activity-content-label">Description/Instructions</label>
                                                 <textarea class="form-control wysiwyg-content" name="content" rows="3" placeholder="Enter instructions or description..."></textarea>
+                                            </div>
+                                            <div class="col-12 activity-quiz-import-fields">
+                                                <div class="quiz-import-box">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label">Question Format</label>
+                                                            <select class="form-select" name="import_format">
+                                                                <option value="gift">GIFT</option>
+                                                                <option value="xml">Moodle XML</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-8">
+                                                            <label class="form-label">Question File</label>
+                                                            <input type="file" class="form-control" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml">
+                                                            <div class="form-text">Supported question types: multiple choice, true/false, identification, and essay.</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
                                                 <div class="form-check">
@@ -1604,7 +1733,8 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
     .lesson-video-fields,
     .lesson-file-fields,
-    .lesson-link-fields {
+    .lesson-link-fields,
+    .activity-quiz-import-fields {
         display: none;
     }
 
@@ -1614,6 +1744,17 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
     .lesson-form-is-file .lesson-file-fields {
         display: block;
+    }
+
+    .activity-form-is-quiz .activity-quiz-import-fields {
+        display: block;
+    }
+
+    .quiz-import-box {
+        padding: 1rem;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        background: #fffbeb;
     }
 
     .lesson-form-is-link .lesson-link-fields {
@@ -2219,6 +2360,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
             var videoUrlInput = form.querySelector('.lesson-video-url');
             var preview = form.querySelector('.video-url-preview');
             var contentLabel = form.querySelector('.lesson-content-label');
+            var contentField = form.querySelector('textarea[name="content"]');
             var fileUrlInput = form.querySelector('.lesson-file-url');
             var linkUrlInput = form.querySelector('.lesson-link-url');
             var contentFieldContainer = form.querySelector('.lesson-content-field');
@@ -2232,12 +2374,14 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                 var isVideo = contentType === 'video';
                 var isFile = contentType === 'file';
                 var isLink = contentType === 'link';
+                var isPage = contentType === 'page';
                 var isText = contentType === 'text';
 
-                form.classList.remove('lesson-form-is-video', 'lesson-form-is-file', 'lesson-form-is-link', 'lesson-form-is-text');
+                form.classList.remove('lesson-form-is-video', 'lesson-form-is-file', 'lesson-form-is-link', 'lesson-form-is-page', 'lesson-form-is-text');
                 if (isVideo) form.classList.add('lesson-form-is-video');
                 if (isFile) form.classList.add('lesson-form-is-file');
                 if (isLink) form.classList.add('lesson-form-is-link');
+                if (isPage) form.classList.add('lesson-form-is-page');
                 if (isText) form.classList.add('lesson-form-is-text');
 
                 if (contentLabel) {
@@ -2247,8 +2391,24 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         contentLabel.textContent = 'File Description';
                     } else if (isLink) {
                         contentLabel.textContent = 'Link Description';
+                    } else if (isPage) {
+                        contentLabel.textContent = 'Page Content';
                     } else {
                         contentLabel.textContent = 'Content';
+                    }
+                }
+
+                if (contentField) {
+                    if (isPage) {
+                        contentField.placeholder = 'Paste or write standalone page content...';
+                    } else if (isVideo) {
+                        contentField.placeholder = 'Enter video notes or transcript...';
+                    } else if (isFile) {
+                        contentField.placeholder = 'Enter file description...';
+                    } else if (isLink) {
+                        contentField.placeholder = 'Enter link description...';
+                    } else {
+                        contentField.placeholder = 'Enter lesson content...';
                     }
                 }
 
@@ -2277,6 +2437,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
             var typeSelect = form.querySelector('select[name="type"]');
             var contentLabel = form.querySelector('.activity-content-label');
             var contentField = form.querySelector('textarea[name="content"]');
+            var questionFile = form.querySelector('input[name="question_file"]');
 
             if (!typeSelect) {
                 return;
@@ -2284,6 +2445,12 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
             function refreshActivityFields() {
                 var activityType = typeSelect.value;
+                var isQuiz = activityType === 'quiz';
+
+                form.classList.toggle('activity-form-is-quiz', isQuiz);
+                if (questionFile) {
+                    questionFile.toggleAttribute('required', isQuiz);
+                }
 
                 if (contentLabel) {
                     var labels = {

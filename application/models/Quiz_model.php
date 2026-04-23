@@ -21,6 +21,13 @@ class Quiz_model extends CI_Model {
                         ->result();
     }
 
+    public function get_quiz_by_activity($activity_id)
+    {
+        return $this->db->where('component_id', $activity_id)
+                        ->get('quizzes')
+                        ->row();
+    }
+
     public function get_quiz($id)
     {
         return $this->db->where('id', $id)->get('quizzes')->row();
@@ -95,6 +102,32 @@ class Quiz_model extends CI_Model {
         return $this->db->where('quiz_id', $quiz_id)->count_all_results('quiz_questions');
     }
 
+    public function get_total_points($quiz_id)
+    {
+        $row = $this->db->select_sum('points')
+                        ->where('quiz_id', $quiz_id)
+                        ->get('quiz_questions')
+                        ->row();
+        return $row && $row->points ? (float) $row->points : 0;
+    }
+
+    public function recalculate_total_points($quiz_id)
+    {
+        $total_points = $this->get_total_points($quiz_id);
+        $this->update_quiz($quiz_id, array('total_points' => $total_points));
+        return $total_points;
+    }
+
+    public function get_questions_with_choices($quiz_id)
+    {
+        $questions = $this->get_questions($quiz_id);
+        foreach ($questions as &$question) {
+            $question->choices = $this->get_choices($question->id);
+        }
+        unset($question);
+        return $questions;
+    }
+
     public function get_next_question_order($quiz_id)
     {
         $row = $this->db->select_max('order_num')->where('quiz_id', $quiz_id)->get('quiz_questions')->row();
@@ -153,6 +186,14 @@ class Quiz_model extends CI_Model {
                         ->result();
     }
 
+    public function count_student_attempts($quiz_id, $student_id)
+    {
+        return $this->db->where('quiz_id', $quiz_id)
+                        ->where('student_id', $student_id)
+                        ->where_in('status', array('submitted', 'graded'))
+                        ->count_all_results('quiz_attempts');
+    }
+
     public function get_all_attempts($quiz_id)
     {
         return $this->db->select('quiz_attempts.*, CONCAT(u.first_name, " ", u.last_name) as student_name, u.email', FALSE)
@@ -194,6 +235,16 @@ class Quiz_model extends CI_Model {
         return $this->db->where('attempt_id', $attempt_id)
                         ->get('quiz_attempt_answers')
                         ->result();
+    }
+
+    public function get_attempt_answers_map($attempt_id)
+    {
+        $answers = $this->get_attempt_answers($attempt_id);
+        $answer_map = array();
+        foreach ($answers as $answer) {
+            $answer_map[(int) $answer->question_id] = $answer;
+        }
+        return $answer_map;
     }
 
     public function submit_attempt($attempt_id)

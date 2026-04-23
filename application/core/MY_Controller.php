@@ -149,13 +149,62 @@ class MY_Controller extends CI_Controller {
             show_error('Only teachers and course creators can switch to student mode.', 403);
         }
 
+        $referer = $this->input->server('HTTP_REFERER');
+
         if ($this->is_student_mode) {
+            $redirect_to = $this->get_student_mode_exit_redirect($referer);
             $this->session->set_userdata('student_mode', false);
         } else {
+            $redirect_to = $referer ?: 'dashboard';
             $this->session->set_userdata('student_mode', true);
         }
 
-        redirect($this->input->server('HTTP_REFERER') ?: 'dashboard');
+        redirect($redirect_to);
+    }
+
+    protected function get_student_mode_exit_redirect($referer)
+    {
+        if ($this->original_role_slug !== 'course_creator') {
+            return 'dashboard';
+        }
+
+        if (!$referer) {
+            return 'course';
+        }
+
+        $path = parse_url($referer, PHP_URL_PATH);
+        $relative = '';
+
+        if ($path && strpos($path, 'index.php/') !== false) {
+            $relative = substr($path, strpos($path, 'index.php/') + 10);
+        } elseif ($path) {
+            $base_path = trim(parse_url(base_url(), PHP_URL_PATH) ?: '', '/');
+            $relative = trim($path, '/');
+            if ($base_path && strpos($relative, $base_path . '/') === 0) {
+                $relative = substr($relative, strlen($base_path) + 1);
+            }
+        }
+
+        $relative = trim($relative, '/');
+        $segments = $relative ? explode('/', $relative) : array();
+
+        if (!empty($segments) && $segments[0] === 'student') {
+            if (($segments[1] ?? '') === 'content' && !empty($segments[2])) {
+                return 'course/content/' . (int) $segments[2] . '?edit=1';
+            }
+
+            if (($segments[1] ?? '') === 'lesson' && !empty($segments[3])) {
+                return 'course/lesson/' . (int) $segments[3];
+            }
+
+            if (($segments[1] ?? '') === 'enroll' && !empty($segments[2])) {
+                return 'course/content/' . (int) $segments[2] . '?edit=1';
+            }
+
+            return 'course';
+        }
+
+        return $referer;
     }
 }
 

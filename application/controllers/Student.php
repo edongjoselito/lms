@@ -9,6 +9,7 @@ class Student extends MY_Controller {
         $this->require_login();
         $this->load->model('Student_model');
         $this->load->model('Lesson_model');
+        $this->load->model('Quiz_model');
     }
 
     private function get_or_create_student($user_id)
@@ -237,6 +238,22 @@ class Student extends MY_Controller {
         
         foreach ($modules as $key => &$module) {
             $module->lessons = $this->Student_model->get_lessons($module->id);
+            $module->activities = $this->Student_model->get_activities($module->id);
+            foreach ($module->activities as $activity_key => &$activity) {
+                if ($activity->type !== 'quiz') {
+                    continue;
+                }
+
+                $activity->quiz = $this->Quiz_model->get_quiz_by_activity($activity->id);
+                if (!$activity->quiz || empty($activity->quiz->is_published)) {
+                    unset($module->activities[$activity_key]);
+                    continue;
+                }
+
+                $activity->question_count = $this->Quiz_model->count_questions($activity->quiz->id);
+            }
+            unset($activity);
+            $module->activities = array_values($module->activities);
         }
         unset($module);
         
@@ -409,9 +426,7 @@ class Student extends MY_Controller {
 
     private function require_student()
     {
-        $role_slug = $this->session->userdata('role_slug');
-        
-        if ($role_slug !== 'student') {
+        if ($this->role_slug !== 'student') {
             show_error('Student access required. You do not have permission to access this page.', 403);
             return;
         }

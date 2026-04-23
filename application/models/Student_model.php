@@ -82,6 +82,15 @@ class Student_model extends CI_Model {
                         ->result();
     }
 
+    public function get_activities($module_id)
+    {
+        return $this->db->where('module_id', $module_id)
+                        ->where('is_published', 1)
+                        ->order_by('order_num', 'ASC')
+                        ->get('activities')
+                        ->result();
+    }
+
     public function get_ordered_lessons_by_subject($subject_id)
     {
         return $this->db->select('l.*, m.title as module_title, m.subject_id')

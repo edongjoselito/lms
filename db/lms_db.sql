@@ -474,7 +474,7 @@ CREATE TABLE `lessons` (
   `module_id` int UNSIGNED NOT NULL,
   `title` varchar(255) NOT NULL,
   `content` longtext,
-  `content_type` enum('text','file','video','link') NOT NULL DEFAULT 'text',
+  `content_type` enum('text','page','file','video','link') NOT NULL DEFAULT 'text',
   `file_path` varchar(500) DEFAULT NULL,
   `external_url` varchar(500) DEFAULT NULL,
   `attachment_path` varchar(500) DEFAULT NULL,

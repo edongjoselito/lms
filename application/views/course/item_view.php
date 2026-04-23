@@ -1,8 +1,29 @@
 <?php
+if (!function_exists('course_item_asset_url')) {
+    function course_item_asset_url($url)
+    {
+        $url = trim((string) $url);
+        if ($url === '') return '';
+        if (preg_match('#^https?://#i', $url) || strpos($url, '/') === 0) return $url;
+        return base_url($url);
+    }
+}
+
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
 $is_lesson = $item_type === 'lesson';
-$is_video_lesson = $is_lesson && !empty($item->content_type) && $item->content_type === 'video';
+$lesson_content_type = $is_lesson && !empty($item->content_type) ? $item->content_type : 'text';
+$is_video_lesson = $is_lesson && $lesson_content_type === 'video';
+$is_file_lesson = $is_lesson && !empty($item->content_type) && $item->content_type === 'file';
+$lesson_file_url = $is_file_lesson && !empty($item->file_path) ? course_item_asset_url($item->file_path) : '';
+$content_has_file_embed = $is_file_lesson && strpos((string) ($item->content ?? ''), 'lesson-file-embed') !== false;
+$lesson_icons = array(
+    'text'  => array('icon' => 'bi-file-text', 'color' => '#dbeafe', 'icon_color' => '#1e40af', 'label' => 'Lesson'),
+    'page'  => array('icon' => 'bi-file-earmark-text', 'color' => '#f3f4f6', 'icon_color' => '#374151', 'label' => 'Page'),
+    'video' => array('icon' => 'bi-play-btn', 'color' => '#fee2e2', 'icon_color' => '#b91c1c', 'label' => 'Video Lesson'),
+    'file'  => array('icon' => 'bi-file-earmark-pdf', 'color' => '#eff6ff', 'icon_color' => '#1d4ed8', 'label' => 'File Lesson'),
+    'link'  => array('icon' => 'bi-link-45deg', 'color' => '#f0fdf4', 'icon_color' => '#15803d', 'label' => 'Link Lesson'),
+);
 $activity_icons = array(
     'assignment' => array('icon' => 'bi-clipboard-check', 'color' => '#dcfce7', 'icon_color' => '#166534', 'label' => 'Assignment'),
     'quiz' => array('icon' => 'bi-question-circle', 'color' => '#fef3c7', 'icon_color' => '#92400e', 'label' => 'Quiz'),
@@ -12,9 +33,7 @@ $activity_icons = array(
     'label' => array('icon' => 'bi-tag', 'color' => '#fce7f3', 'icon_color' => '#be185d', 'label' => 'Label'),
 );
 $icon_info = $is_lesson
-    ? ($is_video_lesson
-        ? array('icon' => 'bi-play-btn', 'color' => '#fee2e2', 'icon_color' => '#b91c1c', 'label' => 'Video Lesson')
-        : array('icon' => 'bi-file-text', 'color' => '#dbeafe', 'icon_color' => '#1e40af', 'label' => 'Lesson'))
+    ? ($lesson_icons[$lesson_content_type] ?? $lesson_icons['text'])
     : ($activity_icons[$item->type] ?? $activity_icons['page']);
 $previous_item = $navigation['previous'] ?? null;
 $next_item = $navigation['next'] ?? null;
@@ -94,10 +113,25 @@ $is_next_accessible = empty($next_item) || empty($is_student_mode) || !isset($ne
                     <?php endif; ?>
                 </div>
 
+                <?php if ($is_file_lesson && !empty($lesson_file_url) && !$content_has_file_embed): ?>
+                    <div class="lesson-file-embed mb-4" data-file-url="<?= htmlspecialchars($lesson_file_url, ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="lesson-file-toolbar mb-2">
+                            <a href="<?= htmlspecialchars($lesson_file_url, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener" class="btn btn-outline-primary">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Open PDF
+                            </a>
+                        </div>
+                        <div class="ratio ratio-4x3 lesson-file-preview">
+                            <iframe src="<?= htmlspecialchars($lesson_file_url, ENT_QUOTES, 'UTF-8') ?>" title="PDF preview" loading="lazy"></iframe>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <?php if (!empty($item->content)): ?>
                     <div class="item-view-content">
                         <?= $item->content ?>
                     </div>
+                <?php elseif ($is_file_lesson && !empty($lesson_file_url)): ?>
+                    <div class="text-muted small">Use the PDF preview above or open the file in a new tab.</div>
                 <?php else: ?>
                     <div class="text-center py-5" style="color:#94a3b8;">
                         <i class="bi bi-file-earmark-text" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
@@ -201,6 +235,14 @@ $is_next_accessible = empty($next_item) || empty($is_student_mode) || !isset($ne
 }
 .item-view-content .lesson-video-embed {
     margin-bottom: 1.5rem;
+}
+.lesson-file-preview iframe,
+.item-view-content .lesson-file-preview iframe {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
 }
 .item-view-content .lesson-video-embed iframe {
     width: 100%;
