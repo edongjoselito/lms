@@ -86,7 +86,6 @@ foreach ($subjects as $subject) {
                         <th>Description</th>
                         <th>Program/Grade Level</th>
                         <th>Semester</th>
-                        <th>Units</th>
                         <th>Lessons</th>
                         <th>Actions</th>
                     </tr>
@@ -111,7 +110,6 @@ foreach ($subjects as $subject) {
                             <td><?= htmlspecialchars($subject->description) ?></td>
                             <td><?= $scope_label ?></td>
                             <td><?= $semester_label ?></td>
-                            <td><?= $subject->units ?: 0 ?></td>
                             <td>
                                 <?php if ($has_lessons): ?>
                                     <span class="lesson-count"><?= $lesson_count ?></span>
