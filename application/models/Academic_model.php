@@ -1,8 +1,9 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 #[\AllowDynamicProperties]
-class Academic_model extends CI_Model {
+class Academic_model extends CI_Model
+{
 
     // ---- School Years ----
     public function get_school_years($school_id = null)
@@ -87,18 +88,18 @@ class Academic_model extends CI_Model {
             $this->db->where('track_id', $track_id);
         }
         return $this->db->select('shs_strands.*, shs_tracks.name as track_name')
-                        ->join('shs_tracks', 'shs_tracks.id = shs_strands.track_id')
-                        ->get('shs_strands')
-                        ->result();
+            ->join('shs_tracks', 'shs_tracks.id = shs_strands.track_id')
+            ->get('shs_strands')
+            ->result();
     }
 
     public function get_strand($id)
     {
         return $this->db->select('shs_strands.*, shs_tracks.name as track_name')
-                        ->join('shs_tracks', 'shs_tracks.id = shs_strands.track_id')
-                        ->where('shs_strands.id', $id)
-                        ->get('shs_strands')
-                        ->row();
+            ->join('shs_tracks', 'shs_tracks.id = shs_strands.track_id')
+            ->where('shs_strands.id', $id)
+            ->get('shs_strands')
+            ->row();
     }
 
     // ---- Programs (CHED) ----
@@ -260,6 +261,11 @@ class Academic_model extends CI_Model {
 
     public function delete_subject($id)
     {
+        // Check if subject is referenced in class_programs
+        $count = $this->db->where('subject_id', $id)->count_all_results('class_programs');
+        if ($count > 0) {
+            return false; // Cannot delete - has related class programs
+        }
         return $this->db->where('id', $id)->delete('subjects');
     }
 
@@ -296,11 +302,11 @@ class Academic_model extends CI_Model {
     public function get_section($id)
     {
         return $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code')
-                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
-                        ->join('programs', 'programs.id = sections.program_id', 'left')
-                        ->where('sections.id', $id)
-                        ->get('sections')
-                        ->row();
+            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+            ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->where('sections.id', $id)
+            ->get('sections')
+            ->row();
     }
 
     public function create_section($data)
@@ -331,60 +337,60 @@ class Academic_model extends CI_Model {
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, CONCAT(u.first_name, " ", u.last_name) as teacher_name, semesters.name as semester_name', FALSE)
-                        ->join('subjects', 'subjects.id = class_programs.subject_id')
-                        ->join('teachers', 'teachers.id = class_programs.teacher_id', 'left')
-                        ->join('users u', 'u.id = teachers.user_id', 'left')
-                        ->join('semesters', 'semesters.id = class_programs.semester_id', 'left')
-                        ->where('class_programs.section_id', $section_id)
-                        ->get('class_programs')
-                        ->result();
+            ->join('subjects', 'subjects.id = class_programs.subject_id')
+            ->join('teachers', 'teachers.id = class_programs.teacher_id', 'left')
+            ->join('users u', 'u.id = teachers.user_id', 'left')
+            ->join('semesters', 'semesters.id = class_programs.semester_id', 'left')
+            ->where('class_programs.section_id', $section_id)
+            ->get('class_programs')
+            ->result();
     }
 
     public function get_class_program($id)
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, sections.system_type')
-                        ->join('subjects', 'subjects.id = class_programs.subject_id')
-                        ->join('sections', 'sections.id = class_programs.section_id')
-                        ->where('class_programs.id', $id)
-                        ->get('class_programs')
-                        ->row();
+            ->join('subjects', 'subjects.id = class_programs.subject_id')
+            ->join('sections', 'sections.id = class_programs.section_id')
+            ->where('class_programs.id', $id)
+            ->get('class_programs')
+            ->row();
     }
 
     public function get_class_program_by_subject_section($subject_id, $section_id)
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->where('subject_id', $subject_id)
-                        ->where('section_id', $section_id)
-                        ->get('class_programs')
-                        ->row();
+            ->where('section_id', $section_id)
+            ->get('class_programs')
+            ->row();
     }
 
     public function get_subject_sections($subject_id)
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
-                        ->join('sections', 'sections.id = class_programs.section_id')
-                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
-                        ->join('programs', 'programs.id = sections.program_id', 'left')
-                        ->where('class_programs.subject_id', $subject_id)
-                        ->where('class_programs.status', 1)
-                        ->order_by('sections.name', 'ASC')
-                        ->get('class_programs')
-                        ->result();
+            ->join('sections', 'sections.id = class_programs.section_id')
+            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+            ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->where('class_programs.subject_id', $subject_id)
+            ->where('class_programs.status', 1)
+            ->order_by('sections.name', 'ASC')
+            ->get('class_programs')
+            ->result();
     }
 
     public function get_subject_section($section_id)
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
-                        ->join('sections', 'sections.id = class_programs.section_id')
-                        ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
-                        ->join('programs', 'programs.id = sections.program_id', 'left')
-                        ->where('class_programs.id', $section_id)
-                        ->where('class_programs.status', 1)
-                        ->get('class_programs')
-                        ->row();
+            ->join('sections', 'sections.id = class_programs.section_id')
+            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
+            ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->where('class_programs.id', $section_id)
+            ->where('class_programs.status', 1)
+            ->get('class_programs')
+            ->row();
     }
 
     public function get_section_students($section_id)
@@ -395,13 +401,13 @@ class Academic_model extends CI_Model {
         }
 
         $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, course_enrollments.enrolled_at as enrolled_date, course_enrollments.user_id', FALSE)
-                        ->join('course_enrollments', 'course_enrollments.course_id = class_programs.subject_id')
-                        ->join('students', 'students.user_id = course_enrollments.user_id')
-                        ->join('users', 'users.id = students.user_id')
-                        ->where('class_programs.id', $section_id)
-                        ->where('course_enrollments.status', 'active')
-                        ->get('class_programs')
-                        ->result();
+            ->join('course_enrollments', 'course_enrollments.course_id = class_programs.subject_id')
+            ->join('students', 'students.user_id = course_enrollments.user_id')
+            ->join('users', 'users.id = students.user_id')
+            ->where('class_programs.id', $section_id)
+            ->where('course_enrollments.status', 'active')
+            ->get('class_programs')
+            ->result();
 
         // Calculate progress for each student
         foreach ($students as $student) {
@@ -409,61 +415,61 @@ class Academic_model extends CI_Model {
 
             // Get total lessons (published only)
             $total_lessons = $this->db->select('COUNT(l.id) as count')
-                                    ->from('lessons l')
-                                    ->join('modules m', 'm.id = l.module_id')
-                                    ->where('m.subject_id', $section->subject_id)
-                                    ->where('l.is_published', 1)
-                                    ->where('m.is_published', 1)
-                                    ->get()
-                                    ->row()->count;
+                ->from('lessons l')
+                ->join('modules m', 'm.id = l.module_id')
+                ->where('m.subject_id', $section->subject_id)
+                ->where('l.is_published', 1)
+                ->where('m.is_published', 1)
+                ->get()
+                ->row()->count;
 
             // Get completed lessons (published only)
             $completed_lessons = $this->db->select('COUNT(lc.lesson_id) as count')
-                                            ->from('lesson_completions lc')
-                                            ->join('lessons l', 'l.id = lc.lesson_id')
-                                            ->join('modules m', 'm.id = l.module_id')
-                                            ->where('lc.student_id', $student_id)
-                                            ->where('m.subject_id', $section->subject_id)
-                                            ->where('l.is_published', 1)
-                                            ->where('m.is_published', 1)
-                                            ->get()
-                                            ->row()->count;
+                ->from('lesson_completions lc')
+                ->join('lessons l', 'l.id = lc.lesson_id')
+                ->join('modules m', 'm.id = l.module_id')
+                ->where('lc.student_id', $student_id)
+                ->where('m.subject_id', $section->subject_id)
+                ->where('l.is_published', 1)
+                ->where('m.is_published', 1)
+                ->get()
+                ->row()->count;
 
             $student->progress_percent = $total_lessons > 0 ? round(($completed_lessons / $total_lessons) * 100) : 0;
 
             // Get completed lesson details
             $student->completed_lessons = $this->db->select('l.title, m.title as module_title')
-                                                    ->from('lesson_completions lc')
-                                                    ->join('lessons l', 'l.id = lc.lesson_id')
-                                                    ->join('modules m', 'm.id = l.module_id')
-                                                    ->where('lc.student_id', $student_id)
-                                                    ->where('m.subject_id', $section->subject_id)
-                                                    ->where('l.is_published', 1)
-                                                    ->where('m.is_published', 1)
-                                                    ->order_by('m.order_num, l.order_num')
-                                                    ->get()
-                                                    ->result();
+                ->from('lesson_completions lc')
+                ->join('lessons l', 'l.id = lc.lesson_id')
+                ->join('modules m', 'm.id = l.module_id')
+                ->where('lc.student_id', $student_id)
+                ->where('m.subject_id', $section->subject_id)
+                ->where('l.is_published', 1)
+                ->where('m.is_published', 1)
+                ->order_by('m.order_num, l.order_num')
+                ->get()
+                ->result();
 
             // Get all lessons for the subject
             $student->all_lessons = $this->db->select('l.title, l.id, m.title as module_title, m.id as module_id')
-                                            ->from('lessons l')
-                                            ->join('modules m', 'm.id = l.module_id')
-                                            ->where('m.subject_id', $section->subject_id)
-                                            ->where('l.is_published', 1)
-                                            ->where('m.is_published', 1)
-                                            ->order_by('m.order_num, l.order_num')
-                                            ->get()
-                                            ->result();
+                ->from('lessons l')
+                ->join('modules m', 'm.id = l.module_id')
+                ->where('m.subject_id', $section->subject_id)
+                ->where('l.is_published', 1)
+                ->where('m.is_published', 1)
+                ->order_by('m.order_num, l.order_num')
+                ->get()
+                ->result();
 
             // Get last course access time from activity_logs
             $last_access = $this->db->select('created_at')
-                                    ->where('user_id', $student->user_id)
-                                    ->where('action', 'view_course')
-                                    ->where('module', 'student')
-                                    ->order_by('created_at', 'DESC')
-                                    ->limit(1)
-                                    ->get('activity_logs')
-                                    ->row();
+                ->where('user_id', $student->user_id)
+                ->where('action', 'view_course')
+                ->where('module', 'student')
+                ->order_by('created_at', 'DESC')
+                ->limit(1)
+                ->get('activity_logs')
+                ->row();
 
             $student->last_access = $last_access ? $last_access->created_at : null;
 
@@ -501,10 +507,10 @@ class Academic_model extends CI_Model {
     {
         $this->ensure_class_program_enrollment_key_column();
         return $this->db->where('subject_id', $subject_id)
-                        ->where('enrollment_key IS NOT NULL', null, false)
-                        ->where('enrollment_key !=', '')
-                        ->where('status', 1)
-                        ->count_all_results('class_programs') > 0;
+            ->where('enrollment_key IS NOT NULL', null, false)
+            ->where('enrollment_key !=', '')
+            ->where('status', 1)
+            ->count_all_results('class_programs') > 0;
     }
 
     public function validate_subject_enrollment_key($subject_id, $enrollment_key)
@@ -516,12 +522,12 @@ class Academic_model extends CI_Model {
         }
 
         return $this->db->select('class_programs.*, sections.name as section_name')
-                        ->join('sections', 'sections.id = class_programs.section_id')
-                        ->where('class_programs.subject_id', $subject_id)
-                        ->where('class_programs.enrollment_key', $key)
-                        ->where('class_programs.status', 1)
-                        ->get('class_programs')
-                        ->row();
+            ->join('sections', 'sections.id = class_programs.section_id')
+            ->where('class_programs.subject_id', $subject_id)
+            ->where('class_programs.enrollment_key', $key)
+            ->where('class_programs.status', 1)
+            ->get('class_programs')
+            ->row();
     }
 
     public function save_subject_section($subject_id, $section_id, $enrollment_key = null)
@@ -553,12 +559,12 @@ class Academic_model extends CI_Model {
         if (!$section) {
             $school_year = $this->db->where('is_active', 1)->where('school_id', $this->session->userdata('school_id'))->get('school_years')->row();
             $school_year_id = $school_year ? $school_year->id : null;
-            
+
             $section_data = array(
                 'name'          => $section_name,
                 'school_id'     => $this->session->userdata('school_id'),
                 'system_type'   => 'custom',
-                'school_year_id'=> $school_year_id,
+                'school_year_id' => $school_year_id,
             );
             $this->db->insert('sections', $section_data);
             $section_id = $this->db->insert_id();
@@ -572,21 +578,21 @@ class Academic_model extends CI_Model {
     public function remove_subject_section($class_program_id, $subject_id)
     {
         return $this->db->where('id', $class_program_id)
-                        ->where('subject_id', $subject_id)
-                        ->delete('class_programs');
+            ->where('subject_id', $subject_id)
+            ->delete('class_programs');
     }
 
     public function update_subject_section($class_program_id, $subject_id, $section_name, $enrollment_key = null)
     {
         $this->ensure_class_program_enrollment_key_column();
-        
+
         $class_program = $this->db->where('id', $class_program_id)->where('subject_id', $subject_id)->get('class_programs')->row();
         if (!$class_program) {
             return false;
         }
 
         $key = trim((string) $enrollment_key);
-        
+
         // Always update the section name
         $this->db->where('id', $class_program->section_id)->update('sections', array('name' => $section_name));
 
@@ -610,7 +616,7 @@ class Academic_model extends CI_Model {
         if (!$student) {
             return array();
         }
-        
+
         // For now, return empty array - enrollment tracking needs proper table structure
         return array();
     }
@@ -621,14 +627,14 @@ class Academic_model extends CI_Model {
         if (!$student) {
             return array();
         }
-        
+
         // Get all subjects for the student's school
         $this->db->select('subjects.*, class_programs.enrollment_key as requires_key', FALSE);
         $this->db->from('class_programs');
         $this->db->join('subjects', 'subjects.id = class_programs.subject_id');
         $this->db->where('class_programs.status', 1);
         $this->db->where('subjects.school_id', $student->school_id);
-        
+
         return $this->db->get()->result();
     }
 
@@ -638,18 +644,18 @@ class Academic_model extends CI_Model {
         if (!$student) {
             return array();
         }
-        
+
         // Query subjects directly from subjects table
         $this->db->select('subjects.*', FALSE);
         $this->db->from('subjects');
         $this->db->where('subjects.school_id', $student->school_id);
-        
+
         if (!empty($filters['system_type'])) {
             $this->db->where('subjects.system_type', $filters['system_type']);
         }
-        
+
         $subjects = $this->db->get()->result();
-        
+
         // Group by program (using program_code if available, otherwise 'General')
         $grouped = array();
         foreach ($subjects as $subject) {
@@ -663,42 +669,42 @@ class Academic_model extends CI_Model {
             }
             $grouped[$program_key]['subjects'][] = $subject;
         }
-        
+
         return $grouped;
     }
 
     public function validate_enrollment_key($subject_id, $enrollment_key, $student_id)
     {
         $this->ensure_class_program_enrollment_key_column();
-        
+
         $student = $this->db->where('id', $student_id)->get('students')->row();
         if (!$student) {
             return false;
         }
-        
+
         // Validate enrollment key - get any class_program for this subject
         $class_program = $this->db->where('subject_id', $subject_id)
-                                  ->where('status', 1)
-                                  ->get('class_programs')
-                                  ->row();
-        
+            ->where('status', 1)
+            ->get('class_programs')
+            ->row();
+
         if (!$class_program) {
             return false;
         }
-        
+
         $stored_key = trim((string) $class_program->enrollment_key);
         $provided_key = trim((string) $enrollment_key);
-        
+
         // If no key is set, allow enrollment
         if ($stored_key === '') {
             return true;
         }
-        
+
         // Validate key
         if ($stored_key === $provided_key) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -733,10 +739,10 @@ class Academic_model extends CI_Model {
     public function get_teachers()
     {
         return $this->db->select('teachers.*, users.first_name, users.last_name, users.email')
-                        ->join('users', 'users.id = teachers.user_id')
-                        ->where('users.status', 1)
-                        ->get('teachers')
-                        ->result();
+            ->join('users', 'users.id = teachers.user_id')
+            ->where('users.status', 1)
+            ->get('teachers')
+            ->result();
     }
 
     public function get_teacher_by_user($user_id)
