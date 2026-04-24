@@ -259,14 +259,79 @@ class Academic_model extends CI_Model
         return $this->db->where('id', $id)->update('subjects', $data);
     }
 
-    public function delete_subject($id)
+    public function delete_subject($id, $school_id = null, $force = false)
     {
         // Check if subject is referenced in class_programs
-        $count = $this->db->where('subject_id', $id)->count_all_results('class_programs');
-        if ($count > 0) {
-            return false; // Cannot delete - has related class programs
+        // If school_id provided, only check that school's class programs
+        // If force is true, skip the check (for school admins)
+        if (!$force) {
+            if ($school_id) {
+                $this->db->select('cp.id');
+                $this->db->join('sections sec', 'sec.id = cp.section_id');
+                $this->db->where('cp.subject_id', $id);
+                $this->db->where('sec.school_id', $school_id);
+                $count = $this->db->count_all_results('class_programs cp');
+            } else {
+                $count = $this->db->where('subject_id', $id)->count_all_results('class_programs');
+            }
+
+            if ($count > 0) {
+                return false; // Cannot delete - has related class programs
+            }
         }
-        return $this->db->where('id', $id)->delete('subjects');
+
+        if ($force) {
+            $class_program_ids = array();
+
+            if ($school_id) {
+                $rows = $this->db->select('cp.id')
+                    ->from('class_programs cp')
+                    ->join('sections sec', 'sec.id = cp.section_id')
+                    ->where('cp.subject_id', $id)
+                    ->where('sec.school_id', $school_id)
+                    ->get()
+                    ->result();
+
+                foreach ($rows as $row) {
+                    $class_program_ids[] = (int) $row->id;
+                }
+            } else {
+                $rows = $this->db->select('id')
+                    ->where('subject_id', $id)
+                    ->get('class_programs')
+                    ->result();
+
+                foreach ($rows as $row) {
+                    $class_program_ids[] = (int) $row->id;
+                }
+            }
+
+            $this->db->trans_start();
+
+            // Remove subject-level records that do not have FK cascade back to subjects.
+            $this->db->where('course_id', $id)->delete('course_enrollments');
+            $this->db->where('course_id', $id)->delete('quizzes');
+            $this->db->where('subject_id', $id)->delete('modules');
+
+            if (!empty($class_program_ids)) {
+                $this->db->where_in('id', $class_program_ids)->delete('class_programs');
+            }
+
+            $this->db->where('id', $id);
+            if ($school_id) {
+                $this->db->where('school_id', $school_id);
+            }
+            $this->db->delete('subjects');
+
+            $this->db->trans_complete();
+            return $this->db->trans_status();
+        }
+
+        $this->db->where('id', $id);
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        return $this->db->delete('subjects');
     }
 
     // ---- Learning Areas ----

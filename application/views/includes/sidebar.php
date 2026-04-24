@@ -37,13 +37,13 @@ if ($rs === 'student') {
 
 
     <?php if ($session_role_slug === 'super_admin' && $selected_school_id && !$is_school_select_page): ?>
-        <div class="px-3 pb-2 d-grid gap-2">
-            <a href="<?= site_url('schools/select') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:rgba(13,148,136,0.1);border-radius:10px;font-size:0.78rem;color:#0d9488;text-decoration:none;font-weight:600;">
-                <i class="bi bi-arrow-left-right"></i>
+        <div class="px-3 pb-2 d-grid gap-1">
+            <a href="<?= site_url('schools/select') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:#f1f5f9;border-radius:8px;font-size:0.78rem;color:#1e293b;text-decoration:none;font-weight:500;letter-spacing:-0.005em;">
+                <i class="bi bi-arrow-left-right" style="font-size:0.95rem;color:#64748b;"></i>
                 <span>Switch School</span>
             </a>
-            <a href="<?= site_url('schools/switch_to_platform') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:#f8fafc;border-radius:10px;font-size:0.78rem;color:#475569;text-decoration:none;font-weight:600;">
-                <i class="bi bi-building"></i>
+            <a href="<?= site_url('schools/switch_to_platform') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:transparent;border-radius:8px;font-size:0.78rem;color:#64748b;text-decoration:none;font-weight:500;letter-spacing:-0.005em;">
+                <i class="bi bi-building" style="font-size:0.95rem;color:#94a3b8;"></i>
                 <span>Platform View</span>
             </a>
         </div>
@@ -150,8 +150,8 @@ if ($rs === 'student') {
         <?php endif; ?>
         <?php if (isset($original_role_slug) && in_array($original_role_slug, array('teacher', 'course_creator'))): ?>
             <?php if (isset($is_student_mode) && $is_student_mode): ?>
-                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#b45309;">
-                    <i class="bi bi-person-badge-fill"></i>
+                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#d97706;">
+                    <i class="bi bi-person-badge-fill" style="color:#d97706;"></i>
                     <span>Exit Student Mode</span>
                 </a>
             <?php else: ?>

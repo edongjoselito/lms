@@ -175,7 +175,7 @@
         gap: 6px;
         font-size: .875rem;
         font-weight: 600;
-        color: #3b67e8;
+        color: #3b82f6;
         text-decoration: none;
         padding: 6px 12px 6px 8px;
         border-radius: 8px;
@@ -183,8 +183,8 @@
     }
 
     .cp-back-link:hover {
-        background: #eff4ff;
-        color: #2752c9;
+        background: #eff6ff;
+        color: #2563eb;
     }
 
     .cp-back-icon {
@@ -194,8 +194,8 @@
         width: 26px;
         height: 26px;
         border-radius: 6px;
-        background: #e8effd;
-        color: #3b67e8;
+        background: #dbeafe;
+        color: #3b82f6;
         flex-shrink: 0;
     }
 
@@ -226,15 +226,15 @@
         height: 46px;
         flex-shrink: 0;
         border-radius: 12px;
-        background: #dde9ff;
-        color: #3b67e8;
-        border: 1px solid #c0d3ff;
+        background: #dbeafe;
+        color: #3b82f6;
+        border: 1px solid #bfdbfe;
     }
 
     .cp-card-title {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #1e293b;
         margin: 0 0 2px;
     }
 
@@ -302,8 +302,8 @@
 
     .cp-input:focus {
         background: #fff;
-        border-color: #3b67e8;
-        box-shadow: 0 0 0 3px rgba(59, 103, 232, .1);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
     }
 
     .cp-input::placeholder {
@@ -409,14 +409,14 @@
     }
 
     .cp-btn--primary {
-        background: #3b67e8;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
     }
 
     .cp-btn--primary:hover {
-        background: #2752c9;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 103, 232, .3);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, .3);
         color: #fff;
     }
 

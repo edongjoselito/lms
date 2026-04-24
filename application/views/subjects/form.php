@@ -80,20 +80,20 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        color: #0071e3;
+        color: #3b82f6;
         text-decoration: none;
         font-size: 0.875rem;
         font-weight: 500;
         margin-bottom: 1.5rem;
         padding: 8px 14px 8px 10px;
         border-radius: 10px;
-        background: rgba(0, 113, 227, 0.06);
+        background: rgba(59, 130, 246, 0.08);
         transition: all 0.2s ease;
     }
 
     .sf-back:hover {
-        background: rgba(0, 113, 227, 0.12);
-        color: #0077ed;
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
     }
 
     .sf-title {
@@ -176,8 +176,8 @@
     .sf-input:focus,
     .sf-select:focus {
         outline: none;
-        border-color: #0071e3;
-        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
 
     .sf-input::placeholder {
@@ -218,14 +218,14 @@
     }
 
     .sf-btn--primary {
-        background: #0071e3;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
     }
 
     .sf-btn--primary:hover {
-        background: #0077ed;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
     .sf-btn--secondary {

@@ -68,9 +68,9 @@ class Dashboard extends MY_Controller
         $data['school_type'] = $school_type;
         $data['total_users'] = $this->User_model->count_by_school($this->school_id);
         $data['total_teachers'] = $this->User_model->count_by_role('teacher', $this->school_id);
-        $data['total_subjects'] = count($this->Academic_model->get_subjects());
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
+        $data['total_subjects'] = count($this->Academic_model->get_subjects(array('school_id' => $this->school_id)));
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $data['is_platform_view'] = false;
 
         $this->render('dashboard/index', $data);

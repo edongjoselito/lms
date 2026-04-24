@@ -221,13 +221,13 @@ foreach ($subjects as $subject) {
 
     .sl-select:focus {
         outline: none;
-        border-color: #0071e3;
-        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
 
     .sl-btn-filter {
         padding: 0.5rem 1rem;
-        background: #1d1d1f;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -238,14 +238,14 @@ foreach ($subjects as $subject) {
     }
 
     .sl-btn-filter:hover {
-        background: #000;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
     }
 
     .sl-btn-reset {
         padding: 0.5rem 1rem;
-        background: #f5f5f7;
-        color: #1d1d1f;
-        border: 1px solid #d2d2d7;
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
         border-radius: 10px;
         font-size: 0.875rem;
         font-weight: 500;
@@ -255,7 +255,7 @@ foreach ($subjects as $subject) {
 
     .sl-btn-reset:hover {
         background: #fff;
-        border-color: #86868b;
+        border-color: #cbd5e1;
     }
 
     /* Stats */
@@ -278,7 +278,7 @@ foreach ($subjects as $subject) {
     .sl-stat-value {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #1d1d1f;
+        color: #1e293b;
         line-height: 1;
         margin-bottom: 0.25rem;
     }
@@ -337,8 +337,8 @@ foreach ($subjects as $subject) {
     .sl-code {
         display: inline-block;
         padding: 0.375rem 0.625rem;
-        background: #e8f4fd;
-        color: #0071e3;
+        background: #dbeafe;
+        color: #3b82f6;
         border-radius: 8px;
         font-size: 0.75rem;
         font-weight: 600;
@@ -387,8 +387,8 @@ foreach ($subjects as $subject) {
     }
 
     .sl-icon-btn:hover {
-        background: rgba(0, 0, 0, 0.06);
-        color: #1d1d1f;
+        background: #f1f5f9;
+        color: #1e293b;
     }
 
     .sl-icon-btn--danger {
@@ -427,7 +427,7 @@ foreach ($subjects as $subject) {
 
     .sl-empty h3 {
         font-size: 1.25rem;
-        color: #1d1d1f;
+        color: #1e293b;
         margin: 0 0 0.5rem 0;
         font-weight: 600;
     }

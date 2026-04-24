@@ -13,7 +13,7 @@
             <div class="row g-4">
                 <?php foreach ($schools as $s): ?>
                     <?php
-                    $type_colors = array('deped' => '#0f172a', 'basic' => '#0f172a', 'ched' => '#0d9488', 'college' => '#0d9488', 'tesda' => '#6366f1', 'tech_voc' => '#6366f1', 'both' => '#7c3aed');
+                    $type_colors = array('deped' => '#3b82f6', 'basic' => '#3b82f6', 'ched' => '#10b981', 'college' => '#10b981', 'tesda' => '#8b5cf6', 'tech_voc' => '#8b5cf6', 'both' => '#f59e0b');
                     $type_labels = array('deped' => 'DepEd', 'basic' => 'DepEd', 'ched' => 'CHED', 'college' => 'CHED', 'tesda' => 'TESDA', 'tech_voc' => 'TESDA', 'both' => 'Both');
                     $type = isset($s->type) ? $s->type : 'deped';
                     $type_color = isset($type_colors[$type]) ? $type_colors[$type] : '#64748b';
@@ -79,35 +79,38 @@
     }
 
     .hero-content {
-        padding: 0.5rem 0;
+        padding: 0;
     }
 
     .hero-title {
         font-size: 1.75rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.35rem;
+        letter-spacing: -0.035em;
     }
 
     .hero-subtitle {
-        color: #64748b;
-        font-size: 0.95rem;
+        color: #6b7280;
+        font-size: 0.925rem;
         margin: 0;
+        letter-spacing: -0.005em;
     }
 
     .school-select-card {
         background: #ffffff;
         border-radius: 16px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #ececee;
         overflow: hidden;
-        transition: all 0.2s ease;
+        transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
         height: 100%;
+        box-shadow: 0 1px 2px rgba(10, 10, 10, 0.03);
     }
 
     .school-select-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-        border-color: #cbd5e1;
+        transform: translateY(-3px);
+        box-shadow: 0 14px 32px rgba(10, 10, 10, 0.08), 0 2px 6px rgba(10, 10, 10, 0.04);
+        border-color: #e0e2e6;
     }
 
     .school-card-header {
@@ -119,22 +122,25 @@
     }
 
     .school-card-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.2);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.18);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        backdrop-filter: blur(6px);
     }
 
     .school-card-type {
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.25rem 0.75rem;
-        background: rgba(255, 255, 255, 0.2);
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 0.22rem 0.6rem;
+        background: rgba(255, 255, 255, 0.18);
         border-radius: 6px;
+        letter-spacing: 0.01em;
+        backdrop-filter: blur(6px);
     }
 
     .school-card-body {
@@ -142,162 +148,180 @@
     }
 
     .school-card-name {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin-bottom: 0.25rem;
-        line-height: 1.3;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.3rem;
+        line-height: 1.35;
+        letter-spacing: -0.015em;
     }
 
     .school-card-id {
-        font-size: 0.8rem;
-        color: #94a3b8;
+        font-size: 0.78rem;
+        color: #9ca3af;
         margin-bottom: 0.5rem;
+        font-variant-numeric: tabular-nums;
     }
 
     .school-card-location {
-        font-size: 0.8rem;
-        color: #64748b;
+        font-size: 0.78rem;
+        color: #6b7280;
         margin-bottom: 0.75rem;
+        letter-spacing: -0.005em;
     }
 
     .school-card-status {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        font-size: 0.8rem;
+        gap: 0.4rem;
+        font-size: 0.72rem;
         font-weight: 500;
-        padding: 0.25rem 0.75rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 6px;
     }
 
     .school-card-status.active {
-        color: #10b981;
-        background: #dcfce7;
+        color: #047857;
+        background: #ecfdf5;
     }
 
     .school-card-status.inactive {
-        color: #94a3b8;
-        background: #f1f5f9;
+        color: #9ca3af;
+        background: #f5f5f7;
     }
 
     .school-card-status .status-dot {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         border-radius: 50%;
         background: currentColor;
     }
 
     .school-card-footer {
-        padding: 1rem 1.25rem;
-        border-top: 1px solid #f1f5f9;
-        background: #f8fafc;
+        padding: 0.875rem 1.25rem;
+        border-top: 1px solid #f2f2f4;
+        background: #fafafa;
     }
 
     .enter-text {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #0d9488;
-        display: flex;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #6b7280;
+        display: inline-flex;
         align-items: center;
+        letter-spacing: -0.005em;
+        transition: color 0.15s ease;
     }
 
     .school-select-card:hover .enter-text {
-        color: #0f766e;
+        color: #1e293b;
     }
 
     /* Add School Card */
     .add-school-card {
-        border: 2px dashed #cbd5e1;
-        background: #f8fafc;
+        border: 1px dashed #d1d5db;
+        background: #fafafa;
+        box-shadow: none;
     }
 
     .add-school-card:hover {
-        border-color: #0d9488;
-        background: #f0fdfa;
+        border-color: #3b82f6;
+        background: #f1f5f9;
     }
 
     .add-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        background: #e2e8f0;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid #ececee;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.75rem;
-        color: #64748b;
+        font-size: 1.3rem;
+        color: #6b7280;
         margin-bottom: 1rem;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
     }
 
     .add-school-card:hover .add-icon {
-        background: #0d9488;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+        border-color: #3b82f6;
         color: white;
     }
 
     .add-school-text {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 600;
-        color: #0f172a;
+        color: #1e293b;
         margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
     }
 
     .add-school-sub {
-        font-size: 0.85rem;
-        color: #64748b;
+        font-size: 0.82rem;
+        color: #6b7280;
         margin: 0;
+        letter-spacing: -0.005em;
     }
 
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
-        background: #f8fafc;
+        background: #ffffff;
         border-radius: 16px;
-        border: 2px dashed #e2e8f0;
+        border: 1px solid #ececee;
+        box-shadow: 0 1px 2px rgba(10, 10, 10, 0.03);
     }
 
     .empty-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 20px;
-        background: #e2e8f0;
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: #f5f5f7;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.5rem;
-        color: #94a3b8;
+        font-size: 1.75rem;
+        color: #9ca3af;
         margin-bottom: 1.5rem;
     }
 
     .empty-state h4 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #1e293b;
         margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
 
     .empty-state p {
-        color: #64748b;
+        color: #6b7280;
         margin-bottom: 1.5rem;
+        font-size: 0.9rem;
     }
 
     .btn-banner-primary {
         display: inline-flex;
         align-items: center;
-        padding: 0.75rem 1.5rem;
-        background: #0d9488;
+        gap: 0.45rem;
+        padding: 0.55rem 1.1rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: white;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        font-weight: 600;
+        border-radius: 9px;
+        font-size: 0.85rem;
+        font-weight: 500;
         text-decoration: none;
-        transition: all 0.2s;
+        transition: all 0.15s ease;
+        letter-spacing: -0.005em;
+        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
     }
 
     .btn-banner-primary:hover {
-        background: #0f766e;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
         color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 </style>

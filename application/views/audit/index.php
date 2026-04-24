@@ -113,7 +113,7 @@
     .hero-title {
         font-size: 1.75rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #1e293b;
         margin-bottom: 0.25rem;
     }
 
@@ -166,8 +166,8 @@
     }
 
     .btn-pagination:hover:not(:disabled) {
-        border-color: #0d9488;
-        color: #0d9488;
+        border-color: #3b82f6;
+        color: #3b82f6;
     }
 
     .btn-pagination:disabled {
@@ -191,11 +191,11 @@
 
     .pagination-page:hover {
         background: #f1f5f9;
-        color: #0f172a;
+        color: #1e293b;
     }
 
     .pagination-page.active {
-        background: #0d9488;
+        background: #3b82f6;
         color: white;
     }
 </style>

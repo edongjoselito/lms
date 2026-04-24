@@ -11,8 +11,8 @@
     <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
         }
 
         * {
@@ -26,7 +26,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: linear-gradient(135deg, #e5eaf0 0%, #dbe2ea 100%);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             padding: 1rem;
         }
@@ -40,7 +40,7 @@
             background: white;
             border-radius: 24px;
             padding: 3rem 2.5rem;
-            box-shadow: 0 20px 60px -10px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 20px 60px -10px rgba(59, 130, 246, 0.15);
             border: 1px solid #e2e8f0;
         }
 
@@ -52,7 +52,7 @@
         .forgot-icon {
             width: 72px;
             height: 72px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), #60a5fa);
             border-radius: 20px;
             display: flex;
             align-items: center;
@@ -60,11 +60,11 @@
             margin: 0 auto 1.5rem;
             font-size: 2rem;
             color: white;
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
         }
 
         .forgot-card h1 {
-            color: #0f172a;
+            color: #1e293b;
             font-weight: 800;
             font-size: 1.75rem;
             margin-bottom: 0.5rem;
@@ -84,7 +84,7 @@
             background: #f8fafc;
             border: 2px solid #e2e8f0;
             border-radius: 14px;
-            color: #0f172a;
+            color: #1e293b;
             height: 56px;
             padding: 1rem 1rem 0.5rem 3rem;
             font-size: 0.95rem;
@@ -94,8 +94,8 @@
         .form-floating .form-control:focus {
             background: white;
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-            color: #0f172a;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            color: #1e293b;
         }
 
         .form-floating label {
@@ -128,7 +128,7 @@
             height: 54px;
             border: none;
             border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), #60a5fa);
             color: white;
             font-weight: 700;
             font-size: 1rem;
@@ -142,7 +142,7 @@
 
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.35);
         }
 
         .btn-submit:active {

@@ -25,24 +25,24 @@
                 <div class="form-section">
                     <h6 class="section-title"><i class="bi bi-person me-2"></i>Personal Information</h6>
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">First Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="first_name" placeholder="Enter first name"
                                 value="<?= ($user) ? htmlspecialchars($user->first_name) : '' ?>" required>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Middle Name</label>
-                            <input type="text" class="form-control" name="middle_name" placeholder="Optional"
-                                value="<?= ($user && isset($user->middle_name)) ? htmlspecialchars($user->middle_name) : '' ?>">
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Last Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="last_name" placeholder="Enter last name"
                                 value="<?= ($user) ? htmlspecialchars($user->last_name) : '' ?>" required>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Suffix</label>
-                            <input type="text" class="form-control" name="suffix" placeholder="Jr., III"
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Middle Name <span class="text-muted">(Optional)</span></label>
+                            <input type="text" class="form-control" name="middle_name" placeholder="Middle name"
+                                value="<?= ($user && isset($user->middle_name)) ? htmlspecialchars($user->middle_name) : '' ?>">
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Suffix <span class="text-muted">(Optional)</span></label>
+                            <input type="text" class="form-control" name="suffix" placeholder="Jr., Sr., III"
                                 value="<?= ($user && isset($user->suffix)) ? htmlspecialchars($user->suffix) : '' ?>">
                         </div>
                     </div>
@@ -52,27 +52,27 @@
                 <div class="form-section">
                     <h6 class="section-title"><i class="bi bi-shield-lock me-2"></i>Contact & Security</h6>
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Email Address <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" name="email" placeholder="user@example.com"
                                 value="<?= ($user) ? htmlspecialchars($user->email) : '' ?>" required>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Phone Number</label>
-                            <input type="text" class="form-control" name="phone" placeholder="e.g., +63 912 345 6789"
+                            <input type="text" class="form-control" name="phone" placeholder="+63 912 345 6789"
                                 value="<?= ($user && isset($user->phone)) ? htmlspecialchars($user->phone) : '' ?>">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">
-                                Password <?= ($user) ? '<span class="text-muted">(leave blank to keep current)</span>' : '<span class="text-danger">*</span>' ?>
+                                Password <?= ($user) ? '<span class="text-muted">(Optional)</span>' : '<span class="text-danger">*</span>' ?>
                             </label>
-                            <input type="password" class="form-control" name="password" placeholder="<?= ($user) ? 'Enter new password' : 'Create password' ?>"
+                            <input type="password" class="form-control" name="password" placeholder="<?= ($user) ? 'New password' : 'Create password' ?>"
                                 <?= ($user) ? '' : 'required' ?> minlength="6">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Role <span class="text-danger">*</span></label>
                             <select class="form-select" name="role_id" required>
-                                <option value="">Select a role</option>
+                                <option value="">Select role</option>
                                 <?php foreach ($roles as $role): ?>
                                     <option value="<?= $role->id ?>" <?= ($user && $user->role_id == $role->id) ? 'selected' : '' ?>><?= $role->name ?></option>
                                 <?php endforeach; ?>
@@ -83,13 +83,18 @@
 
                 <!-- Account Status -->
                 <div class="form-section">
-                    <h6 class="section-title"><i class="bi bi-toggle-on me-2"></i>Account Status</h6>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="status" value="1" id="statusSwitch"
-                            <?= (!$user || $user->status) ? 'checked' : '' ?>>
-                        <label class="form-check-label" for="statusSwitch">
-                            Account is active and user can log in
-                        </label>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-toggle-on text-primary"></i>
+                            <span class="fw-medium">Account Status</span>
+                        </div>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" name="status" value="1" id="statusSwitch"
+                                <?= (!$user || $user->status) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="statusSwitch">
+                                Account is active and user can log in
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -107,23 +112,23 @@
 
 <style>
     .dashboard-hero {
-        margin-bottom: 2rem;
+        margin-bottom: 1.25rem;
     }
 
     .hero-content {
-        padding: 0.5rem 0;
+        padding: 0;
     }
 
     .hero-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #0f172a;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
         margin-bottom: 0.25rem;
     }
 
     .hero-subtitle {
         color: #64748b;
-        font-size: 0.95rem;
+        font-size: 0.875rem;
         margin: 0;
     }
 
@@ -138,27 +143,27 @@
     }
 
     .back-link:hover {
-        color: #0f172a;
+        color: #1e293b;
     }
 
     .form-card {
         background: #ffffff;
-        border-radius: 16px;
+        border-radius: 12px;
         border: 1px solid #e2e8f0;
-        padding: 1.5rem;
+        padding: 2rem;
     }
 
     .form-card-title {
         font-weight: 700;
         margin-bottom: 1.5rem;
-        color: #0f172a;
+        color: #1e293b;
         font-size: 1.1rem;
     }
 
     .form-section {
-        margin-bottom: 2rem;
-        padding-bottom: 2rem;
-        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.75rem;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .form-section:last-of-type {
@@ -168,16 +173,17 @@
     }
 
     .section-title {
-        font-size: 0.95rem;
+        font-size: 0.875rem;
         font-weight: 600;
-        color: #0d9488;
-        margin-bottom: 1rem;
+        color: #3b82f6;
+        margin-bottom: 1.25rem;
         display: flex;
         align-items: center;
+        padding-bottom: 0.5rem;
     }
 
     .section-title i {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .form-label {
@@ -196,8 +202,8 @@
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #0d9488;
-        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
     .form-actions {
@@ -220,12 +226,12 @@
     .btn-light:hover {
         background: #f8fafc;
         border-color: #cbd5e1;
-        color: #0f172a;
+        color: #1e293b;
     }
 
     .form-check-input:checked {
-        background-color: #0d9488;
-        border-color: #0d9488;
+        background-color: #3b82f6;
+        border-color: #3b82f6;
     }
 
     .text-muted {

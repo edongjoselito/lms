@@ -114,9 +114,12 @@ class Subjects extends MY_Controller
     public function delete($id)
     {
         $subject = $this->Academic_model->get_subject($id);
-        $subject_name = $subject ? ($subject->description ?: $subject->code) : 'Unknown';
+        if (!$subject || (int) $subject->school_id !== (int) $this->school_id) {
+            show_404();
+        }
 
-        $result = $this->Academic_model->delete_subject($id);
+        $subject_name = $subject ? ($subject->description ?: $subject->code) : 'Unknown';
+        $result = $this->Academic_model->delete_subject($id, $this->school_id, $this->is_admin());
 
         if (!$result) {
             $this->session->set_flashdata('error', 'Cannot delete subject: it is currently assigned to one or more class programs.');

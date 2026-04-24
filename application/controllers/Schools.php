@@ -96,38 +96,42 @@ class Schools extends MY_Controller
                 // Generate default password (school name in lowercase)
                 $default_password = strtolower(str_replace(' ', '', $school_name)) . '123';
 
-                $this->db->insert('users', array(
-                    'first_name' => 'School',
-                    'last_name'  => 'Admin',
-                    'email'      => $school_email,
-                    'password'   => password_hash($default_password, PASSWORD_DEFAULT),
-                    'role_id'    => $school_admin_role->id,
-                    'school_id'  => $school_id,
-                    'status'     => 1,
-                    'created_at' => date('Y-m-d H:i:s'),
-                ));
+                // Check if email already exists
+                $existing_user = $this->db->where('email', $school_email)->get('users')->row();
+                if (!$existing_user) {
+                    $this->db->insert('users', array(
+                        'first_name' => 'School',
+                        'last_name'  => 'Admin',
+                        'email'      => $school_email,
+                        'password'   => password_hash($default_password, PASSWORD_DEFAULT),
+                        'role_id'    => $school_admin_role->id,
+                        'school_id'  => $school_id,
+                        'status'     => 1,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ));
 
-                // Send email with password
-                $this->load->library('email');
-                $this->config->load('email');
-                $this->email->from($this->config->item('smtp_user'), 'LMS Portal');
-                $this->email->to($school_email);
-                $this->email->subject('Your LMS School Admin Account');
+                    // Send email with password
+                    $this->load->library('email');
+                    $this->config->load('email');
+                    $this->email->from($this->config->item('smtp_user'), 'LMS Portal');
+                    $this->email->to($school_email);
+                    $this->email->subject('Your LMS School Admin Account');
 
-                $message = $this->load->view('emails/school_admin_password', array(
-                    'school_name' => $school_name,
-                    'email' => $school_email,
-                    'password' => $default_password
-                ), true);
+                    $message = $this->load->view('emails/school_admin_password', array(
+                        'school_name' => $school_name,
+                        'email' => $school_email,
+                        'password' => $default_password
+                    ), true);
 
-                $this->email->message($message);
-                $this->email->send();
+                    $this->email->message($message);
+                    $this->email->send();
+                }
             }
 
             // Audit log
             $this->Audit_model->log('create', 'school', $school_id, $d['name'], 'Created school: ' . $d['name'] . ' (' . $d['type'] . ')');
 
-            $this->session->set_flashdata('success', 'School created successfully. A school admin account has been created automatically.');
+            $this->session->set_flashdata('success', 'School created successfully.' . (!$existing_user ? ' A school admin account has been created automatically.' : ''));
             redirect('schools/select');
         }
 

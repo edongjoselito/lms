@@ -774,96 +774,60 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
         <!-- Sidebar -->
         <div class="col-lg-3">
-            <?php if ($edit_mode): ?>
-                <div class="cc-sidebar-card mb-3">
-                    <h5 class="cc-sidebar-title">
+            <div class="cc-sidebar-panel">
+                <!-- Panel Header -->
+                <div class="cc-panel-header">
+                    <h5 class="cc-panel-title">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5" />
-                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5" />
-                            <path d="M23 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.5" />
-                            <path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5" />
+                            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                         </svg>
-                        Sections
+                        Course Structure
                     </h5>
-                    <button class="cc-btn cc-btn--ghost cc-btn--block cc-btn--sm mb-3" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                        Add Section
-                    </button>
-
-                    <?php if (empty($subject_sections)): ?>
-                        <p class="cc-sidebar-empty">No sections added. Students can access this course without an enrollment key.</p>
-                    <?php else: ?>
-                        <div class="cc-section-list">
-                            <?php foreach ($subject_sections as $section_access): ?>
-                                <?php $has_key = trim((string) ($section_access->enrollment_key ?? '')) !== ''; ?>
-                                <div class="cc-section-item" id="sectionItem<?= $section_access->id ?>"
-                                    data-id="<?= $section_access->id ?>"
-                                    data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>"
-                                    data-enrollment-key="<?= htmlspecialchars($section_access->enrollment_key ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                    <div class="cc-section-info">
-                                        <strong><?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <span class="cc-section-status <?= $has_key ? 'locked' : 'open' ?>">
-                                            <?= $has_key ? 'Key enabled' : 'Open access' ?>
-                                        </span>
-                                    </div>
-                                    <div class="cc-section-actions">
-                                        <a href="<?= site_url('course/section_students/' . $section_access->id) ?>" class="cc-section-btn" title="View Enrolled Students">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5" />
-                                                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5" />
-                                            </svg>
-                                        </a>
-                                        <button class="cc-section-btn" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="1.5" />
-                                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.5" />
-                                            </svg>
-                                        </button>
-                                        <a href="<?= site_url('course/remove_subject_section/' . $subject->id . '/' . $section_access->id) ?>" class="cc-section-btn cc-section-btn--danger" title="Remove section" onclick="return confirm('Remove this section from the course?');">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                    <?php if ($edit_mode): ?>
+                        <button class="cc-btn cc-btn--ghost cc-btn--sm" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            Section
+                        </button>
                     <?php endif; ?>
                 </div>
-            <?php elseif (!empty($is_student_mode) && empty($requires_enrollment_key)): ?>
-                <div class="cc-sidebar-card mb-3">
-                    <div class="cc-access-badge cc-access-badge--open">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.5" />
-                            <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                        </svg>
-                        <div>
-                            <h5>Open Access</h5>
-                            <p>No enrollment key is required for this course.</p>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
 
-            <!-- Course Structure -->
-            <div class="cc-sidebar-card">
-                <h5 class="cc-sidebar-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                    Structure
-                </h5>
-                <?php if (empty($modules)): ?>
-                    <p class="text-muted" style="font-size:0.85rem;">No modules yet.</p>
-                <?php else: ?>
-                    <div class="list-group list-group-flush">
+                <!-- Module List -->
+                <div class="cc-module-nav">
+                    <?php if (empty($modules)): ?>
+                        <p class="cc-panel-empty">No modules yet.</p>
+                    <?php else: ?>
                         <?php foreach ($modules as $idx => $mod): ?>
-                            <a href="#module-<?= $mod->id ?>" class="list-group-item list-group-item-action py-2 px-0 border-0" style="font-size:0.85rem;">
-                                <span class="badge bg-light text-dark me-1"><?= $idx + 1 ?></span>
-                                <?= $mod->title ?>
+                            <a href="#module-<?= $mod->id ?>" class="cc-nav-item">
+                                <span class="cc-nav-number"><?= $idx + 1 ?></span>
+                                <span class="cc-nav-text"><?= $mod->title ?></span>
                             </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($edit_mode && !empty($subject_sections)): ?>
+                    <div class="cc-panel-divider"></div>
+                    <div class="cc-sections-list">
+                        <h6 class="cc-subtitle">Sections</h6>
+                        <?php foreach ($subject_sections as $section_access): ?>
+                            <?php $has_key = trim((string) ($section_access->enrollment_key ?? '')) !== ''; ?>
+                            <div class="cc-section-row"
+                                id="sectionItem<?= $section_access->id ?>"
+                                data-id="<?= (int) $section_access->id ?>"
+                                data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>"
+                                data-enrollment-key="<?= htmlspecialchars((string) ($section_access->enrollment_key ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                <div class="cc-section-info">
+                                    <span class="cc-section-name"><?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="cc-section-badge <?= $has_key ? 'locked' : 'open' ?>"><?= $has_key ? 'Locked' : 'Open' ?></span>
+                                </div>
+                                <div class="cc-section-actions">
+                                    <button class="cc-action-btn" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -1014,7 +978,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         margin: 0 auto;
         padding: 1.5rem 2rem 4rem;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-        color: #1d1d1f;
+        color: #1e293b;
     }
 
     /* ── Breadcrumb ────────────────────────────────────────────────── */
@@ -1028,17 +992,17 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         gap: 8px;
         font-size: 0.875rem;
         font-weight: 500;
-        color: #0071e3;
+        color: #3b82f6;
         text-decoration: none;
         padding: 8px 14px 8px 10px;
         border-radius: 10px;
-        background: rgba(0, 113, 227, 0.06);
+        background: rgba(59, 130, 246, 0.08);
         transition: all 0.2s ease;
     }
 
     .cc-back-link:hover {
-        background: rgba(0, 113, 227, 0.12);
-        color: #0077ed;
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
     }
 
     .cc-back-icon {
@@ -1048,28 +1012,28 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         width: 28px;
         height: 28px;
         border-radius: 8px;
-        background: rgba(0, 113, 227, 0.1);
-        color: #0071e3;
+        background: rgba(59, 130, 246, 0.12);
+        color: #3b82f6;
         flex-shrink: 0;
     }
 
     /* ── Hero Card ─────────────────────────────────────────────────── */
     .cc-hero-card {
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         overflow: hidden;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
 
     .cc-hero-main {
-        padding: 2rem 2.5rem;
+        padding: 1.5rem 2rem;
     }
 
     .cc-cover-wrap {
-        margin: -2rem -2.5rem 1.5rem;
-        height: 180px;
+        margin: -1.5rem -2rem 1rem;
+        height: 140px;
         overflow: hidden;
     }
 
@@ -1082,71 +1046,71 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     .cc-hero-content {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .cc-hero-meta {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
         flex-wrap: wrap;
     }
 
     .cc-badge {
         display: inline-flex;
         align-items: center;
-        padding: 5px 12px;
+        padding: 4px 10px;
         border-radius: 100px;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 600;
         letter-spacing: 0.02em;
         text-transform: uppercase;
     }
 
     .cc-badge--deped {
-        background: #e8f4fd;
-        color: #0071e3;
+        background: #dbeafe;
+        color: #3b82f6;
     }
 
     .cc-badge--ched {
-        background: #fff4e5;
-        color: #f5a623;
+        background: #fef3c7;
+        color: #f59e0b;
     }
 
     .cc-badge--tesda {
-        background: #e6f9e6;
-        color: #34c759;
+        background: #dcfce7;
+        color: #22c55e;
     }
 
     .cc-badge--general {
-        background: #f5f5f7;
-        color: #86868b;
+        background: #f1f5f9;
+        color: #64748b;
     }
 
     .cc-edit-indicator {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 5px 12px;
-        background: #fff3e0;
-        color: #ff9500;
+        padding: 4px 10px;
+        background: #fffbeb;
+        color: #f59e0b;
         border-radius: 100px;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
     }
 
     .cc-hero-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1d1d1f;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
         margin: 0;
-        line-height: 1.25;
-        letter-spacing: -0.02em;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
     }
 
     .cc-hero-subtitle {
-        font-size: 1rem;
-        color: #86868b;
+        font-size: 0.9rem;
+        color: #64748b;
         margin: 0;
         font-weight: 400;
     }
@@ -1157,47 +1121,47 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        padding: 1.25rem 2.5rem;
-        background: #fafafa;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 1rem 2rem;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
         flex-wrap: wrap;
     }
 
     .cc-progress-wrap {
         flex: 1;
         min-width: 200px;
-        max-width: 360px;
+        max-width: 320px;
     }
 
     .cc-progress-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .cc-progress-label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #1d1d1f;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #64748b;
     }
 
     .cc-progress-value {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: #0071e3;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #3b82f6;
     }
 
     .cc-progress-bar {
-        height: 6px;
-        background: #e5e5e7;
+        height: 4px;
+        background: #e2e8f0;
         border-radius: 100px;
         overflow: hidden;
     }
 
     .cc-progress-fill {
         height: 100%;
-        background: #34c759;
+        background: #22c55e;
         border-radius: 100px;
         transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -1205,10 +1169,10 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     .cc-enroll-alert {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        background: #fff9e6;
-        color: #d97706;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #fffbeb;
+        color: #f59e0b;
         border-radius: 12px;
         font-size: 0.875rem;
         font-weight: 500;
@@ -1239,36 +1203,37 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .cc-btn--primary {
-        background: #0071e3;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
+        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
     }
 
     .cc-btn--primary:hover {
-        background: #0077ed;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
         transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
     }
 
     .cc-btn--ghost {
-        background: #f5f5f7;
-        color: #1d1d1f;
-        border: 1px solid #d2d2d7;
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
     }
 
     .cc-btn--ghost:hover {
         background: #fff;
-        border-color: #86868b;
-        color: #0071e3;
+        border-color: #cbd5e1;
+        color: #3b82f6;
     }
 
     .cc-btn--warning {
-        background: #fff3e0;
-        color: #ff9500;
-        border: 1px solid #ffcc80;
+        background: #fffbeb;
+        color: #f59e0b;
+        border: 1px solid #fde68a;
     }
 
     .cc-btn--warning:hover {
-        background: #ffe0b2;
+        background: #fef3c7;
     }
 
     .cc-btn--sm {
@@ -1369,16 +1334,11 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     /* ── Module Cards ───────────────────────────────────────────────── */
     .cc-module-card {
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         overflow: hidden;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        transition: box-shadow 0.3s ease;
-    }
-
-    .cc-module-card:hover {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
 
     .cc-module-header {
@@ -1386,28 +1346,28 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        padding: 1.25rem 1.5rem;
+        padding: 1rem 1.25rem;
         background: #fafafa;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .cc-module-title-wrap {
         display: flex;
         align-items: center;
-        gap: 0.875rem;
+        gap: 0.75rem;
         min-width: 0;
     }
 
     .cc-module-number {
-        width: 36px;
-        height: 36px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #0071e3;
+        background: #3b82f6;
         color: #fff;
-        border-radius: 10px;
-        font-size: 0.875rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
         font-weight: 600;
         flex-shrink: 0;
     }
@@ -1421,42 +1381,41 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .cc-module-title {
-        font-size: 1.0625rem;
+        font-size: 1rem;
         font-weight: 600;
-        color: #1d1d1f;
+        color: #1e293b;
         margin: 0;
         line-height: 1.3;
-        letter-spacing: -0.01em;
     }
 
     .cc-module-status {
-        padding: 3px 10px;
-        background: #f5f5f7;
-        color: #86868b;
+        padding: 2px 8px;
+        background: #e2e8f0;
+        color: #64748b;
         border-radius: 100px;
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.03em;
     }
 
     .cc-module-desc {
-        padding: 1rem 1.5rem;
+        padding: 0.75rem 1.25rem;
         background: #fafafa;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .cc-module-desc p {
         margin: 0;
-        font-size: 0.875rem;
-        color: #86868b;
-        line-height: 1.5;
+        font-size: 0.8rem;
+        color: #64748b;
+        line-height: 1.4;
     }
 
     /* ── Content Items (Lessons/Activities) ──────────────────────────── */
     .list-group-item {
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        border-bottom: 1px solid #f1f5f9;
         transition: background 0.2s ease;
     }
 
@@ -1465,7 +1424,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .list-group-item:hover {
-        background: #fafafa;
+        background: #f8fafc;
     }
 
     .content-item-link {
@@ -1490,8 +1449,8 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .activity-icon.lesson {
-        background: #e8f4fd;
-        color: #0071e3;
+        background: #dbeafe;
+        color: #3b82f6;
     }
 
     .activity-icon.activity {
@@ -1502,13 +1461,13 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     .content-item-link h6 {
         font-size: 0.9375rem;
         font-weight: 500;
-        color: #1d1d1f;
+        color: #1e293b;
         margin: 0 0 4px 0;
         letter-spacing: -0.01em;
     }
 
     .content-item-link:hover h6 {
-        color: #0071e3;
+        color: #3b82f6;
     }
 
     .content-item-locked {
@@ -1520,134 +1479,166 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         color: #86868b;
     }
 
-    /* ── Sidebar Cards ───────────────────────────────────────────────── */
-    .cc-sidebar-card {
+    /* ── Unified Sidebar Panel ───────────────────────────────────────── */
+    .cc-sidebar-panel {
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 14px;
-        padding: 1.25rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
 
-    .cc-sidebar-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #1d1d1f;
-        margin: 0 0 1rem;
-    }
-
-    .cc-sidebar-title svg {
-        color: #0071e3;
-    }
-
-    .cc-sidebar-empty {
-        font-size: 0.875rem;
-        color: #86868b;
-        margin: 0;
-    }
-
-    .cc-section-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .cc-section-item {
+    .cc-panel-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.5rem;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .cc-panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .cc-panel-title svg {
+        color: #3b82f6;
+    }
+
+    .cc-panel-empty {
+        font-size: 0.875rem;
+        color: #94a3b8;
+        padding: 1.5rem;
+        text-align: center;
+        margin: 0;
+    }
+
+    .cc-panel-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 0.5rem 1.25rem;
+    }
+
+    /* Module Navigation */
+    .cc-module-nav {
+        padding: 0.5rem;
+    }
+
+    .cc-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
         padding: 0.625rem 0.75rem;
-        background: #f5f5f7;
         border-radius: 8px;
-        transition: background 0.15s ease;
-    }
-
-    .cc-section-item:hover {
-        background: #ebebef;
-    }
-
-    .cc-section-info {
-        min-width: 0;
-    }
-
-    .cc-section-info strong {
-        display: block;
+        color: #475569;
+        text-decoration: none;
         font-size: 0.8125rem;
-        font-weight: 500;
-        color: #1d1d1f;
+        transition: all 0.15s ease;
+    }
+
+    .cc-nav-item:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .cc-nav-number {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: #64748b;
+        border-radius: 4px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .cc-nav-item:hover .cc-nav-number {
+        background: #3b82f6;
+        color: #fff;
+    }
+
+    .cc-nav-text {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .cc-section-status {
+    /* Sections List */
+    .cc-sections-list {
+        padding: 0.5rem 1rem 1rem;
+    }
+
+    .cc-subtitle {
         font-size: 0.75rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 0.75rem;
+    }
+
+    .cc-section-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .cc-section-row:last-child {
+        border-bottom: none;
+    }
+
+    .cc-section-name {
+        font-size: 0.8125rem;
+        color: #1e293b;
+    }
+
+    .cc-section-badge {
+        font-size: 0.6875rem;
         font-weight: 500;
-        color: #86868b;
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
     }
 
-    .cc-section-actions {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-    }
-
-    .cc-section-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
-        color: #86868b;
-        background: none;
-        border: none;
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-
-    .cc-section-btn:hover {
-        background: rgba(0, 0, 0, 0.1);
-        color: #1d1d1f;
-    }
-
-    .cc-section-btn--danger:hover {
-        background: #ff3b30;
-        color: #fff;
-    }
-
-    .cc-access-badge {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 1rem;
-        border-radius: 12px;
-    }
-
-    .cc-access-badge--open {
-        background: #f0fdf4;
+    .cc-section-badge.open {
+        background: #dcfce7;
         color: #15803d;
     }
 
-    .cc-access-badge svg {
-        flex-shrink: 0;
-        margin-top: 2px;
+    .cc-section-badge.locked {
+        background: #fee2e2;
+        color: #dc2626;
     }
 
-    .cc-access-badge h5 {
-        font-size: 0.9375rem;
-        font-weight: 600;
-        margin: 0 0 2px;
+    .cc-action-btn {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: none;
+        color: #94a3b8;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
     }
 
-    .cc-access-badge p {
-        font-size: 0.8125rem;
-        margin: 0;
-        opacity: 0.8;
+    .cc-action-btn:hover {
+        background: #e2e8f0;
+        color: #1e293b;
     }
 
     /* ── Utility Classes ──────────────────────────────────────────────── */
@@ -1850,7 +1841,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
     .wysiwyg-toolbar .btn:hover {
         background: rgba(0, 0, 0, 0.06);
-        color: #1d1d1f;
+        color: #1e293b;
     }
 
     .wysiwyg-format {
@@ -1865,7 +1856,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .wysiwyg-toolbar .btn.active {
-        background: #0071e3;
+        background: #3b82f6;
         color: #fff;
     }
 
@@ -1876,7 +1867,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         overflow-wrap: anywhere;
         font-size: 0.9375rem;
         line-height: 1.6;
-        color: #1d1d1f;
+        color: #1e293b;
     }
 
     .wysiwyg-area:empty::before {
@@ -1887,8 +1878,8 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     .wysiwyg-area blockquote {
         margin: 0 0 1rem;
         padding: 0.75rem 1rem;
-        border-left: 3px solid #0071e3;
-        background: #f5f5f7;
+        border-left: 3px solid #3b82f6;
+        background: #f8fafc;
         color: #374151;
         border-radius: 0 6px 6px 0;
     }
@@ -1920,8 +1911,8 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         align-items: center;
         gap: 6px;
         padding: 6px 14px;
-        background: #e8f4fd;
-        color: #0071e3;
+        background: #dbeafe;
+        color: #3b82f6;
         border-radius: 100px;
         font-size: 0.8125rem;
         font-weight: 600;
@@ -2005,7 +1996,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
     .modal-title {
         font-weight: 600;
-        color: #1d1d1f;
+        color: #1e293b;
     }
 
     /* ── Form Controls ──────────────────────────────────────────────── */
@@ -2020,20 +2011,20 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #0071e3;
-        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
     }
 
     .form-label {
         font-weight: 500;
         font-size: 0.8125rem;
-        color: #1d1d1f;
+        color: #1e293b;
         margin-bottom: 0.5rem;
     }
 
     .form-check-input:checked {
-        background-color: #0071e3;
-        border-color: #0071e3;
+        background-color: #3b82f6;
+        border-color: #3b82f6;
     }
 
     .btn-close {
@@ -2731,30 +2722,22 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     function showEditSectionModal(id) {
-        console.log('showEditSectionModal called with id:', id);
         var sectionItem = document.getElementById('sectionItem' + id);
-        console.log('sectionItem:', sectionItem);
         if (sectionItem) {
-            var sectionName = sectionItem.getAttribute('data-section-name');
-            var enrollmentKey = sectionItem.getAttribute('data-enrollment-key');
-            console.log('sectionName:', sectionName);
-            console.log('enrollmentKey:', enrollmentKey);
+            var sectionName = sectionItem.getAttribute('data-section-name') || '';
+            var enrollmentKey = sectionItem.getAttribute('data-enrollment-key') || '';
 
             document.getElementById('editClassProgramId').value = sectionItem.getAttribute('data-id');
             document.getElementById('editSectionName').value = sectionName;
             document.getElementById('editEnrollmentKeyInput').value = enrollmentKey;
 
             var modalElement = document.getElementById('editSectionModal');
-            console.log('modalElement:', modalElement);
             if (typeof bootstrap !== 'undefined') {
                 var modal = new bootstrap.Modal(modalElement);
                 modal.show();
             } else {
-                console.error('Bootstrap is not loaded');
                 alert('Error: Bootstrap is not loaded');
             }
-        } else {
-            console.error('Section item not found with id: sectionItem' + id);
         }
     }
 

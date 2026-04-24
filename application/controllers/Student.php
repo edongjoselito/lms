@@ -1,7 +1,8 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Student extends MY_Controller {
+class Student extends MY_Controller
+{
 
     public function __construct()
     {
@@ -15,10 +16,10 @@ class Student extends MY_Controller {
     private function get_or_create_student($user_id)
     {
         $student = $this->Student_model->get_student_by_user_id($user_id);
-        
+
         $user = $this->db->where('id', $user_id)->get('users')->row();
         $school_id = $user->school_id ?: 1;
-        
+
         if (!$student) {
             // Use the user's school_id, default to 1 if not set
             $student_id = $this->Student_model->create_student($user_id, $school_id);
@@ -30,22 +31,22 @@ class Student extends MY_Controller {
                 $student->school_id = $school_id;
             }
         }
-        
+
         return $student;
     }
 
     public function index()
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         $subjects = $this->Student_model->get_subjects($student->id);
         foreach ($subjects as &$subject) {
             $subject->requires_key = false;
@@ -64,32 +65,32 @@ class Student extends MY_Controller {
                 $available_subjects[] = $subject;
             }
         }
-        
+
         $data['title'] = 'Student Dashboard';
         $data['subjects'] = $subjects;
         $data['enrolled_subjects'] = $enrolled_subjects;
         $data['available_subjects'] = $available_subjects;
-        
+
         $this->render('student/dashboard', $data);
     }
 
     public function subjects()
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         $filters = array();
         if ($this->input->get('system_type')) {
             $filters['system_type'] = $this->input->get('system_type');
         }
-        
+
         $subjects = $this->Student_model->get_subjects($student->id, $filters);
         foreach ($subjects as &$subject) {
             $subject->requires_key = false;
@@ -117,17 +118,17 @@ class Student extends MY_Controller {
     public function enroll($subject_id)
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         $subject = $this->Student_model->get_subject($subject_id);
-        
+
         if (!$subject) {
             show_404();
         }
@@ -136,27 +137,27 @@ class Student extends MY_Controller {
             redirect('student/content/' . $subject_id);
             return;
         }
-        
+
         if ($this->input->method() === 'post') {
-            $enrollment_key = $this->input->post('enrollment_key', TRUE);
-            
+            $enrollment_key = trim($this->input->post('enrollment_key', TRUE));
+
             // Get sections for this subject to check enrollment keys
             $this->load->model('Academic_model');
             $sections = $this->Academic_model->get_subject_sections($subject_id);
-            
+
             $requires_key = false;
             $key_valid = false;
-            
+
             foreach ($sections as $section) {
                 if (!empty($section->enrollment_key)) {
                     $requires_key = true;
-                    if ($enrollment_key === $section->enrollment_key) {
+                    if ($enrollment_key === trim($section->enrollment_key)) {
                         $key_valid = true;
                         break;
                     }
                 }
             }
-            
+
             // If enrollment key is required but not provided or invalid
             if ($requires_key && !$key_valid) {
                 $this->session->set_flashdata('error', 'Invalid enrollment key. Please contact your instructor for the correct key.');
@@ -166,10 +167,10 @@ class Student extends MY_Controller {
 
             // Create enrollment record
             $existing_enrollment = $this->db->where('user_id', $user_id)
-                                             ->where('course_id', $subject_id)
-                                             ->where('role', 'student')
-                                             ->get('course_enrollments')
-                                             ->row();
+                ->where('course_id', $subject_id)
+                ->where('role', 'student')
+                ->get('course_enrollments')
+                ->row();
 
             if (!$existing_enrollment) {
                 $this->db->insert('course_enrollments', array(
@@ -180,35 +181,35 @@ class Student extends MY_Controller {
                 ));
             } elseif ($existing_enrollment->status !== 'active') {
                 $this->db->where('id', $existing_enrollment->id)
-                         ->update('course_enrollments', array('status' => 'active'));
+                    ->update('course_enrollments', array('status' => 'active'));
             }
 
             $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject->name));
             redirect('student/content/' . $subject_id);
         }
-        
+
         $data['title'] = 'Enroll in Course';
         $data['subject'] = $subject;
-        
+
         $this->render('student/enroll', $data);
     }
 
     public function content($subject_id = null)
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         if (!$subject_id) {
             redirect('student/subjects');
         }
-        
+
         $subject = $this->Student_model->get_subject($subject_id);
         if (!$subject) {
             show_404();
@@ -232,10 +233,10 @@ class Student extends MY_Controller {
 
         // Get modules for this subject
         $modules = $this->Student_model->get_modules_by_subject($subject_id);
-        
+
         // Debug: Check module order
         log_message('debug', 'Modules for subject ' . $subject_id . ': ' . json_encode($modules));
-        
+
         foreach ($modules as $key => &$module) {
             $module->lessons = $this->Student_model->get_lessons($module->id);
             $module->activities = $this->Student_model->get_activities($module->id);
@@ -256,17 +257,17 @@ class Student extends MY_Controller {
             $module->activities = array_values($module->activities);
         }
         unset($module);
-        
+
         // Get lesson completions using the same published lesson set shown on this page.
         $ordered_lessons = $this->Student_model->get_ordered_lessons_by_subject($subject_id);
-        $ordered_lesson_ids = array_map(function($lesson) {
+        $ordered_lesson_ids = array_map(function ($lesson) {
             return (int) $lesson->id;
         }, $ordered_lessons);
         $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
         $completed_lesson_ids = array_values(array_intersect($ordered_lesson_ids, array_map('intval', $completed_lesson_ids)));
         $total_lessons = count($ordered_lesson_ids);
-        $progress_percent = $total_lessons > 0 
-            ? round((count($completed_lesson_ids) / $total_lessons) * 100) 
+        $progress_percent = $total_lessons > 0
+            ? round((count($completed_lesson_ids) / $total_lessons) * 100)
             : 0;
 
         $accessible_lesson_ids = array();
@@ -276,7 +277,7 @@ class Student extends MY_Controller {
                 break;
             }
         }
-        
+
         $data['title'] = $subject->code . ' - ' . $subject->description;
         $data['subject'] = $subject;
         $data['modules'] = $modules;
@@ -284,27 +285,27 @@ class Student extends MY_Controller {
         $data['accessible_lesson_ids'] = $accessible_lesson_ids;
         $data['total_lessons'] = $total_lessons;
         $data['progress_percent'] = max(0, min(100, $progress_percent));
-        
+
         $this->render('student/content', $data);
     }
 
     public function lesson($subject_id, $lesson_id)
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         $subject = $this->Student_model->get_subject($subject_id);
         if (!$subject) {
             show_404();
         }
-        
+
         if (!$this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
             $this->session->set_flashdata('error', 'You need to enroll in this course first.');
             redirect('student/enroll/' . $subject_id);
@@ -312,7 +313,7 @@ class Student extends MY_Controller {
         }
 
         $ordered_lessons = $this->Student_model->get_ordered_lessons_by_subject($subject_id);
-        $lesson_ids = array_map(function($lesson) {
+        $lesson_ids = array_map(function ($lesson) {
             return (int) $lesson->id;
         }, $ordered_lessons);
         $lesson_index = array_search((int) $lesson_id, $lesson_ids, true);
@@ -324,7 +325,7 @@ class Student extends MY_Controller {
         $lesson = $ordered_lessons[$lesson_index];
         $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
         $completed_lesson_ids = array_values(array_intersect($lesson_ids, array_map('intval', $completed_lesson_ids)));
-        
+
         if ($lesson_index > 0) {
             $previous_lesson_id = (int) $lesson_ids[$lesson_index - 1];
             if (!in_array($previous_lesson_id, $completed_lesson_ids, true)) {
@@ -333,7 +334,7 @@ class Student extends MY_Controller {
                 return;
             }
         }
-        
+
         $is_completed = in_array((int) $lesson_id, $completed_lesson_ids, true);
 
         // Auto-mark lesson as complete when opened
@@ -368,10 +369,10 @@ class Student extends MY_Controller {
     {
         $this->require_student();
         $this->output->set_content_type('application/json');
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             $this->output->set_output(json_encode(array(
                 'success' => false,
@@ -380,11 +381,11 @@ class Student extends MY_Controller {
             )));
             return;
         }
-        
+
         // Mark lesson as complete
         $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
         notify_success('Lesson marked as complete.');
-        
+
         $this->output->set_output(json_encode(array(
             'success' => true,
             'message' => 'Lesson marked as complete.',
@@ -395,32 +396,37 @@ class Student extends MY_Controller {
     public function unenroll($subject_id)
     {
         $this->require_student();
-        
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
-        
+
         if (!$student) {
             show_error('Failed to get student profile. Please contact administrator.', 500);
             return;
         }
-        
+
         $subject = $this->Student_model->get_subject($subject_id);
-        
+
         if (!$subject) {
             show_404();
         }
-        
+
         if ($this->input->method() === 'post') {
             // Remove lesson completions for this subject
             $this->Student_model->remove_lesson_completions($student->id, $subject_id);
-            
+
+            // Remove enrollment from course_enrollments
+            $this->db->where('user_id', $student->user_id);
+            $this->db->where('course_id', $subject_id);
+            $this->db->delete('course_enrollments');
+
             $this->session->set_flashdata('success', 'Successfully unenrolled from ' . htmlspecialchars($subject->name));
             redirect('student/subjects');
         }
-        
+
         $data['title'] = 'Unenroll from Course';
         $data['subject'] = $subject;
-        
+
         $this->render('student/unenroll', $data);
     }
 

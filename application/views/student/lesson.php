@@ -152,17 +152,17 @@
         gap: 8px;
         font-size: 0.875rem;
         font-weight: 500;
-        color: #0071e3;
+        color: #3b82f6;
         text-decoration: none;
         padding: 8px 14px 8px 10px;
         border-radius: 10px;
-        background: rgba(0, 113, 227, 0.06);
+        background: rgba(59, 130, 246, 0.08);
         transition: all 0.2s ease;
     }
 
     .lp-back-link:hover {
-        background: rgba(0, 113, 227, 0.12);
-        color: #0077ed;
+        background: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
     }
 
     .lp-back-icon {
@@ -172,8 +172,8 @@
         width: 28px;
         height: 28px;
         border-radius: 8px;
-        background: rgba(0, 113, 227, 0.1);
-        color: #0071e3;
+        background: rgba(59, 130, 246, 0.12);
+        color: #3b82f6;
         flex-shrink: 0;
     }
 
@@ -210,8 +210,8 @@
     }
 
     .lp-badge--deped {
-        background: #e8f4fd;
-        color: #0071e3;
+        background: #dbeafe;
+        color: #3b82f6;
     }
 
     .lp-badge--ched {
@@ -314,7 +314,7 @@
         align-items: center;
         gap: 6px;
         padding: 8px 14px;
-        background: #0071e3;
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
         border-radius: 8px;
         font-size: 0.8125rem;
@@ -459,9 +459,9 @@
         justify-content: center;
         width: 32px;
         height: 32px;
-        background: #e8f4fd;
+        background: #dbeafe;
         border-radius: 8px;
-        color: #0071e3;
+        color: #3b82f6;
         flex-shrink: 0;
     }
 

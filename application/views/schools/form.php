@@ -99,23 +99,23 @@
 
 <style>
     .dashboard-hero {
-        margin-bottom: 2rem;
+        margin-bottom: 1.25rem;
     }
 
     .hero-content {
-        padding: 0.5rem 0;
+        padding: 0;
     }
 
     .hero-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #0f172a;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
         margin-bottom: 0.25rem;
     }
 
     .hero-subtitle {
         color: #64748b;
-        font-size: 0.95rem;
+        font-size: 0.875rem;
         margin: 0;
     }
 
@@ -130,27 +130,28 @@
     }
 
     .back-link:hover {
-        color: #0f172a;
+        color: #1e293b;
     }
 
     .form-card {
         background: #ffffff;
-        border-radius: 16px;
+        border-radius: 12px;
         border: 1px solid #e2e8f0;
-        padding: 1.5rem;
+        padding: 1.75rem;
+        max-width: 720px;
     }
 
     .form-card-title {
         font-weight: 700;
         margin-bottom: 1.5rem;
-        color: #0f172a;
+        color: #1e293b;
         font-size: 1.1rem;
     }
 
     .form-section {
-        margin-bottom: 2rem;
-        padding-bottom: 2rem;
-        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 1.75rem;
+        padding-bottom: 1.75rem;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .form-section:last-of-type {
@@ -160,16 +161,17 @@
     }
 
     .section-title {
-        font-size: 0.95rem;
+        font-size: 0.875rem;
         font-weight: 600;
-        color: #0d9488;
-        margin-bottom: 1rem;
+        color: #3b82f6;
+        margin-bottom: 1.25rem;
         display: flex;
         align-items: center;
+        padding-bottom: 0.5rem;
     }
 
     .section-title i {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .form-label {
@@ -188,8 +190,8 @@
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #0d9488;
-        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
     .form-control-lg {
@@ -217,11 +219,11 @@
     .btn-light:hover {
         background: #f8fafc;
         border-color: #cbd5e1;
-        color: #0f172a;
+        color: #1e293b;
     }
 
     .form-check-input:checked {
-        background-color: #0d9488;
-        border-color: #0d9488;
+        background-color: #3b82f6;
+        border-color: #3b82f6;
     }
 </style>
