@@ -11,33 +11,34 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
         :root {
             --sidebar-width: 260px;
             --sidebar-bg: #ffffff;
-            --sidebar-hover: #f0f4f8;
-            --sidebar-active: #e8edf2;
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --primary-light: #dbeafe;
-            --accent: #0ea5e9;
-            --body-bg: #e5eaf0;
+            --sidebar-hover: #f5f5f9;
+            --sidebar-active: #f5f5f9;
+            --primary: #696cff;
+            --primary-dark: #5f61f4;
+            --primary-light: #e7e7ff;
+            --accent: #696cff;
+            --body-bg: #f5f5f9;
             --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --text-tertiary: #94a3b8;
-            --text-muted: #cbd5e1;
-            --border-soft: #e2e8f0;
-            --border-hairline: #f1f5f9;
-            --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
-            --shadow-soft: 0 2px 12px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-            --shadow-medium: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04);
+            --text-primary: #566a7f;
+            --text-secondary: #697a8d;
+            --text-tertiary: #a1acb8;
+            --text-muted: #d9dee3;
+            --border-soft: #d9dee3;
+            --border-hairline: #f5f5f9;
+            --shadow-xs: 0 2px 6px 0 rgba(67, 89, 113, 0.12);
+            --shadow-soft: 0 2px 6px 0 rgba(67, 89, 113, 0.12);
+            --shadow-medium: 0 4px 20px rgba(67, 89, 113, 0.15);
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-xl: 24px;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         }
 
         * {
@@ -61,6 +62,12 @@
             line-height: 1.5;
             font-feature-settings: 'cv11', 'ss01', 'ss03';
             letter-spacing: -0.01em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         h1,
@@ -102,15 +109,19 @@
         .sidebar-brand .brand-icon {
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            background: #696cff;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1rem;
+            font-size: 1.1rem;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+        }
+
+        .sidebar-brand .brand-icon .material-symbols-outlined {
+            font-size: 1.25rem;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         .sidebar-brand .brand-text {
@@ -159,16 +170,17 @@
         .sidebar-link {
             display: flex;
             align-items: center;
-            gap: 0.7rem;
-            padding: 0.5rem 0.75rem;
+            gap: 0.75rem;
+            padding: 0.625rem 0.875rem;
             color: var(--text-secondary);
             text-decoration: none;
             border-radius: 8px;
             font-size: 0.875rem;
             font-weight: 500;
-            margin: 1px 0;
-            transition: background 0.15s ease, color 0.15s ease;
+            margin: 2px 0;
+            transition: all 0.2s ease;
             letter-spacing: -0.005em;
+            border-right: 4px solid transparent;
         }
 
         .sidebar-link:hover {
@@ -178,24 +190,25 @@
 
         .sidebar-link.active {
             color: var(--primary);
-            background: var(--primary-light);
+            background: var(--sidebar-active);
             font-weight: 600;
+            border-right-color: var(--primary);
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
         }
 
-        .sidebar-link.active i {
-            color: var(--primary);
-        }
-
-        .sidebar-link i {
-            font-size: 1.05rem;
-            width: 20px;
+        .sidebar-link .material-symbols-outlined {
+            font-size: 1.25rem;
+            width: 24px;
             text-align: center;
             color: var(--text-tertiary);
             transition: color 0.15s ease;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
-        .sidebar-link:hover i {
-            color: var(--text-secondary);
+        .sidebar-link:hover .material-symbols-outlined,
+        .sidebar-link.active .material-symbols-outlined {
+            color: var(--primary);
         }
 
         .sidebar-footer {
@@ -271,18 +284,21 @@
             margin-left: 0;
         }
 
+        .topbar-wrapper {
+            padding: 1rem 1.5rem 0;
+        }
+
         .topbar {
-            background: rgba(255, 255, 255, 0.75);
-            border-bottom: 1px solid var(--border-soft);
-            padding: 0.875rem 2.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            backdrop-filter: saturate(200%) blur(20px);
-            -webkit-backdrop-filter: saturate(200%) blur(20px);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .topbar-left {
@@ -303,12 +319,11 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             background: transparent;
-            border: 1px solid var(--border-soft);
-            border-radius: 8px;
-            font-size: 1.1rem;
+            border: none;
+            border-radius: 50%;
             color: var(--text-secondary);
             cursor: pointer;
             padding: 0;
@@ -316,14 +331,78 @@
         }
 
         .menu-toggle:hover {
-            background: #f5f5f7;
+            background: var(--sidebar-hover);
             color: var(--text-primary);
+        }
+
+        .menu-toggle .material-symbols-outlined {
+            font-size: 1.25rem;
         }
 
         .topbar-right {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.25rem;
+        }
+
+        .topbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-soft);
+            margin: 0 0.5rem;
+        }
+
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-left: 0.5rem;
+        }
+
+        .topbar-user-info {
+            text-align: right;
+        }
+
+        .topbar-user-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .topbar-user-role {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            line-height: 1.2;
+        }
+
+        .topbar-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2px solid rgba(105, 108, 255, 0.2);
+            padding: 2px;
+            overflow: hidden;
+        }
+
+        .topbar-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .topbar-avatar-initials {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         /* Search Bar */
@@ -331,31 +410,29 @@
             position: relative;
             display: flex;
             align-items: center;
+            gap: 0.75rem;
         }
 
-        .search-bar i {
-            position: absolute;
-            left: 12px;
-            color: var(--text-tertiary);
-            font-size: 0.85rem;
+        .search-bar .material-symbols-outlined {
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         .search-bar input {
-            padding: 0.5rem 0.875rem 0.5rem 2.2rem;
-            border: 1px solid var(--border-soft);
-            border-radius: 10px;
-            font-size: 0.85rem;
+            padding: 0.5rem 0;
+            border: none;
+            border-radius: 0;
+            font-size: 0.875rem;
             font-family: var(--font-sans);
-            width: 260px;
-            background: #ffffff;
+            width: 240px;
+            background: transparent;
             color: var(--text-primary);
-            transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: all 0.2s ease;
         }
 
         .search-bar input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .search-bar input::placeholder {
@@ -389,32 +466,36 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             background: transparent;
-            border: 1px solid transparent;
-            border-radius: 8px;
+            border: none;
+            border-radius: 50%;
             color: var(--text-secondary);
-            font-size: 1rem;
             cursor: pointer;
             position: relative;
             transition: all 0.15s ease;
         }
 
         .topbar-icon-btn:hover {
-            background: #f5f5f7;
+            background: var(--sidebar-hover);
             color: var(--text-primary);
+        }
+
+        .topbar-icon-btn .material-symbols-outlined {
+            font-size: 1.25rem;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
         .notification-dot {
             position: absolute;
-            top: 7px;
-            right: 7px;
-            width: 6px;
-            height: 6px;
-            background: #ff3b30;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            background: #ba1a1a;
             border-radius: 50%;
-            border: 2px solid rgba(250, 250, 250, 0.9);
+            border: 2px solid #ffffff;
         }
 
         .btn-logout {
@@ -439,7 +520,7 @@
         }
 
         .content-area {
-            padding: 1.75rem 2rem 2.5rem;
+            padding: 1.5rem;
             max-width: 1280px;
             margin: 0 auto;
         }
@@ -952,49 +1033,79 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="topbar">
-            <div class="topbar-left">
-                <button type="button" class="menu-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
-                    <i class="bi bi-list"></i>
-                </button>
-                <h1><?= isset($title) ? $title : 'Dashboard' ?></h1>
-            </div>
-            <div class="topbar-right">
-                <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
-                    <?php
-                    $is_school_select_page = ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'select');
-                    $has_selected_school = (bool) $this->session->userdata('school_id');
-                    ?>
-                    <!-- Search Bar -->
-                    <div class="search-bar">
-                        <i class="bi bi-search"></i>
-                        <input type="text" placeholder="Search schools or admins..." />
-                    </div>
-                    <!-- Switch School Button -->
-                    <?php if ($has_selected_school && !$is_school_select_page): ?>
-                        <a href="<?= site_url('schools/select') ?>" class="btn-switch-school">
-                            <i class="bi bi-arrow-left-right"></i>
-                            Switch School
-                        </a>
+        <div class="topbar-wrapper">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="menu-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    <h1><?= isset($title) ? $title : 'Dashboard' ?></h1>
+                </div>
+                <div class="topbar-right">
+                    <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
+                        <?php
+                        $is_school_select_page = ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'select');
+                        $has_selected_school = (bool) $this->session->userdata('school_id');
+                        ?>
+                        <!-- Search Bar -->
+                        <div class="search-bar">
+                            <span class="material-symbols-outlined">search</span>
+                            <input type="text" placeholder="Search (Ctrl+/)">
+                        </div>
+                        <!-- Switch School Button -->
+                        <?php if ($has_selected_school && !$is_school_select_page): ?>
+                            <a href="<?= site_url('schools/select') ?>" class="btn-switch-school">
+                                <span class="material-symbols-outlined" style="font-size:1rem;">swap_horiz</span>
+                                Switch School
+                            </a>
+                        <?php endif; ?>
+                    <?php elseif ($this->session->userdata('school_name') && (!isset($role_slug) || $role_slug !== 'student')): ?>
+                        <span style="background:var(--sidebar-hover);padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:var(--text-primary);margin-right:0.5rem;">
+                            <span class="material-symbols-outlined" style="font-size:1rem;vertical-align:middle;margin-right:0.25rem;">apartment</span>
+                            <?= htmlspecialchars($this->session->userdata('school_name')) ?>
+                        </span>
                     <?php endif; ?>
+
+                    <!-- Dark Mode Toggle -->
+                    <button type="button" class="topbar-icon-btn" title="Toggle Dark Mode">
+                        <span class="material-symbols-outlined">dark_mode</span>
+                    </button>
+
                     <!-- Notification Icon -->
                     <button type="button" class="topbar-icon-btn" title="Notifications">
-                        <i class="bi bi-bell"></i>
+                        <span class="material-symbols-outlined">notifications</span>
                         <span class="notification-dot"></span>
                     </button>
+
                     <!-- Help Icon -->
                     <button type="button" class="topbar-icon-btn" title="Help">
-                        <i class="bi bi-question-circle"></i>
+                        <span class="material-symbols-outlined">help_outline</span>
                     </button>
-                <?php elseif ($this->session->userdata('school_name') && (!isset($role_slug) || $role_slug !== 'student')): ?>
-                    <span style="background:#f1f5f9;padding:0.4rem 0.85rem;border-radius:10px;font-size:0.78rem;font-weight:600;color:#475569;margin-right:0.5rem;">
-                        <i class="bi bi-building me-1"></i><?= htmlspecialchars($this->session->userdata('school_name')) ?>
-                    </span>
-                <?php endif; ?>
-                <a href="<?= site_url('auth/logout') ?>" class="btn-logout">
-                    <i class="bi bi-box-arrow-right"></i>
-                    Logout
-                </a>
+
+                    <div class="topbar-divider"></div>
+
+                    <!-- User Profile -->
+                    <div class="topbar-user">
+                        <div class="topbar-user-info">
+                            <div class="topbar-user-name"><?= $this->session->userdata('first_name') . ' ' . $this->session->userdata('last_name') ?></div>
+                            <div class="topbar-user-role"><?= $this->session->userdata('role_name') ?></div>
+                        </div>
+                        <div class="topbar-avatar">
+                            <?php
+                            $avatar_path = $this->session->userdata('avatar');
+                            $first_name = $this->session->userdata('first_name');
+                            $last_name = $this->session->userdata('last_name');
+                            ?>
+                            <?php if (!empty($avatar_path) && file_exists('./' . $avatar_path)): ?>
+                                <img src="<?= base_url($avatar_path) ?>" alt="Avatar">
+                            <?php else: ?>
+                                <div class="topbar-avatar-initials">
+                                    <?= strtoupper(substr($first_name, 0, 1) . substr($last_name, 0, 1)) ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

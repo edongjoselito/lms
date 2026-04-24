@@ -27,7 +27,7 @@ if ($rs === 'student') {
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="brand-icon">
-            <i class="bi bi-mortarboard-fill"></i>
+            <span class="material-symbols-outlined">school</span>
         </div>
         <div>
             <div class="brand-text"><?= htmlspecialchars($brand_text) ?></div>
@@ -38,12 +38,12 @@ if ($rs === 'student') {
 
     <?php if ($session_role_slug === 'super_admin' && $selected_school_id && !$is_school_select_page): ?>
         <div class="px-3 pb-2 d-grid gap-1">
-            <a href="<?= site_url('schools/select') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:#f1f5f9;border-radius:8px;font-size:0.78rem;color:#1e293b;text-decoration:none;font-weight:500;letter-spacing:-0.005em;">
-                <i class="bi bi-arrow-left-right" style="font-size:0.95rem;color:#64748b;"></i>
+            <a href="<?= site_url('schools/select') ?>" class="sidebar-link" style="font-size:0.78rem;margin:0;">
+                <span class="material-symbols-outlined">swap_horiz</span>
                 <span>Switch School</span>
             </a>
-            <a href="<?= site_url('schools/switch_to_platform') ?>" class="d-flex align-items-center gap-2 px-3 py-2" style="background:transparent;border-radius:8px;font-size:0.78rem;color:#64748b;text-decoration:none;font-weight:500;letter-spacing:-0.005em;">
-                <i class="bi bi-building" style="font-size:0.95rem;color:#94a3b8;"></i>
+            <a href="<?= site_url('schools/switch_to_platform') ?>" class="sidebar-link" style="font-size:0.78rem;margin:0;">
+                <span class="material-symbols-outlined">domain</span>
                 <span>Platform View</span>
             </a>
         </div>
@@ -53,7 +53,7 @@ if ($rs === 'student') {
         <?php if ($nav_role !== 'student' && $nav_role !== 'course_creator'): ?>
             <div class="nav-section-title">Main</div>
             <a href="<?= site_url('dashboard') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'dashboard') ? 'active' : '' ?>">
-                <i class="bi bi-grid-1x2-fill"></i>
+                <span class="material-symbols-outlined">dashboard</span>
                 <span>Dashboard</span>
             </a>
         <?php endif; ?>
@@ -61,11 +61,11 @@ if ($rs === 'student') {
         <?php if ($nav_role === 'super_admin'): ?>
             <div class="nav-section-title">Platform</div>
             <a href="<?= site_url('schools') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'schools') ? 'active' : '' ?>">
-                <i class="bi bi-building"></i>
+                <span class="material-symbols-outlined">domain</span>
                 <span>Schools</span>
             </a>
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic') ? 'active' : '' ?>">
-                <i class="bi bi-mortarboard-fill"></i>
+                <span class="material-symbols-outlined">school</span>
                 <span>Programs</span>
             </a>
         <?php endif; ?>
@@ -73,14 +73,14 @@ if ($rs === 'student') {
         <?php if (in_array($nav_role, array('super_admin', 'school_admin'))): ?>
             <div class="nav-section-title">Administration</div>
             <a href="<?= site_url('users') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'users') ? 'active' : '' ?>">
-                <i class="bi bi-people-fill"></i>
+                <span class="material-symbols-outlined">group</span>
                 <span>Users</span>
             </a>
         <?php endif; ?>
 
         <?php if ($nav_role === 'super_admin'): ?>
             <a href="<?= site_url('audit') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'audit') ? 'active' : '' ?>">
-                <i class="bi bi-clock-history"></i>
+                <span class="material-symbols-outlined">history</span>
                 <span>Audit Logs</span>
             </a>
         <?php endif; ?>
@@ -88,11 +88,11 @@ if ($rs === 'student') {
         <?php if ($nav_role === 'teacher'): ?>
             <div class="nav-section-title">Academics</div>
             <a href="<?= site_url('grades') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'grades') ? 'active' : '' ?>">
-                <i class="bi bi-journal-check"></i>
+                <span class="material-symbols-outlined">checklist</span>
                 <span>Grades</span>
             </a>
             <a href="<?= site_url('attendance') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'attendance') ? 'active' : '' ?>">
-                <i class="bi bi-calendar-check-fill"></i>
+                <span class="material-symbols-outlined">event_available</span>
                 <span>Attendance</span>
             </a>
         <?php endif; ?>
@@ -100,7 +100,7 @@ if ($rs === 'student') {
         <?php if ($nav_role === 'course_creator'): ?>
             <div class="nav-section-title">Course Management</div>
             <a href="<?= site_url('course') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && !$this->uri->segment(2)) ? 'active' : '' ?>">
-                <i class="bi bi-speedometer2"></i>
+                <span class="material-symbols-outlined">speed</span>
                 <span>Dashboard</span>
             </a>
         <?php endif; ?>
@@ -108,7 +108,7 @@ if ($rs === 'student') {
         <?php if ($nav_role === 'school_admin'): ?>
             <div class="nav-section-title">Academic Setup</div>
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
-                <i class="bi bi-mortarboard-fill"></i>
+                <span class="material-symbols-outlined">school</span>
                 <span>Programs</span>
             </a>
         <?php endif; ?>
@@ -116,7 +116,7 @@ if ($rs === 'student') {
         <?php if ($nav_role === 'student'): ?>
             <div class="nav-section-title">Main</div>
             <a href="<?= site_url('student') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'student' && !$this->uri->segment(2)) ? 'active' : '' ?>">
-                <i class="bi bi-grid-1x2-fill"></i>
+                <span class="material-symbols-outlined">dashboard</span>
                 <span>Dashboard</span>
             </a>
         <?php endif; ?>
@@ -126,12 +126,12 @@ if ($rs === 'student') {
             <?php if ($nav_role === 'student'): ?>
                 <?php $student_learning_active = ($this->uri->segment(1) == 'student' && in_array($this->uri->segment(2), array('subjects', 'content', 'lesson', 'enroll'))); ?>
                 <a href="<?= site_url('student/subjects') ?>" class="sidebar-link <?= $student_learning_active ? 'active' : '' ?>">
-                    <i class="bi bi-book-fill"></i>
+                    <span class="material-symbols-outlined">menu_book</span>
                     <span>Subjects</span>
                 </a>
             <?php else: ?>
                 <a href="<?= site_url('subjects') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('subjects')) ? 'active' : '' ?>">
-                    <i class="bi bi-book-fill"></i>
+                    <span class="material-symbols-outlined">menu_book</span>
                     <span>Subjects</span>
                 </a>
             <?php endif; ?>
@@ -139,30 +139,30 @@ if ($rs === 'student') {
 
         <div class="nav-section-title">Account</div>
         <a href="<?= site_url('profile') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'profile') ? 'active' : '' ?>">
-            <i class="bi bi-person-circle"></i>
+            <span class="material-symbols-outlined">person</span>
             <span>My Profile</span>
         </a>
         <?php if ($session_role_slug === 'super_admin'): ?>
             <a href="<?= site_url('settings') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'settings') ? 'active' : '' ?>">
-                <i class="bi bi-gear"></i>
+                <span class="material-symbols-outlined">settings</span>
                 <span>Settings</span>
             </a>
         <?php endif; ?>
         <?php if (isset($original_role_slug) && in_array($original_role_slug, array('teacher', 'course_creator'))): ?>
             <?php if (isset($is_student_mode) && $is_student_mode): ?>
-                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fef3c7;color:#d97706;">
-                    <i class="bi bi-person-badge-fill" style="color:#d97706;"></i>
+                <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link" style="background:#fff2e2;color:#ff9f43;">
+                    <span class="material-symbols-outlined" style="color:#ff9f43;">person</span>
                     <span>Exit Student Mode</span>
                 </a>
             <?php else: ?>
                 <a href="<?= site_url('mode/toggle') ?>" class="sidebar-link">
-                    <i class="bi bi-eye-fill"></i>
+                    <span class="material-symbols-outlined">visibility</span>
                     <span>View as Student</span>
                 </a>
             <?php endif; ?>
         <?php endif; ?>
         <a href="<?= site_url('auth/logout') ?>" class="sidebar-link">
-            <i class="bi bi-box-arrow-left"></i>
+            <span class="material-symbols-outlined">logout</span>
             <span>Logout</span>
         </a>
     </nav>
