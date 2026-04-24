@@ -142,8 +142,8 @@ if ($rs === 'student') {
             <i class="bi bi-person-circle"></i>
             <span>My Profile</span>
         </a>
-        <?php if ($nav_role === 'super_admin'): ?>
-            <a href="#" class="sidebar-link">
+        <?php if ($session_role_slug === 'super_admin'): ?>
+            <a href="<?= site_url('settings') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'settings') ? 'active' : '' ?>">
                 <i class="bi bi-gear"></i>
                 <span>Settings</span>
             </a>

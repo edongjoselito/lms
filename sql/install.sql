@@ -90,6 +90,16 @@ CREATE TABLE IF NOT EXISTS `school_years` (
 
 INSERT INTO `school_years` (`school_id`, `year_start`, `year_end`, `is_active`) VALUES (1, 2025, 2026, 1);
 
+CREATE TABLE IF NOT EXISTS `platform_settings` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `setting_key` (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `semesters` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `school_year_id` int(11) UNSIGNED NOT NULL,

@@ -933,6 +933,20 @@ INSERT INTO `school_years` (`id`, `school_id`, `year_start`, `year_end`, `is_act
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `platform_settings`
+--
+
+CREATE TABLE `platform_settings` (
+  `id` int UNSIGNED NOT NULL,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sections`
 --
 
@@ -1577,6 +1591,13 @@ ALTER TABLE `schools`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `platform_settings`
+--
+ALTER TABLE `platform_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `setting_key` (`setting_key`);
+
+--
 -- Indexes for table `school_years`
 --
 ALTER TABLE `school_years`
@@ -1899,6 +1920,12 @@ ALTER TABLE `rubric_criteria`
 --
 ALTER TABLE `schools`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `platform_settings`
+--
+ALTER TABLE `platform_settings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `school_years`

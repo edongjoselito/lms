@@ -8,6 +8,7 @@ class Auth extends CI_Controller
     {
         parent::__construct();
         $this->load->model('User_model');
+        $this->load->model('Setting_model');
     }
 
     public function index()
@@ -15,7 +16,8 @@ class Auth extends CI_Controller
         if ($this->session->userdata('logged_in')) {
             redirect('dashboard');
         }
-        $this->load->view('auth/login');
+        $data['login_image_url'] = $this->get_login_image_url();
+        $this->load->view('auth/login', $data);
     }
 
     public function login()
@@ -189,5 +191,20 @@ class Auth extends CI_Controller
         }
 
         $this->load->view('auth/forgot_password');
+    }
+
+    private function get_login_image_url()
+    {
+        $filename = $this->Setting_model->get_value('login_image');
+        if (empty($filename)) {
+            return null;
+        }
+
+        $file_path = FCPATH . 'uploads/login/' . $filename;
+        if (!file_exists($file_path)) {
+            return null;
+        }
+
+        return base_url('uploads/login/' . rawurlencode($filename));
     }
 }

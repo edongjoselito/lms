@@ -1,3 +1,4 @@
+<?php $has_custom_login_image = !empty($login_image_url); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -104,7 +105,7 @@
             max-width: 1240px;
             min-height: min(730px, calc(100vh - 36px));
             display: grid;
-            grid-template-columns: minmax(340px, 410px) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
             background: rgba(255, 255, 255, 0.58);
             border: 1px solid rgba(255, 255, 255, 0.9);
             border-radius: var(--shell-radius);
@@ -114,6 +115,7 @@
         }
 
         .login-panel {
+            grid-column: 2;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -125,8 +127,8 @@
 
         .form-card {
             width: 100%;
-            max-width: 376px;
-            padding: 28px 24px 22px;
+            max-width: 392px;
+            padding: 30px 28px 24px;
             border-radius: var(--card-radius);
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(219, 234, 254, 0.95);
@@ -174,25 +176,6 @@
             letter-spacing: -0.04em;
         }
 
-        .login-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            margin-bottom: 14px;
-            border-radius: 999px;
-            background: var(--blue-050);
-            color: var(--blue-900);
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .login-badge i {
-            font-size: 0.88rem;
-        }
-
         .form-card h1 {
             margin-bottom: 8px;
             font-family: var(--font-heading);
@@ -203,111 +186,14 @@
         }
 
         .login-subtitle {
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             color: var(--ink-500);
             font-size: 0.9rem;
             line-height: 1.6;
         }
 
-        .mobile-preview {
-            display: none;
-            margin-bottom: 16px;
-            padding: 14px;
-            border-radius: 20px;
-            background: linear-gradient(145deg, #0f2e6f 0%, #1d4ed8 58%, #4f97ff 100%);
-            color: var(--white);
-            box-shadow: 0 18px 30px rgba(29, 78, 216, 0.2);
-        }
-
-        .mobile-preview-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .mobile-preview-top strong {
-            display: block;
-            font-family: var(--font-heading);
-            font-size: 0.94rem;
-            letter-spacing: -0.03em;
-        }
-
-        .mobile-preview-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.14);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            font-size: 0.68rem;
-            font-weight: 800;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .mobile-preview-chip i {
-            font-size: 0.8rem;
-        }
-
-        .mobile-preview-stats {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-        }
-
-        .mobile-preview-stat {
-            padding: 10px 8px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            text-align: center;
-        }
-
-        .mobile-preview-stat strong {
-            display: block;
-            margin-bottom: 2px;
-            font-family: var(--font-heading);
-            font-size: 1rem;
-            letter-spacing: -0.04em;
-        }
-
-        .mobile-preview-stat span {
-            display: block;
-            color: rgba(255, 255, 255, 0.82);
-            font-size: 0.68rem;
-            line-height: 1.3;
-        }
-
-        .role-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 18px;
-        }
-
-        .role-strip span {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 14px;
-            background: #f8fbff;
-            border: 1px solid var(--blue-100);
-            color: var(--ink-700);
-            font-size: 0.74rem;
-            font-weight: 700;
-        }
-
-        .role-strip i {
-            color: var(--blue-800);
-            font-size: 0.84rem;
-        }
-
         .field-group {
-            margin-bottom: 13px;
+            margin-bottom: 16px;
         }
 
         .field-label {
@@ -386,25 +272,6 @@
             color: var(--blue-850);
         }
 
-        .assist-note {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 13px;
-            margin: 2px 0 14px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #eff6ff 0%, #edf5ff 100%);
-            color: var(--ink-700);
-            font-size: 0.79rem;
-            line-height: 1.45;
-        }
-
-        .assist-note i {
-            color: var(--blue-850);
-            font-size: 0.96rem;
-            margin-top: 1px;
-        }
-
         .btn-login {
             width: 100%;
             height: 56px;
@@ -462,6 +329,8 @@
         }
 
         .hero-panel {
+            grid-column: 1;
+            grid-row: 1;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -473,6 +342,12 @@
                 radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 30%),
                 linear-gradient(160deg, var(--blue-980) 0%, var(--blue-950) 24%, var(--blue-900) 58%, var(--blue-800) 100%);
             overflow: hidden;
+        }
+
+        .hero-panel--image {
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
         }
 
         .hero-panel::before {
@@ -489,6 +364,13 @@
             pointer-events: none;
         }
 
+        .hero-panel--image::before {
+            background: linear-gradient(180deg, rgba(8, 23, 52, 0.22) 0%, rgba(8, 23, 52, 0.48) 42%, rgba(8, 23, 52, 0.76) 100%);
+            opacity: 1;
+            mask-image: none;
+            -webkit-mask-image: none;
+        }
+
         .hero-panel::after {
             content: '';
             position: absolute;
@@ -501,10 +383,62 @@
             pointer-events: none;
         }
 
+        .hero-panel--image::after {
+            width: 520px;
+            height: 520px;
+            right: -220px;
+            bottom: -260px;
+            background: rgba(96, 165, 250, 0.18);
+        }
+
         .hero-copy,
         .hero-dashboard {
             position: relative;
             z-index: 1;
+        }
+
+        .hero-image-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 540px;
+            margin-top: auto;
+        }
+
+        .hero-image-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(12px);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .hero-image-badge i {
+            font-size: 0.88rem;
+        }
+
+        .hero-image-title {
+            margin: 0 0 10px;
+            font-family: var(--font-heading);
+            font-size: clamp(2.1rem, 3.8vw, 3.35rem);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
+            color: var(--white);
+        }
+
+        .hero-image-note {
+            margin: 0;
+            max-width: 420px;
+            color: rgba(255, 255, 255, 0.84);
+            font-size: 0.94rem;
+            line-height: 1.6;
         }
 
         .hero-kicker {
@@ -839,7 +773,7 @@
             }
 
             .form-card {
-                padding: 22px 20px 18px;
+                padding: 24px 22px 20px;
             }
 
             .hero-panel {
@@ -867,7 +801,7 @@
 
         @media (max-width: 1100px) {
             .login-shell {
-                grid-template-columns: minmax(330px, 390px) minmax(0, 1fr);
+                grid-template-columns: minmax(0, 1fr) minmax(330px, 390px);
             }
 
             .hero-panel {
@@ -887,10 +821,13 @@
             }
 
             .login-panel {
+                grid-column: auto;
                 padding: 22px 20px 0;
             }
 
             .hero-panel {
+                grid-column: auto;
+                grid-row: auto;
                 padding: 22px 20px 22px;
             }
 
@@ -925,7 +862,7 @@
 
             .form-card {
                 max-width: none;
-                padding: 22px 18px 18px;
+                padding: 24px 18px 18px;
                 border-radius: 26px;
                 box-shadow: 0 20px 42px rgba(15, 23, 42, 0.14);
             }
@@ -952,19 +889,6 @@
             .login-subtitle {
                 margin-bottom: 14px;
                 font-size: 0.86rem;
-            }
-
-            .mobile-preview {
-                display: block;
-            }
-
-            .role-strip {
-                display: none;
-            }
-
-            .assist-note {
-                font-size: 0.76rem;
-                margin-bottom: 12px;
             }
 
             .hero-panel {
@@ -1000,43 +924,8 @@
                         </div>
                     </div>
 
-                    <div class="login-badge">
-                        <i class="bi bi-shield-check"></i>
-                        Secure BlueCampus Access
-                    </div>
-
                     <h1>Welcome Back</h1>
-                    <p class="login-subtitle">Sign in to continue managing classes, lessons, grades, and campus activity in BlueCampus.</p>
-
-                    <div class="mobile-preview">
-                        <div class="mobile-preview-top">
-                            <strong>BlueCampus Preview</strong>
-                            <span class="mobile-preview-chip">
-                                <i class="bi bi-grid-1x2-fill"></i>
-                                BlueCampus
-                            </span>
-                        </div>
-                        <div class="mobile-preview-stats">
-                            <div class="mobile-preview-stat">
-                                <strong>Courses</strong>
-                                <span>Learning spaces</span>
-                            </div>
-                            <div class="mobile-preview-stat">
-                                <strong>Lessons</strong>
-                                <span>Content flow</span>
-                            </div>
-                            <div class="mobile-preview-stat">
-                                <strong>Grades</strong>
-                                <span>Performance view</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="role-strip">
-                        <span><i class="bi bi-person-workspace"></i> Faculty</span>
-                        <span><i class="bi bi-mortarboard"></i> Students</span>
-                        <span><i class="bi bi-building"></i> Admin</span>
-                    </div>
+                    <p class="login-subtitle">Sign in to continue in BlueCampus.</p>
 
                     <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
                         <div class="field-group">
@@ -1058,11 +947,6 @@
                             </div>
                         </div>
 
-                        <div class="assist-note">
-                            <i class="bi bi-shield-lock-fill"></i>
-                            <div>Your sign-in keeps course records, grades, and student data inside your authorized BlueCampus account.</div>
-                        </div>
-
                         <button type="submit" class="btn-login">
                             <i class="bi bi-box-arrow-in-right"></i>
                             Login to My Account
@@ -1076,133 +960,146 @@
                 </div>
             </aside>
 
-            <section class="hero-panel">
-                <div class="hero-copy">
-                    <div class="hero-kicker">
-                        <i class="bi bi-grid-1x2-fill"></i>
-                        BlueCampus Experience
+            <?php if ($has_custom_login_image): ?>
+                <section class="hero-panel hero-panel--image" style="background-image: url('<?= htmlspecialchars($login_image_url, ENT_QUOTES, 'UTF-8') ?>');">
+                    <div class="hero-image-copy">
+                        <div class="hero-image-badge">
+                            <i class="bi bi-image-fill"></i>
+                            BlueCampus
+                        </div>
+                        <h2 class="hero-image-title">A custom welcome screen for your platform.</h2>
+                        <p class="hero-image-note">This login image is managed from the BlueCampus super admin settings.</p>
                     </div>
-
-                    <h2>Everything academic, arranged in one clear workspace.</h2>
-                    <p>Courses, lessons, grades, and school updates stay connected in BlueCampus through a workspace designed around the daily flow of learning.</p>
-
-                    <div class="hero-tags">
-                        <span><i class="bi bi-journal-check"></i> Course management</span>
-                        <span><i class="bi bi-journal-richtext"></i> Lesson organization</span>
-                        <span><i class="bi bi-bar-chart-line"></i> Grade visibility</span>
-                    </div>
-                </div>
-
-                <div class="hero-dashboard">
-                    <div class="dashboard-frame">
-                        <div class="floating-card top">
-                            <i class="bi bi-clipboard-check"></i>
-                            <div>
-                                <strong>BlueCampus preview</strong>
-                                <span>Visual sample of the platform</span>
-                            </div>
+                </section>
+            <?php else: ?>
+                <section class="hero-panel">
+                    <div class="hero-copy">
+                        <div class="hero-kicker">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            BlueCampus
                         </div>
 
-                        <div class="dashboard-board">
-                            <div class="dashboard-top">
-                                <div class="window-meta">
-                                    <div class="window-dots">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                    <div class="board-name">BlueCampus Workspace</div>
-                                </div>
-                                <div class="board-chip">BlueCampus</div>
-                            </div>
+                        <h2>A cleaner space for learning.</h2>
+                        <p>Courses, lessons, and grades in one place.</p>
 
-                            <div class="snapshot-grid">
-                                <div class="snapshot-card">
-                                    <span class="label">Courses</span>
-                                    <strong>Structured</strong>
-                                    <div class="snapshot-bar"><span style="width: 82%;"></span></div>
-                                </div>
-                                <div class="snapshot-card">
-                                    <span class="label">Lessons</span>
-                                    <strong>Organized</strong>
-                                    <div class="snapshot-bar"><span style="width: 74%;"></span></div>
-                                </div>
-                                <div class="snapshot-card">
-                                    <span class="label">Grades</span>
-                                    <strong>Visible</strong>
-                                    <div class="snapshot-bar"><span style="width: 58%;"></span></div>
+                        <div class="hero-tags">
+                            <span><i class="bi bi-journal-check"></i> Courses</span>
+                            <span><i class="bi bi-journal-richtext"></i> Lessons</span>
+                            <span><i class="bi bi-bar-chart-line"></i> Grades</span>
+                        </div>
+                    </div>
+
+                    <div class="hero-dashboard">
+                        <div class="dashboard-frame">
+                            <div class="floating-card top">
+                                <i class="bi bi-clipboard-check"></i>
+                                <div>
+                                    <strong>BlueCampus preview</strong>
+                                    <span>Sample layout</span>
                                 </div>
                             </div>
 
-                            <div class="dashboard-columns">
-                                <div class="board-card">
-                                    <div class="board-card-header">
-                                        <strong>Core Modules</strong>
-                                        <span>LMS</span>
-                                    </div>
-
-                                    <div class="session-row">
-                                        <div class="session-time">01</div>
-                                        <div class="session-copy">
-                                            <strong>Course Spaces</strong>
-                                            <span>Manage subjects, lessons, and class content.</span>
+                            <div class="dashboard-board">
+                                <div class="dashboard-top">
+                                    <div class="window-meta">
+                                        <div class="window-dots">
+                                            <span></span>
+                                            <span></span>
+                                            <span></span>
                                         </div>
+                                        <div class="board-name">Workspace</div>
                                     </div>
+                                    <div class="board-chip">BlueCampus</div>
+                                </div>
 
-                                    <div class="session-row">
-                                        <div class="session-time">02</div>
-                                        <div class="session-copy">
-                                            <strong>Learning Materials</strong>
-                                            <span>Keep module resources clear and accessible.</span>
-                                        </div>
+                                <div class="snapshot-grid">
+                                    <div class="snapshot-card">
+                                        <span class="label">Courses</span>
+                                        <strong>Structured</strong>
+                                        <div class="snapshot-bar"><span style="width: 82%;"></span></div>
                                     </div>
-
-                                    <div class="session-row">
-                                        <div class="session-time">03</div>
-                                        <div class="session-copy">
-                                            <strong>Grade Monitoring</strong>
-                                            <span>Review performance with a simpler academic view.</span>
-                                        </div>
+                                    <div class="snapshot-card">
+                                        <span class="label">Lessons</span>
+                                        <strong>Organized</strong>
+                                        <div class="snapshot-bar"><span style="width: 74%;"></span></div>
+                                    </div>
+                                    <div class="snapshot-card">
+                                        <span class="label">Grades</span>
+                                        <strong>Visible</strong>
+                                        <div class="snapshot-bar"><span style="width: 58%;"></span></div>
                                     </div>
                                 </div>
 
-                                <div class="board-card">
-                                    <div class="board-card-header">
-                                        <strong>Portal Highlights</strong>
-                                        <span>Preview</span>
-                                    </div>
+                                <div class="dashboard-columns">
+                                    <div class="board-card">
+                                        <div class="board-card-header">
+                                            <strong>Core Modules</strong>
+                                            <span>LMS</span>
+                                        </div>
 
-                                    <div class="activity-list">
-                                        <div class="activity-row">
-                                            <div class="activity-icon"><i class="bi bi-journal-text"></i></div>
-                                            <div class="activity-copy">
-                                                <strong>Lesson-ready layout</strong>
-                                                <span>Built for course delivery and academic structure.</span>
+                                        <div class="session-row">
+                                            <div class="session-time">01</div>
+                                            <div class="session-copy">
+                                                <strong>Course Spaces</strong>
+                                                <span>Subjects and class content.</span>
                                             </div>
                                         </div>
 
-                                        <div class="activity-row">
-                                            <div class="activity-icon"><i class="bi bi-megaphone-fill"></i></div>
-                                            <div class="activity-copy">
-                                                <strong>BlueCampus access</strong>
-                                                <span>Supports a cleaner sign-in experience for users.</span>
+                                        <div class="session-row">
+                                            <div class="session-time">02</div>
+                                            <div class="session-copy">
+                                                <strong>Learning Materials</strong>
+                                                <span>Modules and resources.</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="session-row">
+                                            <div class="session-time">03</div>
+                                            <div class="session-copy">
+                                                <strong>Grade Monitoring</strong>
+                                                <span>Performance overview.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="board-card">
+                                        <div class="board-card-header">
+                                            <strong>Portal Highlights</strong>
+                                            <span>Preview</span>
+                                        </div>
+
+                                        <div class="activity-list">
+                                            <div class="activity-row">
+                                                <div class="activity-icon"><i class="bi bi-journal-text"></i></div>
+                                                <div class="activity-copy">
+                                                    <strong>Lesson-ready layout</strong>
+                                                    <span>Built for course delivery.</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="activity-row">
+                                                <div class="activity-icon"><i class="bi bi-megaphone-fill"></i></div>
+                                                <div class="activity-copy">
+                                                    <strong>BlueCampus access</strong>
+                                                    <span>Cleaner sign-in flow.</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="floating-card bottom">
-                            <i class="bi bi-bar-chart-steps"></i>
-                            <div>
-                                <strong>Modern LMS theme</strong>
-                                <span>Designed as a visual concept only</span>
+                            <div class="floating-card bottom">
+                                <i class="bi bi-bar-chart-steps"></i>
+                                <div>
+                                    <strong>Modern theme</strong>
+                                    <span>Visual concept</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            <?php endif; ?>
         </div>
     </div>
 
