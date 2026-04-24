@@ -365,7 +365,7 @@
         }
 
         .hero-panel--image::before {
-            background: linear-gradient(180deg, rgba(8, 23, 52, 0.22) 0%, rgba(8, 23, 52, 0.48) 42%, rgba(8, 23, 52, 0.76) 100%);
+            background: linear-gradient(180deg, rgba(8, 23, 52, 0.08) 0%, rgba(8, 23, 52, 0.16) 100%);
             opacity: 1;
             mask-image: none;
             -webkit-mask-image: none;
@@ -384,61 +384,13 @@
         }
 
         .hero-panel--image::after {
-            width: 520px;
-            height: 520px;
-            right: -220px;
-            bottom: -260px;
-            background: rgba(96, 165, 250, 0.18);
+            display: none;
         }
 
         .hero-copy,
         .hero-dashboard {
             position: relative;
             z-index: 1;
-        }
-
-        .hero-image-copy {
-            position: relative;
-            z-index: 1;
-            max-width: 540px;
-            margin-top: auto;
-        }
-
-        .hero-image-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.18);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            backdrop-filter: blur(12px);
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .hero-image-badge i {
-            font-size: 0.88rem;
-        }
-
-        .hero-image-title {
-            margin: 0 0 10px;
-            font-family: var(--font-heading);
-            font-size: clamp(2.1rem, 3.8vw, 3.35rem);
-            line-height: 1.02;
-            letter-spacing: -0.05em;
-            color: var(--white);
-        }
-
-        .hero-image-note {
-            margin: 0;
-            max-width: 420px;
-            color: rgba(255, 255, 255, 0.84);
-            font-size: 0.94rem;
-            line-height: 1.6;
         }
 
         .hero-kicker {
@@ -961,16 +913,7 @@
             </aside>
 
             <?php if ($has_custom_login_image): ?>
-                <section class="hero-panel hero-panel--image" style="background-image: url('<?= htmlspecialchars($login_image_url, ENT_QUOTES, 'UTF-8') ?>');">
-                    <div class="hero-image-copy">
-                        <div class="hero-image-badge">
-                            <i class="bi bi-image-fill"></i>
-                            BlueCampus
-                        </div>
-                        <h2 class="hero-image-title">A custom welcome screen for your platform.</h2>
-                        <p class="hero-image-note">This login image is managed from the BlueCampus super admin settings.</p>
-                    </div>
-                </section>
+                <section class="hero-panel hero-panel--image" style="background-image: url('<?= htmlspecialchars($login_image_url, ENT_QUOTES, 'UTF-8') ?>');" aria-label="BlueCampus login image"></section>
             <?php else: ?>
                 <section class="hero-panel">
                     <div class="hero-copy">
