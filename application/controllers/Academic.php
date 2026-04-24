@@ -205,7 +205,7 @@ class Academic extends Admin_Controller {
     {
         if ($this->input->method() === 'post') {
             $type = $this->input->post('type', TRUE);
-            
+
             $d = array(
                 'name'              => $this->input->post('name', TRUE),
                 'code'              => $this->input->post('code', TRUE),
@@ -213,17 +213,7 @@ class Academic extends Admin_Controller {
                 'type'              => $type,
                 'school_id'         => $this->school_id,
             );
-            
-            // Add type-specific fields
-            if ($type === 'program') {
-                $d['degree_type'] = $this->input->post('degree_type', TRUE);
-                $d['total_units'] = $this->input->post('total_units');
-                $d['years_to_complete'] = $this->input->post('years_to_complete');
-            } elseif ($type === 'grade_level') {
-                $d['category'] = $this->input->post('category', TRUE);
-                $d['level_order'] = $this->input->post('level_order');
-            }
-            
+
             $this->Academic_model->create_academic_program($d);
             $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level created.' : 'Program created.');
             redirect('academic/programs');
@@ -240,24 +230,14 @@ class Academic extends Admin_Controller {
 
         if ($this->input->method() === 'post') {
             $type = $this->input->post('type', TRUE);
-            
+
             $d = array(
                 'name'              => $this->input->post('name', TRUE),
                 'code'              => $this->input->post('code', TRUE),
                 'description'       => $this->input->post('description', TRUE),
                 'type'              => $type,
             );
-            
-            // Add type-specific fields
-            if ($type === 'program') {
-                $d['degree_type'] = $this->input->post('degree_type', TRUE);
-                $d['total_units'] = $this->input->post('total_units');
-                $d['years_to_complete'] = $this->input->post('years_to_complete');
-            } elseif ($type === 'grade_level') {
-                $d['category'] = $this->input->post('category', TRUE);
-                $d['level_order'] = $this->input->post('level_order');
-            }
-            
+
             $this->Academic_model->update_academic_program($id, $d);
             $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level updated.' : 'Program updated.');
             redirect('academic/programs');
