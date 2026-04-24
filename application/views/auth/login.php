@@ -4,23 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Learning Management System</title>
+    <title>Login - BlueCampus</title>
     <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/favicon.ico') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --text-tertiary: #94a3b8;
-            --border-soft: #e2e8f0;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            --blue-980: #081734;
+            --blue-950: #0d2453;
+            --blue-900: #13367a;
+            --blue-850: #1a4bb1;
+            --blue-800: #2563eb;
+            --blue-700: #3b82f6;
+            --blue-600: #60a5fa;
+            --blue-100: #dbeafe;
+            --blue-050: #eff6ff;
+            --ink-950: #0f172a;
+            --ink-800: #1e293b;
+            --ink-700: #334155;
+            --ink-500: #64748b;
+            --ink-300: #cbd5e1;
+            --ink-200: #e2e8f0;
+            --white: #ffffff;
+            --font-heading: 'Lexend', 'Segoe UI', sans-serif;
+            --font-body: 'Manrope', 'Segoe UI', sans-serif;
+            --shell-radius: 34px;
+            --card-radius: 28px;
+            --shell-shadow: 0 28px 80px rgba(15, 23, 42, 0.16);
+            --card-shadow: 0 24px 60px rgba(37, 99, 235, 0.14);
         }
 
         * {
@@ -31,6 +46,7 @@
 
         html,
         body {
+            min-height: 100%;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
@@ -38,280 +54,401 @@
 
         body {
             min-height: 100vh;
-            font-family: var(--font-sans);
-            color: var(--text-primary);
-            letter-spacing: -0.01em;
-            background: #e5eaf0;
+            font-family: var(--font-body);
+            color: var(--ink-950);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.28), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.22), transparent 30%),
+                linear-gradient(145deg, #edf5ff 0%, #dde9ff 48%, #f8fbff 100%);
+            overflow-x: hidden;
         }
 
-        .login-wrapper {
-            display: flex;
-            min-height: 100vh;
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 999px;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(10px);
         }
 
-        .login-left {
-            flex: 1.1;
-            background: linear-gradient(135deg, #1e293b 0%, #3b82f6 50%, #60a5fa 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 3rem;
-            color: white;
+        body::before {
+            width: 220px;
+            height: 220px;
+            top: 34px;
+            left: -72px;
+            background: rgba(37, 99, 235, 0.12);
+        }
+
+        body::after {
+            width: 320px;
+            height: 320px;
+            right: -120px;
+            bottom: -80px;
+            background: rgba(29, 78, 216, 0.11);
+        }
+
+        .page-shell {
             position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 1;
+        }
+
+        .login-shell {
+            width: 100%;
+            max-width: 1240px;
+            min-height: min(730px, calc(100vh - 36px));
+            display: grid;
+            grid-template-columns: minmax(340px, 410px) minmax(0, 1fr);
+            background: rgba(255, 255, 255, 0.58);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: var(--shell-radius);
+            box-shadow: var(--shell-shadow);
+            backdrop-filter: blur(14px);
             overflow: hidden;
         }
 
-        .login-left::before {
-            content: '';
-            position: absolute;
-            inset: 0;
+        .login-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 20px;
             background:
-                radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-            pointer-events: none;
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.1), transparent 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.96) 100%);
         }
 
-        .login-left::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
-            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .login-left-content {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            max-width: 460px;
-        }
-
-        .login-left-logo {
-            width: 72px;
-            height: 72px;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 2rem;
-            font-size: 2rem;
-            color: white;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .login-left h1 {
-            font-size: 2.25rem;
-            font-weight: 600;
-            margin-bottom: 0.875rem;
-            letter-spacing: -0.035em;
-            line-height: 1.15;
-        }
-
-        .login-left p {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.6;
-            margin-bottom: 2.5rem;
-            letter-spacing: -0.005em;
-        }
-
-        .login-features {
-            display: flex;
-            gap: 1.75rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .login-feature {
-            text-align: center;
-        }
-
-        .login-feature-icon {
-            width: 44px;
-            height: 44px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 0.65rem;
-            font-size: 1.05rem;
-            color: #e5e7eb;
-        }
-
-        .login-feature span {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-            letter-spacing: -0.005em;
-        }
-
-        .login-right {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #ffffff;
-            padding: 2rem;
-        }
-
-        .login-card {
-            background: white;
-            border-radius: 18px;
-            padding: 2.75rem 2.5rem;
+        .form-card {
             width: 100%;
-            max-width: 400px;
+            max-width: 376px;
+            padding: 28px 24px 22px;
+            border-radius: var(--card-radius);
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(219, 234, 254, 0.95);
+            box-shadow: var(--card-shadow);
         }
 
-        .login-header {
-            text-align: left;
-            margin-bottom: 2rem;
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 18px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--ink-200);
         }
 
-        .login-card h2 {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 1.6rem;
-            margin-bottom: 0.45rem;
+        .brand-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--blue-900), var(--blue-600));
+            color: var(--white);
+            font-size: 1.35rem;
+            box-shadow: 0 18px 28px rgba(37, 99, 235, 0.18);
+            flex-shrink: 0;
+        }
+
+        .brand-copy small {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--blue-850);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: 1.38rem;
+            color: var(--blue-950);
+            letter-spacing: -0.04em;
+        }
+
+        .login-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            border-radius: 999px;
+            background: var(--blue-050);
+            color: var(--blue-900);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .login-badge i {
+            font-size: 0.88rem;
+        }
+
+        .form-card h1 {
+            margin-bottom: 8px;
+            font-family: var(--font-heading);
+            font-size: 1.82rem;
+            line-height: 1;
+            letter-spacing: -0.05em;
+            color: var(--blue-950);
+        }
+
+        .login-subtitle {
+            margin-bottom: 16px;
+            color: var(--ink-500);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .mobile-preview {
+            display: none;
+            margin-bottom: 16px;
+            padding: 14px;
+            border-radius: 20px;
+            background: linear-gradient(145deg, #0f2e6f 0%, #1d4ed8 58%, #4f97ff 100%);
+            color: var(--white);
+            box-shadow: 0 18px 30px rgba(29, 78, 216, 0.2);
+        }
+
+        .mobile-preview-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .mobile-preview-top strong {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: 0.94rem;
             letter-spacing: -0.03em;
         }
 
-        .login-card .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            letter-spacing: -0.005em;
+        .mobile-preview-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
 
-        .form-floating {
-            margin-bottom: 0.875rem;
+        .mobile-preview-chip i {
+            font-size: 0.8rem;
         }
 
-        .form-floating .form-control {
-            background: #ffffff;
-            border: 1px solid var(--border-soft);
-            border-radius: 10px;
-            color: var(--text-primary);
-            height: 52px;
-            padding: 1rem 1rem 0.5rem 2.75rem;
-            font-size: 0.9rem;
-            font-family: var(--font-sans);
-            transition: all 0.15s ease;
+        .mobile-preview-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
         }
 
-        .form-floating .form-control:focus {
-            background: white;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            color: var(--text-primary);
+        .mobile-preview-stat {
+            padding: 10px 8px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            text-align: center;
         }
 
-        .form-floating label {
-            color: var(--text-tertiary);
-            padding-left: 2.75rem;
-            font-size: 0.9rem;
-            letter-spacing: -0.005em;
+        .mobile-preview-stat strong {
+            display: block;
+            margin-bottom: 2px;
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            letter-spacing: -0.04em;
         }
 
-        .form-floating .form-control:focus~label,
-        .form-floating .form-control:not(:placeholder-shown)~label {
-            color: var(--text-secondary);
+        .mobile-preview-stat span {
+            display: block;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.68rem;
+            line-height: 1.3;
+        }
+
+        .role-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .role-strip span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: #f8fbff;
+            border: 1px solid var(--blue-100);
+            color: var(--ink-700);
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        .role-strip i {
+            color: var(--blue-800);
+            font-size: 0.84rem;
+        }
+
+        .field-group {
+            margin-bottom: 13px;
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--ink-700);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+
+        .input-wrap {
+            position: relative;
         }
 
         .input-icon {
             position: absolute;
-            left: 0.95rem;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-tertiary);
-            z-index: 5;
-            font-size: 1rem;
-            transition: color 0.15s;
+            width: 32px;
+            height: 32px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--blue-850);
+            font-size: 0.9rem;
+            pointer-events: none;
         }
 
-        .form-floating:focus-within .input-icon {
-            color: var(--text-primary);
+        .input-wrap .form-control {
+            height: 56px;
+            padding: 14px 50px 14px 58px;
+            border-radius: 18px;
+            border: 1px solid #d8e7ff;
+            background: #f8fbff;
+            color: var(--ink-950);
+            font-size: 0.93rem;
+            font-weight: 600;
+            box-shadow: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .input-wrap .form-control:focus {
+            background: var(--white);
+            border-color: var(--blue-700);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        }
+
+        .input-wrap .form-control::placeholder {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--ink-500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .password-toggle:hover {
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--blue-850);
+        }
+
+        .assist-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 13px;
+            margin: 2px 0 14px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #eff6ff 0%, #edf5ff 100%);
+            color: var(--ink-700);
+            font-size: 0.79rem;
+            line-height: 1.45;
+        }
+
+        .assist-note i {
+            color: var(--blue-850);
+            font-size: 0.96rem;
+            margin-top: 1px;
         }
 
         .btn-login {
             width: 100%;
-            height: 48px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
-            font-weight: 500;
-            font-size: 0.925rem;
-            font-family: var(--font-sans);
-            letter-spacing: -0.005em;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 1.25rem;
-            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+            height: 56px;
+            border: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 52%, var(--blue-600) 100%);
+            color: var(--white);
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: -0.015em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 18px 28px rgba(37, 99, 235, 0.24);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
         }
 
         .btn-login:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 22px 34px rgba(37, 99, 235, 0.28);
+            filter: saturate(1.04);
         }
 
         .btn-login:active {
             transform: translateY(0);
         }
 
-        .alert-custom {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            margin-bottom: 1.25rem;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 0.85rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-tertiary);
-            cursor: pointer;
-            z-index: 5;
-            padding: 0.25rem;
-            transition: color 0.15s;
-        }
-
-        .password-toggle:hover {
-            color: var(--text-primary);
-        }
-
         .login-footer {
-            text-align: center;
-            margin-top: 1.75rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border-soft);
-            color: var(--text-tertiary);
-            font-size: 0.825rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--ink-200);
         }
 
         .login-footer a {
-            color: var(--text-primary);
+            color: var(--blue-850);
             text-decoration: none;
-            font-weight: 500;
-            letter-spacing: -0.005em;
+            font-size: 0.84rem;
+            font-weight: 800;
         }
 
         .login-footer a:hover {
@@ -319,13 +456,528 @@
             text-underline-offset: 3px;
         }
 
+        .login-footer span {
+            color: var(--ink-500);
+            font-size: 0.76rem;
+        }
+
+        .hero-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 30px 30px 26px;
+            color: var(--white);
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 30%),
+                linear-gradient(160deg, var(--blue-980) 0%, var(--blue-950) 24%, var(--blue-900) 58%, var(--blue-800) 100%);
+            overflow: hidden;
+        }
+
+        .hero-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 42px 42px;
+            opacity: 0.22;
+            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.76), transparent 88%);
+            -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.76), transparent 88%);
+            pointer-events: none;
+        }
+
+        .hero-panel::after {
+            content: '';
+            position: absolute;
+            width: 420px;
+            height: 420px;
+            right: -180px;
+            bottom: -220px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        .hero-copy,
+        .hero-dashboard {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            margin-bottom: 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(10px);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .hero-kicker i {
+            font-size: 0.88rem;
+        }
+
+        .hero-copy h2 {
+            max-width: 600px;
+            margin-bottom: 10px;
+            font-family: var(--font-heading);
+            font-size: clamp(2.2rem, 3.8vw, 3.45rem);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
+        }
+
+        .hero-copy p {
+            max-width: 560px;
+            margin-bottom: 18px;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
+
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hero-tags span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .hero-tags i {
+            color: #bfdbfe;
+        }
+
+        .dashboard-frame {
+            position: relative;
+            padding: 16px;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 24px 44px rgba(5, 18, 47, 0.2);
+            backdrop-filter: blur(12px);
+        }
+
+        .floating-card {
+            position: absolute;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.96);
+            color: var(--ink-700);
+            box-shadow: 0 16px 28px rgba(8, 27, 71, 0.18);
+            z-index: 2;
+        }
+
+        .floating-card i {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--blue-850), var(--blue-600));
+            color: var(--white);
+            font-size: 0.9rem;
+        }
+
+        .floating-card strong {
+            display: block;
+            font-size: 0.83rem;
+            color: var(--blue-950);
+        }
+
+        .floating-card span {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--ink-500);
+        }
+
+        .floating-card.top {
+            top: -14px;
+            right: 18px;
+        }
+
+        .floating-card.bottom {
+            left: 18px;
+            bottom: -16px;
+        }
+
+        .dashboard-board {
+            padding: 16px;
+            min-height: 330px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
+            color: var(--ink-950);
+        }
+
+        .dashboard-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .window-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .window-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #c7ddff;
+        }
+
+        .board-name {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: var(--blue-950);
+        }
+
+        .board-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--blue-050);
+            color: var(--blue-900);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .snapshot-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .snapshot-card {
+            padding: 12px;
+            border-radius: 18px;
+            background: var(--white);
+            border: 1px solid #dbeafe;
+            box-shadow: 0 12px 20px rgba(37, 99, 235, 0.06);
+        }
+
+        .snapshot-card .label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--ink-500);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .snapshot-card strong {
+            display: block;
+            margin-bottom: 6px;
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            letter-spacing: -0.04em;
+            color: var(--blue-950);
+        }
+
+        .snapshot-bar {
+            height: 6px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #e3efff;
+        }
+
+        .snapshot-bar span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, var(--blue-800), var(--blue-600));
+        }
+
+        .dashboard-columns {
+            display: grid;
+            grid-template-columns: 1.08fr 0.92fr;
+            gap: 10px;
+        }
+
+        .board-card {
+            padding: 14px;
+            border-radius: 18px;
+            background: var(--white);
+            border: 1px solid #dbeafe;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.06);
+        }
+
+        .board-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .board-card-header strong {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--blue-950);
+        }
+
+        .board-card-header span {
+            color: var(--ink-500);
+            font-size: 0.73rem;
+            font-weight: 700;
+        }
+
+        .session-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-top: 1px solid #edf4ff;
+        }
+
+        .session-row:first-of-type {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .session-time {
+            min-width: 68px;
+            padding: 7px 8px;
+            border-radius: 12px;
+            background: var(--blue-050);
+            color: var(--blue-900);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .session-copy strong,
+        .activity-copy strong {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 0.83rem;
+            color: var(--ink-950);
+        }
+
+        .session-copy span,
+        .activity-copy span {
+            display: block;
+            color: var(--ink-500);
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+
+        .activity-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .activity-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 14px;
+            background: #f8fbff;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--blue-850), var(--blue-600));
+            color: var(--white);
+            font-size: 0.86rem;
+            box-shadow: 0 10px 18px rgba(59, 130, 246, 0.16);
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 993px) and (max-height: 850px) {
+            .page-shell {
+                padding: 12px;
+            }
+
+            .login-shell {
+                min-height: calc(100vh - 24px);
+            }
+
+            .login-panel {
+                padding: 18px 16px;
+            }
+
+            .form-card {
+                padding: 22px 20px 18px;
+            }
+
+            .hero-panel {
+                padding: 24px 24px 20px;
+            }
+
+            .hero-copy h2 {
+                font-size: clamp(2rem, 3.2vw, 2.8rem);
+            }
+
+            .hero-copy p {
+                margin-bottom: 14px;
+                font-size: 0.9rem;
+            }
+
+            .dashboard-frame {
+                padding: 14px;
+            }
+
+            .dashboard-board {
+                min-height: 304px;
+                padding: 14px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .login-shell {
+                grid-template-columns: minmax(330px, 390px) minmax(0, 1fr);
+            }
+
+            .hero-panel {
+                padding: 26px 24px 22px;
+            }
+        }
+
         @media (max-width: 992px) {
-            .login-left {
+            .page-shell {
+                padding: 18px;
+            }
+
+            .login-shell {
+                min-height: auto;
+                grid-template-columns: 1fr;
+                max-width: 760px;
+            }
+
+            .login-panel {
+                padding: 22px 20px 0;
+            }
+
+            .hero-panel {
+                padding: 22px 20px 22px;
+            }
+
+            .hero-copy h2 {
+                font-size: 2.2rem;
+            }
+
+            .snapshot-grid,
+            .dashboard-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-shell {
+                padding: 0;
+            }
+
+            .login-shell {
+                min-height: 100vh;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+                background: linear-gradient(180deg, var(--blue-950) 0px, var(--blue-900) 170px, #eef5ff 170px, #f8fbff 100%);
+                backdrop-filter: none;
+            }
+
+            .login-panel {
+                align-items: flex-start;
+                padding: 18px 16px 20px;
+            }
+
+            .form-card {
+                max-width: none;
+                padding: 22px 18px 18px;
+                border-radius: 26px;
+                box-shadow: 0 20px 42px rgba(15, 23, 42, 0.14);
+            }
+
+            .brand-row {
+                gap: 12px;
+            }
+
+            .brand-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 16px;
+                font-size: 1.15rem;
+            }
+
+            .brand-copy strong {
+                font-size: 1.24rem;
+            }
+
+            .form-card h1 {
+                font-size: 1.65rem;
+            }
+
+            .login-subtitle {
+                margin-bottom: 14px;
+                font-size: 0.86rem;
+            }
+
+            .mobile-preview {
+                display: block;
+            }
+
+            .role-strip {
                 display: none;
             }
 
-            .login-right {
-                flex: 1;
+            .assist-note {
+                font-size: 0.76rem;
+                margin-bottom: 12px;
+            }
+
+            .hero-panel {
+                display: none;
+            }
+
+            .login-footer span {
+                display: none;
+            }
+
+            .login-footer {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -333,69 +985,224 @@
 
 <body>
     <?= render_notifications() ?>
-    <div class="login-wrapper">
-        <div class="login-left">
-            <div class="login-left-content">
-                <div class="login-left-logo">
-                    <i class="bi bi-mortarboard-fill"></i>
-                </div>
-                <h1>Learning Management System</h1>
-                <p>Empower your educational journey with our comprehensive platform for courses, assessments, and collaborative learning.</p>
-                <div class="login-features">
-                    <div class="login-feature">
-                        <div class="login-feature-icon">
-                            <i class="bi bi-book"></i>
-                        </div>
-                        <span>Rich Content</span>
-                    </div>
-                    <div class="login-feature">
-                        <div class="login-feature-icon">
-                            <i class="bi bi-clipboard-check"></i>
-                        </div>
-                        <span>Assessments</span>
-                    </div>
-                    <div class="login-feature">
-                        <div class="login-feature-icon">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        <span>Collaboration</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="login-right">
-            <div class="login-card">
-                <div class="login-header">
-                    <h2>Welcome Back</h2>
-                    <p class="subtitle">Sign in to continue</p>
-                </div>
-
-                <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
-                    <div class="form-floating position-relative">
-                        <i class="bi bi-envelope input-icon"></i>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="Email address" required autofocus>
-                        <label for="email">Email address</label>
+    <div class="page-shell">
+        <div class="login-shell">
+            <aside class="login-panel">
+                <div class="form-card">
+                    <div class="brand-row">
+                        <div class="brand-icon">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <div class="brand-copy">
+                            <small>BlueCampus</small>
+                            <strong>LMS Portal</strong>
+                        </div>
                     </div>
 
-                    <div class="form-floating position-relative">
-                        <i class="bi bi-lock input-icon"></i>
-                        <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-                        <label for="password">Password</label>
-                        <button type="button" class="password-toggle" onclick="togglePassword()">
-                            <i class="bi bi-eye" id="toggleIcon"></i>
+                    <div class="login-badge">
+                        <i class="bi bi-shield-check"></i>
+                        Secure BlueCampus Access
+                    </div>
+
+                    <h1>Welcome Back</h1>
+                    <p class="login-subtitle">Sign in to continue managing classes, lessons, grades, and campus activity in BlueCampus.</p>
+
+                    <div class="mobile-preview">
+                        <div class="mobile-preview-top">
+                            <strong>BlueCampus Preview</strong>
+                            <span class="mobile-preview-chip">
+                                <i class="bi bi-grid-1x2-fill"></i>
+                                BlueCampus
+                            </span>
+                        </div>
+                        <div class="mobile-preview-stats">
+                            <div class="mobile-preview-stat">
+                                <strong>Courses</strong>
+                                <span>Learning spaces</span>
+                            </div>
+                            <div class="mobile-preview-stat">
+                                <strong>Lessons</strong>
+                                <span>Content flow</span>
+                            </div>
+                            <div class="mobile-preview-stat">
+                                <strong>Grades</strong>
+                                <span>Performance view</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="role-strip">
+                        <span><i class="bi bi-person-workspace"></i> Faculty</span>
+                        <span><i class="bi bi-mortarboard"></i> Students</span>
+                        <span><i class="bi bi-building"></i> Admin</span>
+                    </div>
+
+                    <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
+                        <div class="field-group">
+                            <label class="field-label" for="email">Email Address</label>
+                            <div class="input-wrap">
+                                <span class="input-icon"><i class="bi bi-envelope-fill"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email address" autocomplete="email" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label class="field-label" for="password">Password</label>
+                            <div class="input-wrap">
+                                <span class="input-icon"><i class="bi bi-lock-fill"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="assist-note">
+                            <i class="bi bi-shield-lock-fill"></i>
+                            <div>Your sign-in keeps course records, grades, and student data inside your authorized BlueCampus account.</div>
+                        </div>
+
+                        <button type="submit" class="btn-login">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            Login to My Account
                         </button>
+                    </form>
+
+                    <div class="login-footer">
+                        <a href="<?= site_url('auth/forgot_password') ?>">Forgot password?</a>
+                        <span>Need help? Contact your school administrator.</span>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="hero-panel">
+                <div class="hero-copy">
+                    <div class="hero-kicker">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        BlueCampus Experience
                     </div>
 
-                    <button type="submit" class="btn-login">
-                        Sign In
-                    </button>
-                </form>
+                    <h2>Everything academic, arranged in one clear workspace.</h2>
+                    <p>Courses, lessons, grades, and school updates stay connected in BlueCampus through a workspace designed around the daily flow of learning.</p>
 
-                <div class="login-footer">
-                    <a href="<?= site_url('auth/forgot_password') ?>">Forgot password?</a>
+                    <div class="hero-tags">
+                        <span><i class="bi bi-journal-check"></i> Course management</span>
+                        <span><i class="bi bi-journal-richtext"></i> Lesson organization</span>
+                        <span><i class="bi bi-bar-chart-line"></i> Grade visibility</span>
+                    </div>
                 </div>
-            </div>
+
+                <div class="hero-dashboard">
+                    <div class="dashboard-frame">
+                        <div class="floating-card top">
+                            <i class="bi bi-clipboard-check"></i>
+                            <div>
+                                <strong>BlueCampus preview</strong>
+                                <span>Visual sample of the platform</span>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-board">
+                            <div class="dashboard-top">
+                                <div class="window-meta">
+                                    <div class="window-dots">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                    <div class="board-name">BlueCampus Workspace</div>
+                                </div>
+                                <div class="board-chip">BlueCampus</div>
+                            </div>
+
+                            <div class="snapshot-grid">
+                                <div class="snapshot-card">
+                                    <span class="label">Courses</span>
+                                    <strong>Structured</strong>
+                                    <div class="snapshot-bar"><span style="width: 82%;"></span></div>
+                                </div>
+                                <div class="snapshot-card">
+                                    <span class="label">Lessons</span>
+                                    <strong>Organized</strong>
+                                    <div class="snapshot-bar"><span style="width: 74%;"></span></div>
+                                </div>
+                                <div class="snapshot-card">
+                                    <span class="label">Grades</span>
+                                    <strong>Visible</strong>
+                                    <div class="snapshot-bar"><span style="width: 58%;"></span></div>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-columns">
+                                <div class="board-card">
+                                    <div class="board-card-header">
+                                        <strong>Core Modules</strong>
+                                        <span>LMS</span>
+                                    </div>
+
+                                    <div class="session-row">
+                                        <div class="session-time">01</div>
+                                        <div class="session-copy">
+                                            <strong>Course Spaces</strong>
+                                            <span>Manage subjects, lessons, and class content.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="session-row">
+                                        <div class="session-time">02</div>
+                                        <div class="session-copy">
+                                            <strong>Learning Materials</strong>
+                                            <span>Keep module resources clear and accessible.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="session-row">
+                                        <div class="session-time">03</div>
+                                        <div class="session-copy">
+                                            <strong>Grade Monitoring</strong>
+                                            <span>Review performance with a simpler academic view.</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="board-card">
+                                    <div class="board-card-header">
+                                        <strong>Portal Highlights</strong>
+                                        <span>Preview</span>
+                                    </div>
+
+                                    <div class="activity-list">
+                                        <div class="activity-row">
+                                            <div class="activity-icon"><i class="bi bi-journal-text"></i></div>
+                                            <div class="activity-copy">
+                                                <strong>Lesson-ready layout</strong>
+                                                <span>Built for course delivery and academic structure.</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="activity-row">
+                                            <div class="activity-icon"><i class="bi bi-megaphone-fill"></i></div>
+                                            <div class="activity-copy">
+                                                <strong>BlueCampus access</strong>
+                                                <span>Supports a cleaner sign-in experience for users.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="floating-card bottom">
+                            <i class="bi bi-bar-chart-steps"></i>
+                            <div>
+                                <strong>Modern LMS theme</strong>
+                                <span>Designed as a visual concept only</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -403,6 +1210,11 @@
         function togglePassword() {
             const input = document.getElementById('password');
             const icon = document.getElementById('toggleIcon');
+
+            if (!input || !icon) {
+                return;
+            }
+
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.className = 'bi bi-eye-slash';
