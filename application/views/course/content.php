@@ -785,7 +785,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         </svg>
                         Course Structure
                     </h5>
-                    <?php if ($edit_mode): ?>
+                    <?php if (!empty($can_manage_sections)): ?>
                         <button class="cc-btn cc-btn--ghost cc-btn--sm" data-bs-toggle="modal" data-bs-target="#addSectionModal">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                                 <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -809,7 +809,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                     <?php endif; ?>
                 </div>
 
-                <?php if ($edit_mode && !empty($subject_sections)): ?>
+                <?php if (!empty($can_manage_sections) && !empty($subject_sections)): ?>
                     <div class="cc-panel-divider"></div>
                     <div class="cc-sections-list">
                         <h6 class="cc-subtitle">Sections</h6>
@@ -906,7 +906,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     </div>
 <?php endif; ?>
 
-<?php if ($edit_mode): ?>
+<?php if (!empty($can_manage_sections)): ?>
     <!-- Add Section Modal -->
     <div class="modal fade" id="addSectionModal" tabindex="-1">
         <div class="modal-dialog">
