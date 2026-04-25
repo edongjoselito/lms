@@ -7,7 +7,7 @@ class Course extends MY_Controller {
     {
         parent::__construct();
         $this->require_login();
-        if (!in_array($this->role_slug, array('student', 'course_creator', 'super_admin', 'school_admin')) &&
+        if (!in_array($this->role_slug, array('student', 'course_creator', 'super_admin', 'school_admin', 'teacher')) &&
             !($this->is_student_mode && in_array($this->original_role_slug, array('course_creator', 'teacher')))) {
             show_error('You do not have permission to access this page.', 403);
         }
@@ -24,11 +24,27 @@ class Course extends MY_Controller {
         return $this->is_student_content_view() && $this->original_role_slug === 'student';
     }
 
-    private function require_course_manager()
+    private function require_course_manager($subject_id = null)
     {
-        if (!in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'))) {
-            show_error('You do not have permission to manage course content.', 403);
+        if (in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'))) {
+            return;
         }
+        if ($subject_id && $this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id)) {
+            return;
+        }
+        show_error('You do not have permission to manage course content.', 403);
+    }
+
+    private function is_teacher_for_subject($subject_id)
+    {
+        if ($this->original_role_slug !== 'teacher' || !$this->current_user) {
+            return false;
+        }
+        $this->Academic_model->ensure_subject_teachers_table();
+        $row = $this->db->where('subject_id', (int)$subject_id)
+                        ->where('user_id', (int)$this->current_user->id)
+                        ->get('subject_teachers')->row();
+        return (bool)$row;
     }
 
     private function get_subject_access_session()
@@ -75,6 +91,9 @@ class Course extends MY_Controller {
 
     public function index()
     {
+        if ($this->original_role_slug === 'teacher') {
+            redirect('course/teacher_subjects');
+        }
         $this->require_course_manager();
         $data['title'] = 'Course Creator Dashboard';
         
@@ -98,6 +117,18 @@ class Course extends MY_Controller {
     {
         $this->require_course_manager();
         redirect('subjects');
+    }
+
+    public function teacher_subjects()
+    {
+        if ($this->original_role_slug !== 'teacher') {
+            show_error('Access denied.', 403);
+        }
+        $this->Academic_model->ensure_subject_teacher_column();
+        $subjects = $this->Academic_model->get_subjects_by_teacher_user($this->current_user->id);
+        $data['title']    = 'My Subjects';
+        $data['subjects'] = $subjects;
+        $this->render('course/teacher_subjects', $data);
     }
 
     public function content($subject_id = null)
@@ -173,7 +204,10 @@ class Course extends MY_Controller {
         $data['title'] = 'Subject Content: ' . $subject->code;
         $data['subject'] = $subject;
         $data['modules'] = $modules;
-        $data['edit_mode'] = !$student_content_view && $this->input->get('edit') === '1';
+        $can_edit = in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'))
+                    || ($this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id));
+        $data['edit_mode'] = !$student_content_view && $this->input->get('edit') === '1' && $can_edit;
+        $data['can_edit']  = $can_edit;
         $data['completed_lesson_ids'] = $completed_lesson_ids;
         $data['accessible_lesson_ids'] = $accessible_lesson_ids;
         $data['progress_percent'] = $progress_percent;
@@ -182,7 +216,17 @@ class Course extends MY_Controller {
         $data['available_sections'] = $this->Academic_model->get_sections(array('school_id' => $this->school_id));
         $data['requires_enrollment_key'] = $requires_enrollment_key;
         $data['has_subject_access'] = $has_subject_access;
-        
+
+        $back_param = $this->input->get('back', TRUE);
+        if ($back_param) {
+            $data['back_url'] = site_url($back_param);
+        } else {
+            $referer = $this->input->server('HTTP_REFERER');
+            $data['back_url'] = ($referer && strpos($referer, base_url()) === 0)
+                ? $referer
+                : site_url('course/subjects');
+        }
+
         $this->render('course/content', $data);
     }
 
@@ -728,7 +772,7 @@ class Course extends MY_Controller {
 
     public function add_subject_section($subject_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$subject) show_404();
 
@@ -744,7 +788,7 @@ class Course extends MY_Controller {
 
     public function remove_subject_section($subject_id, $class_program_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
 
         // Check if section can be deleted
         if (!$this->Academic_model->can_delete_section($class_program_id)) {
@@ -759,9 +803,9 @@ class Course extends MY_Controller {
 
     public function section_students($section_id)
     {
-        $this->require_course_manager();
         $section = $this->Academic_model->get_subject_section($section_id);
         if (!$section) show_404();
+        $this->require_course_manager($section->subject_id);
 
         $data['title'] = 'Enrolled Students: ' . $section->section_name;
         $data['section'] = $section;
@@ -772,9 +816,9 @@ class Course extends MY_Controller {
 
     public function section_progress($section_id)
     {
-        $this->require_course_manager();
         $section = $this->Academic_model->get_subject_section($section_id);
         if (!$section) show_404();
+        $this->require_course_manager($section->subject_id);
 
         $data['title'] = 'Section Progress: ' . $section->section_name;
         $data['section'] = $section;
@@ -785,9 +829,9 @@ class Course extends MY_Controller {
 
     public function section_attendance($section_id)
     {
-        $this->require_course_manager();
         $section = $this->Academic_model->get_subject_section($section_id);
         if (!$section) show_404();
+        $this->require_course_manager($section->subject_id);
 
         $data['title'] = 'Section Attendance: ' . $section->section_name;
         $data['section'] = $section;
@@ -798,7 +842,7 @@ class Course extends MY_Controller {
 
     public function edit_subject_section($subject_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$subject) show_404();
 
@@ -817,7 +861,7 @@ class Course extends MY_Controller {
 
     public function upload_cover_photo($subject_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$subject) show_404();
 
@@ -854,7 +898,7 @@ class Course extends MY_Controller {
 
     public function remove_cover_photo($subject_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$subject) show_404();
 
@@ -873,7 +917,7 @@ class Course extends MY_Controller {
     // ---- Module Management ----
     public function create_module($subject_id)
     {
-        $this->require_course_manager();
+        $this->require_course_manager($subject_id);
         if ($this->input->method() === 'post') {
             $order = $this->Lesson_model->get_next_order('modules', 'subject_id', $subject_id);
             $data = array(
@@ -892,9 +936,9 @@ class Course extends MY_Controller {
 
     public function edit_module($module_id)
     {
-        $this->require_course_manager();
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
+        $this->require_course_manager($module->subject_id);
         
         if ($this->input->method() === 'post') {
             $data = array(
@@ -910,9 +954,9 @@ class Course extends MY_Controller {
 
     public function delete_module($module_id)
     {
-        $this->require_course_manager();
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
+        $this->require_course_manager($module->subject_id);
         
         $this->Lesson_model->delete_module($module_id);
         $this->session->set_flashdata('success', 'Module deleted successfully.');
@@ -922,9 +966,9 @@ class Course extends MY_Controller {
     // ---- Lesson Management ----
     public function create_lesson($module_id)
     {
-        $this->require_course_manager();
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
+        $this->require_course_manager($module->subject_id);
         
         if ($this->input->method() === 'post') {
             $order = $this->Lesson_model->get_next_order('lessons', 'module_id', $module_id);
@@ -957,11 +1001,10 @@ class Course extends MY_Controller {
 
     public function edit_lesson($lesson_id)
     {
-        $this->require_course_manager();
         $lesson = $this->Lesson_model->get_lesson($lesson_id);
         if (!$lesson) show_404();
-        
         $module = $this->Lesson_model->get_module($lesson->module_id);
+        $this->require_course_manager($module ? $module->subject_id : null);
         
         if ($this->input->method() === 'post') {
             $content_type = $this->normalize_lesson_content_type($this->input->post('content_type', TRUE));
@@ -996,11 +1039,10 @@ class Course extends MY_Controller {
 
     public function delete_lesson($lesson_id)
     {
-        $this->require_course_manager();
         $lesson = $this->Lesson_model->get_lesson($lesson_id);
         if (!$lesson) show_404();
-        
         $module = $this->Lesson_model->get_module($lesson->module_id);
+        $this->require_course_manager($module ? $module->subject_id : null);
         
         $this->Lesson_model->delete_lesson($lesson_id);
         $this->session->set_flashdata('success', 'Lesson deleted successfully.');
@@ -1010,9 +1052,9 @@ class Course extends MY_Controller {
     // ---- Activity Management ----
     public function create_activity($module_id)
     {
-        $this->require_course_manager();
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
+        $this->require_course_manager($module->subject_id);
         
         if ($this->input->method() === 'post') {
             $type = $this->input->post('type', TRUE);
@@ -1080,11 +1122,10 @@ class Course extends MY_Controller {
 
     public function edit_activity($activity_id)
     {
-        $this->require_course_manager();
         $activity = $this->Lesson_model->get_activity($activity_id);
         if (!$activity) show_404();
-        
         $module = $this->Lesson_model->get_module($activity->module_id);
+        $this->require_course_manager($module ? $module->subject_id : null);
         
         if ($this->input->method() === 'post') {
             $data = array(
@@ -1553,9 +1594,9 @@ class Course extends MY_Controller {
 
     public function create_assessment($module_id)
     {
-        $this->require_course_manager();
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
+        $this->require_course_manager($module->subject_id);
 
         $subject = $this->Academic_model->get_subject($module->subject_id);
         if (!$subject) show_404();
@@ -1631,9 +1672,9 @@ class Course extends MY_Controller {
 
     public function edit_assessment($quiz_id)
     {
-        $this->require_course_manager();
         $context = $this->get_assessment_context_by_quiz($quiz_id);
         if (!$context) show_404();
+        $this->require_course_manager($context['module']->subject_id);
 
         if ($this->input->method() === 'post') {
             $title = trim($this->input->post('title', TRUE));
@@ -1676,9 +1717,9 @@ class Course extends MY_Controller {
 
     public function upload_assessment_questions($quiz_id)
     {
-        $this->require_course_manager();
         $context = $this->get_assessment_context_by_quiz($quiz_id);
         if (!$context) show_404();
+        $this->require_course_manager($context['module']->subject_id);
 
         if ($this->input->method() === 'post') {
             $import = $this->import_assessment_questions_from_upload($quiz_id);
@@ -1690,12 +1731,12 @@ class Course extends MY_Controller {
 
     public function delete_assessment_question($question_id)
     {
-        $this->require_course_manager();
         $question = $this->Quiz_model->get_question($question_id);
         if (!$question) show_404();
 
         $context = $this->get_assessment_context_by_quiz($question->quiz_id);
         if (!$context) show_404();
+        $this->require_course_manager($context['module']->subject_id);
 
         $this->Quiz_model->delete_question($question_id);
         $this->Quiz_model->recalculate_total_points($question->quiz_id);
@@ -1749,7 +1790,7 @@ class Course extends MY_Controller {
             return;
         }
 
-        $this->require_course_manager();
+        $this->require_course_manager($subject->id);
         $quiz = $this->get_or_create_quiz_for_activity($activity, $module, $subject);
         $questions = $this->Quiz_model->get_questions_with_choices($quiz->id);
 
@@ -1918,7 +1959,7 @@ class Course extends MY_Controller {
 
         $is_owner = $this->current_user && (int) $attempt->student_id === (int) $this->current_user->id;
         if (!$is_owner) {
-            $this->require_course_manager();
+            $this->require_course_manager($context['subject']->id);
         }
 
         $data['title'] = 'Assessment Result: ' . $context['quiz']->title;
@@ -1935,11 +1976,10 @@ class Course extends MY_Controller {
 
     public function delete_activity($activity_id)
     {
-        $this->require_course_manager();
         $activity = $this->Lesson_model->get_activity($activity_id);
         if (!$activity) show_404();
-        
         $module = $this->Lesson_model->get_module($activity->module_id);
+        $this->require_course_manager($module ? $module->subject_id : null);
         
         $this->Lesson_model->delete_activity($activity_id);
         if ($activity->type === 'quiz') {

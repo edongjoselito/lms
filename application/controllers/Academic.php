@@ -1,11 +1,12 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Academic extends Admin_Controller {
+class Academic extends MY_Controller {
 
     public function __construct()
     {
         parent::__construct();
+        $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
         $this->require_school();
         $this->load->model(array('Academic_model', 'User_model'));
     }
@@ -265,7 +266,7 @@ class Academic extends Admin_Controller {
             $semester_type = $this->input->post('semester_type', TRUE);
             $year_level = $this->input->post('year_level');
             $units = $this->input->post('units');
-            
+
             if ($subject_id) {
                 $d = array(
                     'program_id'      => $program_id,
@@ -279,22 +280,48 @@ class Academic extends Admin_Controller {
             redirect('academic/program_subjects/' . $program_id);
         }
 
-        $data['title'] = 'Manage Subjects - ' . $program->name;
-        $data['program'] = $program;
-        $data['program_subjects'] = $this->Academic_model->get_subjects_by_program($program_id);
+        $this->Academic_model->ensure_subject_teachers_table();
+
+        $raw_teachers = $this->Academic_model->get_teachers_by_school($this->school_id);
+
+        $program_subjects = $this->Academic_model->get_subjects_by_program($program_id);
+
+        // Build per-subject assigned teacher_ids map
+        $assigned_map = array();
+        foreach ($program_subjects as $s) {
+            $assigned_map[$s->id] = $this->Academic_model->get_subject_teacher_ids($s->id);
+        }
+
+        $data['title']            = 'Manage Subjects - ' . $program->name;
+        $data['program']          = $program;
+        $data['program_subjects'] = $program_subjects;
         $data['available_subjects'] = $this->Academic_model->get_subjects(array('program_id' => null));
+        $data['is_admin']            = $this->is_admin();
+        $data['can_manage_teachers'] = in_array($this->role_slug, array('super_admin', 'school_admin', 'course_creator'));
+        $data['teachers']            = $raw_teachers;
+        $data['assigned_map']        = $assigned_map;
         $this->render('academic/program_subjects', $data);
+    }
+
+    public function assign_subject_teacher($program_id, $subject_id)
+    {
+        $program = $this->Academic_model->get_program($program_id);
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$program || !$subject || $subject->program_id != $program_id) show_404();
+
+        $user_id = (int)$this->input->post('user_id');
+        if ($user_id) {
+            $action = $this->Academic_model->toggle_subject_teacher($subject_id, $user_id);
+            $this->session->set_flashdata('success', $action === 'added' ? 'Teacher assigned.' : 'Teacher removed.');
+        }
+        redirect('academic/program_subjects/' . $program_id);
     }
 
     public function remove_subject_from_program($program_id, $subject_id)
     {
         $subject = $this->Academic_model->get_subject($subject_id);
         if ($subject) {
-            $d = array(
-                'program_id' => null,
-                'semester_type' => null,
-            );
-            $this->Academic_model->update_subject($subject_id, $d);
+            $this->Academic_model->update_subject($subject_id, array('program_id' => null, 'semester_type' => null));
             $this->session->set_flashdata('success', 'Subject removed from program.');
         }
         redirect('academic/program_subjects/' . $program_id);
@@ -302,19 +329,24 @@ class Academic extends Admin_Controller {
 
     public function create_program_subject($program_id)
     {
+        if (!in_array($this->role_slug, array('super_admin', 'school_admin'))) {
+            $this->session->set_flashdata('error', 'Only school admins can add subjects.');
+            redirect('academic/program_subjects/' . $program_id);
+        }
+
         if ($this->input->method() === 'post') {
+            $code = $this->input->post('code', TRUE);
+            if ($this->Academic_model->subject_code_exists_in_program($program_id, $code)) {
+                $this->session->set_flashdata('error', 'Course code "' . $code . '" already exists in this program.');
+                redirect('academic/program_subjects/' . $program_id);
+            }
             $d = array(
-                'code'            => $this->input->post('code', TRUE),
-                'description'     => $this->input->post('description', TRUE),
-                'program_id'      => $program_id,
-                'semester_type'   => $this->input->post('semester_type', TRUE),
-                'year_level'      => $this->input->post('year_level'),
-                'units'           => $this->input->post('units'),
-                'lec_hours'       => $this->input->post('lec_hours'),
-                'lab_hours'       => $this->input->post('lab_hours'),
-                'status'          => 1,
+                'code'        => $code,
+                'description' => $this->input->post('description', TRUE),
+                'program_id'  => $program_id,
+                'status'      => 1,
             );
-            $subject_id = $this->Academic_model->create_subject($d);
+            $this->Academic_model->create_subject($d);
             $this->session->set_flashdata('success', 'Subject created and added to program.');
             redirect('academic/program_subjects/' . $program_id);
         }
@@ -327,19 +359,21 @@ class Academic extends Admin_Controller {
         if (!$subject || $subject->program_id != $program_id) show_404();
 
         if ($this->input->method() === 'post') {
+            $code = $this->input->post('code', TRUE);
+            if ($this->Academic_model->subject_code_exists_in_program($program_id, $code, $subject_id)) {
+                $this->session->set_flashdata('error', 'Course code "' . $code . '" already exists in this program.');
+                redirect('academic/edit_program_subject/' . $program_id . '/' . $subject_id);
+            }
             $d = array(
-                'semester_type'   => $this->input->post('semester_type', TRUE),
-                'year_level'      => $this->input->post('year_level'),
-                'units'           => $this->input->post('units'),
-                'lec_hours'       => $this->input->post('lec_hours'),
-                'lab_hours'       => $this->input->post('lab_hours'),
+                'code'        => $code,
+                'description' => $this->input->post('description', TRUE),
             );
             $this->Academic_model->update_subject($subject_id, $d);
             $this->session->set_flashdata('success', 'Subject updated successfully.');
             redirect('academic/program_subjects/' . $program_id);
         }
 
-        $data['title'] = 'Edit Subject';
+        $data['title']   = 'Edit Subject';
         $data['program'] = $this->Academic_model->get_program($program_id);
         $data['subject'] = $subject;
         $this->render('academic/edit_program_subject', $data);
@@ -348,6 +382,10 @@ class Academic extends Admin_Controller {
     // ---- Subjects ----
     public function subjects()
     {
+        if ($this->is_course_creator()) {
+            redirect('academic/programs');
+        }
+
         $filters = array('school_id' => $this->school_id);
         if ($this->input->get('system_type')) {
             $filters['system_type'] = $this->input->get('system_type');

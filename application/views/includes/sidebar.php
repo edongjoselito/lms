@@ -86,6 +86,11 @@ if ($rs === 'student') {
         <?php endif; ?>
 
         <?php if ($nav_role === 'teacher'): ?>
+            <div class="nav-section-title">Course Content</div>
+            <a href="<?= site_url('course/teacher_subjects') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && $this->uri->segment(2) == 'teacher_subjects') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span>My Subjects</span>
+            </a>
             <div class="nav-section-title">Academics</div>
             <a href="<?= site_url('grades') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'grades') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">checklist</span>
@@ -102,6 +107,10 @@ if ($rs === 'student') {
             <a href="<?= site_url('course') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'course' && !$this->uri->segment(2)) ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">speed</span>
                 <span>Dashboard</span>
+            </a>
+            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('programs', 'program_subjects'))) ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">school</span>
+                <span>Programs</span>
             </a>
         <?php endif; ?>
 
@@ -121,7 +130,7 @@ if ($rs === 'student') {
             </a>
         <?php endif; ?>
 
-        <?php if (in_array($nav_role, array('school_admin', 'teacher', 'student', 'course_creator'))): ?>
+        <?php if (in_array($nav_role, array('teacher', 'student'))): ?>
             <div class="nav-section-title">Learning</div>
             <?php if ($nav_role === 'student'): ?>
                 <?php $student_learning_active = ($this->uri->segment(1) == 'student' && in_array($this->uri->segment(2), array('subjects', 'content', 'lesson', 'enroll'))); ?>

@@ -521,7 +521,7 @@
 
         .content-area {
             padding: 1.5rem;
-            max-width: 1280px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 

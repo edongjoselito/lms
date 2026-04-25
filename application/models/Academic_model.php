@@ -248,6 +248,13 @@ class Academic_model extends CI_Model
         return $this->db->where('subjects.id', $id)->get('subjects')->row();
     }
 
+    public function subject_code_exists_in_program($program_id, $code, $exclude_id = null)
+    {
+        $this->db->where('program_id', $program_id)->where('code', $code)->where('status', 1);
+        if ($exclude_id) $this->db->where('id !=', $exclude_id);
+        return $this->db->count_all_results('subjects') > 0;
+    }
+
     public function create_subject($data)
     {
         $this->db->insert('subjects', $data);
@@ -813,5 +820,81 @@ class Academic_model extends CI_Model
     public function get_teacher_by_user($user_id)
     {
         return $this->db->where('user_id', $user_id)->get('teachers')->row();
+    }
+
+    // ---- Subject–Teacher Assignment ----
+    public function ensure_subject_teacher_column()
+    {
+        // kept for backward compat; real data now lives in subject_teachers table
+    }
+
+    public function ensure_subject_teachers_table()
+    {
+        $exists = $this->db->query("SHOW TABLES LIKE 'subject_teachers'")->num_rows();
+        if (!$exists) {
+            $this->db->query("CREATE TABLE `subject_teachers` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `subject_id` int(11) NOT NULL,
+                `user_id` int(11) NOT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `uq_subject_teacher` (`subject_id`, `user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+        }
+    }
+
+    public function get_teachers_by_school($school_id)
+    {
+        $q = $this->db->select('users.id, users.first_name, users.last_name, users.email')
+            ->join('roles', 'roles.id = users.role_id')
+            ->where('roles.slug', 'teacher')
+            ->where('users.status', 1);
+        if ($school_id) {
+            $q->where('users.school_id', $school_id);
+        }
+        return $q->order_by('users.last_name, users.first_name')->get('users')->result();
+    }
+
+    public function get_subject_teacher_ids($subject_id)
+    {
+        $this->ensure_subject_teachers_table();
+        $rows = $this->db->select('user_id')->where('subject_id', (int)$subject_id)->get('subject_teachers')->result();
+        return array_map(function($r) { return (int)$r->user_id; }, $rows);
+    }
+
+    public function get_subject_teachers($subject_id)
+    {
+        $this->ensure_subject_teachers_table();
+        return $this->db->select('users.id, users.first_name, users.last_name')
+            ->join('subject_teachers', 'subject_teachers.user_id = users.id')
+            ->where('subject_teachers.subject_id', (int)$subject_id)
+            ->get('users')
+            ->result();
+    }
+
+    public function toggle_subject_teacher($subject_id, $user_id)
+    {
+        $this->ensure_subject_teachers_table();
+        $subject_id = (int)$subject_id;
+        $user_id    = (int)$user_id;
+        $exists = $this->db->where('subject_id', $subject_id)->where('user_id', $user_id)->count_all_results('subject_teachers');
+        if ($exists) {
+            $this->db->where('subject_id', $subject_id)->where('user_id', $user_id)->delete('subject_teachers');
+            return 'removed';
+        }
+        $this->db->insert('subject_teachers', array('subject_id' => $subject_id, 'user_id' => $user_id));
+        return 'added';
+    }
+
+    public function get_subjects_by_teacher_user($user_id)
+    {
+        $this->ensure_subject_teachers_table();
+        return $this->db->select('subjects.*, programs.code as program_code, programs.name as program_name')
+            ->join('subject_teachers', 'subject_teachers.subject_id = subjects.id')
+            ->join('programs', 'programs.id = subjects.program_id', 'left')
+            ->where('subject_teachers.user_id', (int)$user_id)
+            ->where('subjects.status', 1)
+            ->order_by('subjects.code')
+            ->get('subjects')
+            ->result();
     }
 }

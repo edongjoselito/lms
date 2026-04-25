@@ -50,7 +50,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 <div class="cc-wrap">
     <!-- Breadcrumb -->
     <div class="cc-breadcrumb">
-        <a href="<?= site_url('course/subjects') ?>" class="cc-back-link">
+        <a href="<?= $back_url ?>" class="cc-back-link">
             <span class="cc-back-icon">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -134,7 +134,8 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         </svg>
                         Cover
                     </button>
-                    <a href="<?= site_url('course/content/' . $subject->id) ?>" class="cc-btn cc-btn--ghost">
+                    <?php $back_param = $this->input->get('back', TRUE) ?: ''; ?>
+                    <a href="<?= site_url('course/content/' . $subject->id . ($back_param ? '?back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--ghost">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" stroke-width="2" />
                             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
@@ -147,8 +148,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         </svg>
                         Add Module
                     </button>
-                <?php elseif (empty($is_student_mode) && isset($original_role_slug) && in_array($original_role_slug, array('course_creator', 'super_admin', 'school_admin'))): ?>
-                    <a href="<?= site_url('course/content/' . $subject->id . '?edit=1') ?>" class="cc-btn cc-btn--primary">
+                <?php elseif (empty($is_student_mode) && !empty($can_edit)): ?>
+                    <?php $back_param = $this->input->get('back', TRUE) ?: ''; ?>
+                    <a href="<?= site_url('course/content/' . $subject->id . '?edit=1' . ($back_param ? '&back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--primary">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="2" />
                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" />
@@ -229,10 +231,10 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                         </svg>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="#editModule<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-pencil me-2"></i>Edit Module</a></li>
-                                        <li><a class="dropdown-item" href="#addLesson<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-file-text me-2"></i>Add Lesson</a></li>
-                                        <li><a class="dropdown-item" href="#addAssessment<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-ui-checks me-2"></i>Add Assessment</a></li>
-                                        <li><a class="dropdown-item" href="#addActivity<?= $module->id ?>" data-bs-toggle="collapse"><i class="bi bi-lightning me-2"></i>Add Activity</a></li>
+                                        <li><a class="dropdown-item" href="#" data-collapse-target="#editModule<?= $module->id ?>"><i class="bi bi-pencil me-2"></i>Edit Module</a></li>
+                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addLesson<?= $module->id ?>"><i class="bi bi-file-text me-2"></i>Add Lesson</a></li>
+                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addAssessment<?= $module->id ?>"><i class="bi bi-ui-checks me-2"></i>Add Assessment</a></li>
+                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addActivity<?= $module->id ?>"><i class="bi bi-lightning me-2"></i>Add Activity</a></li>
                                         <li>
                                             <hr class="dropdown-divider">
                                         </li>
@@ -1336,7 +1338,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
-        overflow: hidden;
+        overflow: visible;
         margin-bottom: 1rem;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
@@ -2747,4 +2749,32 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
             modal.hide();
         }
     }
+
+    // Handle dropdown → collapse items via custom data-collapse-target attribute
+    // (avoids Bootstrap's double-toggle conflict with data-bs-toggle="collapse" inside dropdowns)
+    document.addEventListener('click', function (e) {
+        var item = e.target.closest('[data-collapse-target]');
+        if (!item) return;
+        e.preventDefault();
+        var targetSel = item.getAttribute('data-collapse-target');
+        var target = document.querySelector(targetSel);
+        if (!target) return;
+        // Close the dropdown
+        var dropdownEl = item.closest('.dropdown');
+        if (dropdownEl) {
+            var btn = dropdownEl.querySelector('[data-bs-toggle="dropdown"]');
+            if (btn) {
+                var dd = bootstrap.Dropdown.getInstance(btn);
+                if (dd) dd.hide();
+            }
+        }
+        // Toggle the collapse (close siblings in the same parent accordion)
+        var col = bootstrap.Collapse.getOrCreateInstance(target, { toggle: false });
+        col.toggle();
+        // Scroll into view once open
+        target.addEventListener('shown.bs.collapse', function scrollOnce() {
+            target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            target.removeEventListener('shown.bs.collapse', scrollOnce);
+        });
+    });
 </script>
