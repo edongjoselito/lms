@@ -57,6 +57,44 @@ class Dashboard extends MY_Controller
             return;
         }
 
+        // Teachers get their own dashboard
+        if ($this->role_slug === 'teacher') {
+            $this->Academic_model->ensure_subject_teachers_table();
+            $subjects = $this->Academic_model->get_subjects_by_teacher_user($this->current_user->id);
+
+            $total_sections = 0;
+            $total_students = 0;
+            foreach ($subjects as &$s) {
+                $sections          = $this->Academic_model->get_subject_sections($s->id);
+                $s->section_list   = $sections;
+                $s->section_count  = count($sections);
+                $total_sections   += $s->section_count;
+                $s->student_count  = 0;
+                foreach ($sections as $sec) {
+                    $cnt = count($this->Academic_model->get_section_students($sec->id));
+                    $s->student_count += $cnt;
+                    $total_students   += $cnt;
+                }
+            }
+            unset($s);
+
+            $hour = (int) date('G');
+            if ($hour < 12)     $greeting = 'Good morning';
+            elseif ($hour < 18) $greeting = 'Good afternoon';
+            else                $greeting = 'Good evening';
+
+            $data['title']           = 'Teacher Dashboard';
+            $data['greeting']        = $greeting;
+            $data['subjects']        = $subjects;
+            $data['total_sections']  = $total_sections;
+            $data['total_students']  = $total_students;
+            $data['school_year']     = $this->Academic_model->get_active_school_year($this->school_id);
+            $data['is_teacher_view'] = true;
+            $data['is_platform_view'] = false;
+            $this->render('dashboard/index', $data);
+            return;
+        }
+
         $sy = $this->Academic_model->get_active_school_year($this->school_id);
 
         // Get school type

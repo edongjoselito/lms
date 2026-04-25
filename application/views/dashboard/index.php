@@ -713,6 +713,130 @@
             }
         }
     </style>
+<?php elseif (!empty($is_teacher_view)):
+$sy_label      = isset($school_year) && $school_year ? $school_year->year_start . '-' . $school_year->year_end : 'N/A';
+$subject_count = count($subjects);
+$palette       = array('#696cff','#03c3ec','#71dd37','#ffab00','#ff3e1d','#8592a3');
+function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
+?>
+<!-- Page title -->
+<div class="mb-3">
+    <span class="badge-role badge-admin">
+        <i class="bi bi-calendar3 me-1"></i>S.Y. <?= $sy_label ?>
+    </span>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;">
+                <i class="bi bi-journal-bookmark-fill"></i>
+            </div>
+            <div class="stat-value"><?= $subject_count ?></div>
+            <div class="stat-label">Assigned Subjects</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-value"><?= $total_sections ?></div>
+            <div class="stat-label">Total Sections</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#dcfce7;color:#15803d;">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+            <div class="stat-value"><?= $total_students ?></div>
+            <div class="stat-label">Total Students</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fef3c7;color:#d97706;">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div class="stat-value"><?= $sy_label ?></div>
+            <div class="stat-label">School Year</div>
+        </div>
+    </div>
+</div>
+
+<!-- My Subjects table -->
+<div class="data-table mb-4">
+    <div class="table-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>My Subjects</h5>
+        <a href="<?= site_url('course/teacher_subjects') ?>" class="btn-view-all">
+            View All <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    <?php if (empty($subjects)): ?>
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+            No subjects assigned yet.
+        </div>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Program</th>
+                    <th>Sections</th>
+                    <th>Students</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($subjects as $s):
+                    $color    = td_color($s->code, $palette);
+                    $raw      = preg_replace('/[^A-Za-z]/', '', $s->code);
+                    $initials = strtoupper(substr($raw ?: $s->code, 0, 2));
+                    $s_students = $s->student_count;
+                ?>
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:34px;height:34px;border-radius:8px;background:<?= $color ?>22;color:<?= $color ?>;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;">
+                                <?= htmlspecialchars($initials) ?>
+                            </div>
+                            <div>
+                                <div style="font-weight:600;color:#2d3748;font-size:.875rem;"><?= htmlspecialchars($s->code) ?></div>
+                                <?php if (!empty($s->description)): ?>
+                                    <div style="font-size:.75rem;color:#697a8d;"><?= htmlspecialchars($s->description) ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <?php if (!empty($s->program_code)): ?>
+                            <span style="background:#ede9fe;color:#5b21b6;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:20px;">
+                                <?= htmlspecialchars($s->program_code) ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="color:#a1acb8;font-size:.8rem;">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="font-weight:600;color:#2d3748;"><?= $s->section_count ?></td>
+                    <td style="font-weight:600;color:#2d3748;"><?= $s_students ?></td>
+                    <td>
+                        <a href="<?= site_url('course/content/' . $s->id) ?>"
+                           class="btn btn-sm btn-primary" style="font-size:.78rem;padding:4px 12px;">
+                            Open
+                        </a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
+</div>
+
 <?php else: ?>
     <?php $sy = isset($school_year) && $school_year ? $school_year->year_start . '-' . $school_year->year_end : 'N/A'; ?>
     <div class="mb-3">
