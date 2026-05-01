@@ -1,4 +1,3 @@
-<?php $subject_system_type = strtolower($subject->system_type ?: 'general'); ?>
 <div class="enroll-page">
     <div class="enroll-breadcrumb">
         <a href="<?= site_url('student/subjects') ?>" class="breadcrumb-item"><i class="bi bi-arrow-left"></i> Back to Subjects</a>
@@ -6,7 +5,6 @@
 
     <div class="enroll-card">
         <div class="enroll-header">
-            <div class="subject-badge <?= htmlspecialchars($subject_system_type) ?>"><?= htmlspecialchars(strtoupper($subject_system_type)) ?></div>
             <h1 class="enroll-title">Enroll in Course</h1>
             <div class="subject-info">
                 <div class="subject-code"><?= htmlspecialchars($subject->code) ?></div>
@@ -89,37 +87,6 @@
     color: #182033;
     text-align: left;
     border-bottom: 1px solid #edf0f4;
-}
-
-.subject-badge {
-    display: inline-flex;
-    padding: 0.32rem 0.7rem;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    letter-spacing: 0;
-}
-
-.subject-badge.deped {
-    background: #edf4ff;
-    color: #2f6fed;
-}
-
-.subject-badge.ched {
-    background: #fff6df;
-    color: #9a6700;
-}
-
-.subject-badge.tesda {
-    background: #e9f8f0;
-    color: #0f8b5f;
-}
-
-.subject-badge.general {
-    background: #eef2f7;
-    color: #475467;
 }
 
 .enroll-title {

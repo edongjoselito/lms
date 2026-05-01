@@ -91,7 +91,6 @@
         <h2 class="section-title">Available Courses</h2>
         <div class="courses-grid">
             <?php foreach ($available_subjects as $subject): ?>
-                <?php $system_type = strtolower($subject->system_type ?: 'general'); ?>
                 <div class="course-card course-card-available">
                     <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
                         <?php if (!empty($subject->cover_photo)): ?>
@@ -103,9 +102,6 @@
                     <div class="course-body">
                         <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>
                         <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
-                        <div class="course-meta">
-                            <span class="course-badge <?= htmlspecialchars($system_type) ?>"><?= htmlspecialchars(strtoupper($system_type)) ?></span>
-                        </div>
                         <?php if ($subject->requires_key): ?>
                             <a href="<?= site_url('student/enroll/' . $subject->id) ?>" class="btn-enroll">
                                 <i class="bi bi-key-fill"></i> Enroll with Key

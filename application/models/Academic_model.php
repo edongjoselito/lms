@@ -405,6 +405,13 @@ class Academic_model extends CI_Model
         }
     }
 
+    public function ensure_class_program_created_by_column()
+    {
+        if (!$this->db->field_exists('created_by_user_id', 'class_programs')) {
+            $this->db->query("ALTER TABLE `class_programs` ADD COLUMN `created_by_user_id` int(11) UNSIGNED DEFAULT NULL AFTER `enrollment_key`");
+        }
+    }
+
     public function get_class_programs($section_id)
     {
         $this->ensure_class_program_enrollment_key_column();
@@ -438,16 +445,23 @@ class Academic_model extends CI_Model
             ->row();
     }
 
-    public function get_subject_sections($subject_id)
+    public function get_subject_sections($subject_id, $created_by_user_id = null)
     {
         $this->ensure_class_program_enrollment_key_column();
-        return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+        $this->ensure_class_program_created_by_column();
+        $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
             ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
             ->where('class_programs.subject_id', $subject_id)
-            ->where('class_programs.status', 1)
-            ->order_by('sections.name', 'ASC')
+            ->where('class_programs.status', 1);
+        if ($created_by_user_id !== null) {
+            $this->db->group_start()
+                ->where('class_programs.created_by_user_id', $created_by_user_id)
+                ->or_where('class_programs.created_by_user_id IS NULL', null, false)
+                ->group_end();
+        }
+        return $this->db->order_by('sections.name', 'ASC')
             ->get('class_programs')
             ->result();
     }
@@ -602,9 +616,10 @@ class Academic_model extends CI_Model
             ->row();
     }
 
-    public function save_subject_section($subject_id, $section_id, $enrollment_key = null)
+    public function save_subject_section($subject_id, $section_id, $enrollment_key = null, $created_by_user_id = null)
     {
         $this->ensure_class_program_enrollment_key_column();
+        $this->ensure_class_program_created_by_column();
         $key = trim((string) $enrollment_key);
         $data = array(
             'subject_id'      => $subject_id,
@@ -612,6 +627,10 @@ class Academic_model extends CI_Model
             'enrollment_key'  => $key === '' ? null : $key,
             'status'          => 1,
         );
+
+        if ($created_by_user_id) {
+            $data['created_by_user_id'] = $created_by_user_id;
+        }
 
         $existing = $this->get_class_program_by_subject_section($subject_id, $section_id);
         if ($existing) {
@@ -623,7 +642,7 @@ class Academic_model extends CI_Model
         return $this->db->insert_id();
     }
 
-    public function save_subject_section_by_name($subject_id, $section_name, $enrollment_key = null)
+    public function save_subject_section_by_name($subject_id, $section_name, $enrollment_key = null, $created_by_user_id = null)
     {
         $this->db->where('school_id', $this->session->userdata('school_id'));
         $section = $this->db->where('name', $section_name)->get('sections')->row();
@@ -644,7 +663,7 @@ class Academic_model extends CI_Model
             $section_id = $section->id;
         }
 
-        return $this->save_subject_section($subject_id, $section_id, $enrollment_key);
+        return $this->save_subject_section($subject_id, $section_id, $enrollment_key, $created_by_user_id);
     }
 
     public function remove_subject_section($class_program_id, $subject_id)

@@ -31,6 +31,7 @@ if (!function_exists('assessment_datetime_value')) {
         </div>
 
         <div class="p-4">
+            <?php if (!empty($can_edit_assessment)): ?>
             <form action="<?= site_url('course/edit_assessment/' . $quiz->id) ?>" method="post" class="assessment-panel mb-4">
                 <h6 class="mb-3"><i class="bi bi-sliders me-2"></i>Assessment Settings</h6>
                 <div class="row g-3">
@@ -105,6 +106,7 @@ if (!function_exists('assessment_datetime_value')) {
                 </div>
                 <div class="form-text mt-2">Supported: multiple choice, true/false, identification, essay.</div>
             </form>
+            <?php endif; ?>
 
             <div class="assessment-panel mb-4">
                 <h6 class="mb-3"><i class="bi bi-list-check me-2"></i>Questions</h6>
@@ -134,9 +136,11 @@ if (!function_exists('assessment_datetime_value')) {
                                             </ul>
                                         <?php endif; ?>
                                     </div>
+                                    <?php if (!empty($can_edit_assessment)): ?>
                                     <a href="<?= site_url('course/delete_assessment_question/' . $question->id) ?>" class="btn btn-sm btn-outline-danger align-self-start" onclick="return confirm('Delete this question?');">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>

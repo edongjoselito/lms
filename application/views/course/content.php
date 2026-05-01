@@ -45,6 +45,17 @@ if (!function_exists('course_lesson_notes_content')) {
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
 $subject_system_type = strtolower($subject->system_type ?: 'general');
+$course_modules = isset($modules) && is_array($modules) ? $modules : array();
+$course_module_count = count($course_modules);
+$course_lesson_count = 0;
+$course_activity_count = 0;
+
+foreach ($course_modules as $course_module) {
+    $course_lesson_count += !empty($course_module->lessons) && is_array($course_module->lessons) ? count($course_module->lessons) : 0;
+    $course_activity_count += !empty($course_module->activities) && is_array($course_module->activities) ? count($course_module->activities) : 0;
+}
+
+$course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
 ?>
 
 <div class="cc-wrap">
@@ -63,11 +74,15 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     <!-- Hero Card -->
     <div class="cc-hero-card">
         <div class="cc-hero-main">
-            <?php if (!empty($subject->cover_photo)): ?>
-                <div class="cc-cover-wrap">
+            <div class="cc-cover-wrap <?= empty($subject->cover_photo) ? 'cc-cover-wrap--empty' : '' ?>">
+                <?php if (!empty($subject->cover_photo)): ?>
                     <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Course Cover" class="cc-cover-img">
-                </div>
-            <?php endif; ?>
+                <?php else: ?>
+                    <div class="cc-cover-fallback" aria-hidden="true">
+                        <span><?= htmlspecialchars($subject->code) ?></span>
+                    </div>
+                <?php endif; ?>
+            </div>
             <div class="cc-hero-content">
                 <div class="cc-hero-meta">
                     <span class="cc-badge cc-badge--<?= htmlspecialchars($subject_system_type) ?>">
@@ -87,6 +102,20 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                 <?php if (!empty($subject->name)): ?>
                     <p class="cc-hero-subtitle"><?= htmlspecialchars($subject->name) ?></p>
                 <?php endif; ?>
+                <div class="cc-hero-stats" aria-label="Course summary">
+                    <span class="cc-stat-pill">
+                        <strong><?= (int) $course_module_count ?></strong>
+                        <span>Modules</span>
+                    </span>
+                    <span class="cc-stat-pill">
+                        <strong><?= (int) $course_lesson_count ?></strong>
+                        <span>Lessons</span>
+                    </span>
+                    <span class="cc-stat-pill">
+                        <strong><?= (int) $course_activity_count ?></strong>
+                        <span>Activities</span>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -96,10 +125,10 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                 <div class="cc-progress-wrap">
                     <div class="cc-progress-header">
                         <span class="cc-progress-label">Course Progress</span>
-                        <span class="cc-progress-value"><?= (int) ($progress_percent ?? 0) ?>%</span>
+                        <span class="cc-progress-value"><?= $course_completion_percent ?>%</span>
                     </div>
                     <div class="cc-progress-bar">
-                        <div class="cc-progress-fill" style="width:<?= (int) ($progress_percent ?? 0) ?>"></div>
+                        <div class="cc-progress-fill" style="width:<?= $course_completion_percent ?>%;"></div>
                     </div>
                 </div>
             <?php elseif (!empty($is_student_mode) && empty($has_subject_access)): ?>
@@ -208,6 +237,11 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                 </div>
             <?php else: ?>
                 <?php foreach ($modules as $module_index => $module): ?>
+                    <?php
+                    $module_lessons_count = !empty($module->lessons) && is_array($module->lessons) ? count($module->lessons) : 0;
+                    $module_activities_count = !empty($module->activities) && is_array($module->activities) ? count($module->activities) : 0;
+                    $module_item_count = $module_lessons_count + $module_activities_count;
+                    ?>
                     <!-- Module Card -->
                     <div class="cc-module-card" id="module-<?= $module->id ?>">
                         <!-- Module Header -->
@@ -219,6 +253,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                     <?php if (!$module->is_published): ?>
                                         <span class="cc-module-status">Hidden</span>
                                     <?php endif; ?>
+                                    <span class="cc-module-count"><?= (int) $module_item_count ?> <?= $module_item_count === 1 ? 'item' : 'items' ?></span>
                                 </div>
                             </div>
                             <?php if ($edit_mode): ?>
@@ -329,7 +364,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
                                         $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
                                         ?>
-                                        <div class="list-group-item p-3 d-flex align-items-center justify-content-between <?= (!$item->is_published && $edit_mode) ? 'bg-light' : '' ?>">
+                                        <div class="list-group-item cc-content-item p-3 d-flex align-items-center justify-content-between <?= (!$item->is_published && $edit_mode) ? 'cc-content-item--hidden bg-light' : '' ?>">
                                             <?php if ($is_accessible_lesson): ?>
                                                 <a href="<?= $item_url ?>" class="content-item-link d-flex align-items-center flex-grow-1">
                                                 <?php else: ?>
@@ -350,9 +385,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                         <div class="activity-icon me-3" style="width:40px;height:40px;border-radius:8px;background:<?= $lesson_icon_info['color'] ?>;display:flex;align-items:center;justify-content:center;color:<?= $lesson_icon_info['icon_color'] ?>;">
                                                             <i class="bi <?= !$is_accessible_lesson ? 'bi-lock-fill' : $lesson_icon_info['icon'] ?>"></i>
                                                         </div>
-                                                        <div>
-                                                            <h6 class="mb-1"><?= $item->title ?></h6>
-                                                            <small class="text-muted">
+                                                        <div class="cc-item-body">
+                                                            <h6 class="cc-item-title mb-1"><?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?></h6>
+                                                            <small class="cc-item-meta text-muted">
                                                                 <span class="badge bg-light text-dark border"><?= $lesson_icon_info['label'] ?></span>
                                                                 <?php if ($is_completed_lesson): ?>
                                                                     <span class="ms-1 badge bg-success"><i class="bi bi-check2 me-1"></i>Completed</span>
@@ -382,9 +417,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                         <div class="activity-icon me-3" style="width:40px;height:40px;border-radius:8px;background:<?= $icon_info['color'] ?>;display:flex;align-items:center;justify-content:center;color:<?= $icon_info['icon_color'] ?>;">
                                                             <i class="bi <?= $icon_info['icon'] ?>"></i>
                                                         </div>
-                                                        <div>
-                                                            <h6 class="mb-1"><?= $item->title ?></h6>
-                                                            <small class="text-muted">
+                                                        <div class="cc-item-body">
+                                                            <h6 class="cc-item-title mb-1"><?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?></h6>
+                                                            <small class="cc-item-meta text-muted">
                                                                 <span class="badge bg-light text-dark border"><?= $icon_info['label'] ?></span>
                                                                 <?php if ($is_quiz_item): ?>
                                                                     <span class="ms-1"><i class="bi bi-list-check"></i> <?= (int) ($item->question_count ?? 0) ?> Questions</span>
@@ -403,12 +438,13 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
 
                                             <?php if ($edit_mode): ?>
                                                 <div class="dropdown">
-                                                    <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-flip="true">
+                                                    <button class="btn btn-sm btn-link text-muted cc-item-menu-btn" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-flip="true" aria-label="Content actions">
                                                         <i class="bi bi-three-dots-vertical"></i>
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end">
                                                         <li><a class="dropdown-item" href="<?= $item_url ?>"><i class="bi bi-eye me-2"></i>View</a></li>
                                                         <?php if ($item->item_type === 'lesson'): ?>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                             <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                             <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                         <?php elseif ($is_quiz_item): ?>
@@ -417,6 +453,20 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                                         <?php else: ?>
                                                             <li><a class="dropdown-item" href="#editActivity<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editActivity<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                             <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this activity?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                        <?php endif; ?>
+                                                    </ul>
+                                                </div>
+                                            <?php elseif (!empty($can_manage_sections) && !$student_content_view): ?>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-link text-muted cc-item-menu-btn" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-flip="true" aria-label="Content actions">
+                                                        <i class="bi bi-three-dots-vertical"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="<?= $item_url ?>"><i class="bi bi-eye me-2"></i>View</a></li>
+                                                        <?php if ($item->item_type === 'lesson'): ?>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
+                                                        <?php elseif ($is_quiz_item): ?>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-people me-2"></i>View Attempts</a></li>
                                                         <?php endif; ?>
                                                     </ul>
                                                 </div>
@@ -803,7 +853,7 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         <?php foreach ($modules as $idx => $mod): ?>
                             <a href="#module-<?= $mod->id ?>" class="cc-nav-item">
                                 <span class="cc-nav-number"><?= $idx + 1 ?></span>
-                                <span class="cc-nav-text"><?= $mod->title ?></span>
+                                <span class="cc-nav-text"><?= htmlspecialchars($mod->title ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                             </a>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -825,6 +875,12 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                                     <span class="cc-section-badge <?= $has_key ? 'locked' : 'open' ?>"><?= $has_key ? 'Locked' : 'Open' ?></span>
                                 </div>
                                 <div class="cc-section-actions">
+                                    <a class="cc-action-btn" href="<?= site_url('course/section_students/' . $section_access->id) ?>" title="View Students">
+                                        <i class="bi bi-people"></i>
+                                    </a>
+                                    <a class="cc-action-btn" href="<?= site_url('course/section_progress/' . $section_access->id) ?>" title="View Lesson Progress">
+                                        <i class="bi bi-graph-up"></i>
+                                    </a>
                                     <button class="cc-action-btn" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -892,9 +948,9 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
                         <hr>
                     <?php endif; ?>
                     <div class="mb-3">
-                        <label class="form-label">Upload PDF File</label>
-                        <input type="file" class="form-control" name="cover_photo" accept=".pdf,application/pdf" required>
-                        <div class="form-text">Supported format: PDF only.</div>
+                        <label class="form-label">Upload Cover Photo</label>
+                        <input type="file" class="form-control" name="cover_photo" accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp" required>
+                        <div class="form-text">Supported formats: JPG, PNG, GIF, or WebP. Maximum size: 5 MB.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1751,42 +1807,29 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
     }
 
     .lesson-form-is-link .lesson-link-fields {
+        display: block;
+    }
 
-        .video-lesson-box {
-            padding: 1rem;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            background: #fafafa;
-            margin-bottom: 1rem;
-        }
+    .video-lesson-box,
+    .file-lesson-box,
+    .link-lesson-box {
+        padding: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        background: #fafafa;
+        margin-bottom: 1rem;
+    }
 
-        .file-lesson-box {
-            padding: 1rem;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            background: #fafafa;
-            margin-bottom: 1rem;
-        }
+    .video-url-preview:empty {
+        display: none;
+    }
 
-        .link-lesson-box {
-            padding: 1rem;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            background: #fafafa;
-            margin-bottom: 1rem;
-        }
-
-        .video-url-preview:empty {
-            display: none;
-        }
-
-        .video-url-preview iframe,
-        .video-url-preview video {
-            width: 100%;
-            border: 0;
-            border-radius: 8px;
-            background: #0f172a;
-        }
+    .video-url-preview iframe,
+    .video-url-preview video {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        background: #0f172a;
     }
 
     .module-add-form h6 {
@@ -2318,6 +2361,496 @@ $subject_system_type = strtolower($subject->system_type ?: 'general');
             flex-direction: column;
             align-items: flex-start;
             gap: 0.75rem;
+        }
+    }
+
+    /* Course content visual refresh */
+    .cc-wrap,
+    .cc-wrap * {
+        letter-spacing: 0;
+    }
+
+    .cc-wrap {
+        width: 100%;
+        max-width: none;
+        padding: 1rem 0 4rem;
+    }
+
+    .cc-hero-card,
+    .cc-module-card,
+    .cc-sidebar-panel,
+    .cc-empty-card,
+    .cc-enroll-card {
+        border-color: #e7edf5;
+        border-radius: 16px;
+        box-shadow: 0 12px 28px rgba(67, 89, 113, 0.08);
+    }
+
+    .cc-hero-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+    .cc-hero-main {
+        display: grid;
+        grid-template-columns: minmax(220px, 28%) 1fr;
+        min-height: 210px;
+        padding: 0;
+    }
+
+    .cc-cover-wrap {
+        position: relative;
+        height: auto;
+        min-height: 210px;
+        margin: 0;
+        border-right: 1px solid #e7edf5;
+        background: #eef4f7;
+    }
+
+    .cc-cover-img {
+        width: 100%;
+        height: 100%;
+        min-height: 210px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .cc-cover-wrap--empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            linear-gradient(135deg, rgba(105, 108, 255, 0.08), rgba(16, 185, 129, 0.08)),
+            #f3f7fb;
+    }
+
+    .cc-cover-fallback {
+        width: min(150px, 58%);
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(105, 108, 255, 0.18);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.78);
+        color: #566a7f;
+        font-size: clamp(1.3rem, 3vw, 2rem);
+        font-weight: 700;
+        text-align: center;
+        box-shadow: 0 12px 28px rgba(67, 89, 113, 0.08);
+    }
+
+    .cc-cover-fallback span {
+        max-width: 90%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cc-hero-content {
+        justify-content: center;
+        padding: 1.5rem 1.75rem;
+    }
+
+    .cc-hero-title {
+        max-width: 920px;
+        color: #253446;
+        font-size: clamp(1.35rem, 2vw, 1.8rem);
+        line-height: 1.25;
+    }
+
+    .cc-hero-subtitle {
+        color: #697a8d;
+    }
+
+    .cc-hero-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        margin-top: 0.35rem;
+    }
+
+    .cc-stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 36px;
+        padding: 0.45rem 0.75rem;
+        border: 1px solid #e7edf5;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #697a8d;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .cc-stat-pill strong {
+        color: #253446;
+        font-size: 0.95rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cc-hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        background: #ffffff;
+        border-top: 0;
+        border-left: 1px solid #eef2f7;
+        padding: 1.25rem;
+    }
+
+    .cc-hero-actions .cc-progress-wrap {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .cc-action-btns {
+        width: 100%;
+        align-items: stretch;
+    }
+
+    .cc-action-btns .cc-btn {
+        width: 100%;
+    }
+
+    .cc-progress-bar {
+        height: 8px;
+        background: #edf2f7;
+    }
+
+    .cc-progress-fill {
+        background: #10b981;
+    }
+
+    .cc-btn {
+        min-height: 40px;
+        border-radius: 10px;
+    }
+
+    .cc-btn--primary {
+        background: #696cff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, 0.22);
+    }
+
+    .cc-btn--primary:hover {
+        background: #5f61f4;
+        color: #ffffff;
+    }
+
+    .cc-btn--ghost {
+        background: #ffffff;
+        border-color: #e7edf5;
+        color: #566a7f;
+    }
+
+    .cc-btn--ghost:hover {
+        background: #f8fafc;
+        border-color: #d9dee3;
+        color: #253446;
+    }
+
+    .cc-module-card {
+        overflow: visible;
+        margin-bottom: 1.2rem;
+        background: #ffffff;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .cc-module-card:hover {
+        border-color: #d8e0ea;
+        box-shadow: 0 14px 32px rgba(67, 89, 113, 0.1);
+    }
+
+    .cc-module-header {
+        background: #ffffff;
+        border-bottom-color: #eef2f7;
+        padding: 1rem 1.15rem;
+    }
+
+    .cc-module-number {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: #696cff;
+        box-shadow: 0 8px 18px rgba(105, 108, 255, 0.2);
+    }
+
+    .cc-module-title {
+        color: #253446;
+        overflow-wrap: anywhere;
+    }
+
+    .cc-module-count {
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        background: #f3f6fa;
+        color: #697a8d;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .cc-module-desc {
+        background: #fbfcfe;
+        border-bottom-color: #eef2f7;
+    }
+
+    .cc-module-card .list-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        padding: 0.9rem;
+        overflow: visible;
+    }
+
+    .cc-content-item {
+        position: relative;
+        gap: 0.75rem;
+        border: 1px solid #eef2f7 !important;
+        border-radius: 12px !important;
+        background: #ffffff;
+        overflow: visible !important;
+        transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .cc-content-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .cc-content-item:hover {
+        z-index: 10;
+        transform: translateY(-1px);
+        border-color: #d8e0ea !important;
+        box-shadow: 0 8px 18px rgba(67, 89, 113, 0.07);
+        background: #ffffff;
+    }
+
+    .cc-content-item:focus-within {
+        z-index: 20;
+    }
+
+    .cc-content-item--hidden {
+        background: #f8fafc !important;
+    }
+
+    .content-item-link {
+        min-width: 0;
+    }
+
+    .cc-item-body {
+        min-width: 0;
+    }
+
+    .cc-item-title {
+        color: #253446;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .cc-item-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.5rem;
+        line-height: 1.4;
+    }
+
+    .cc-item-meta .ms-1 {
+        margin-left: 0 !important;
+    }
+
+    .cc-item-meta .badge {
+        border-radius: 999px;
+        font-size: 0.68rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .activity-icon {
+        border-radius: 12px !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+    }
+
+    .cc-item-menu-btn {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        text-decoration: none;
+    }
+
+    .cc-item-menu-btn:hover,
+    .cc-item-menu-btn:focus {
+        background: #f3f6fa;
+        border-color: #e7edf5;
+        color: #253446 !important;
+    }
+
+    .cc-content-item .dropdown {
+        position: relative;
+        z-index: 30;
+    }
+
+    .cc-content-item .dropdown-menu {
+        z-index: 1095;
+        margin-top: 0.35rem !important;
+        border-radius: 10px;
+    }
+
+    .cc-sidebar-panel {
+        position: sticky;
+        top: 1rem;
+    }
+
+    .cc-panel-header {
+        background: #ffffff;
+        border-bottom-color: #eef2f7;
+    }
+
+    .cc-nav-item {
+        min-height: 38px;
+        border: 1px solid transparent;
+    }
+
+    .cc-nav-item:hover {
+        background: #f8fafc;
+        border-color: #eef2f7;
+    }
+
+    .cc-sections-list {
+        padding-bottom: 1.15rem;
+    }
+
+    .cc-section-row {
+        padding: 0.65rem 0;
+    }
+
+    .cc-section-info {
+        min-width: 0;
+    }
+
+    .cc-section-name {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    .module-add-panels,
+    .item-edit-panel,
+    .collapse.show {
+        background: #f8fafc;
+    }
+
+    .module-add-form {
+        border-color: #e7edf5;
+        border-radius: 12px;
+        box-shadow: 0 8px 18px rgba(67, 89, 113, 0.06);
+    }
+
+    .video-lesson-box,
+    .file-lesson-box,
+    .link-lesson-box,
+    .quiz-import-box {
+        border-radius: 12px !important;
+    }
+
+    @media (max-width: 992px) {
+        .cc-wrap {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .cc-hero-card {
+            grid-template-columns: 1fr;
+        }
+
+        .cc-hero-main {
+            grid-template-columns: 1fr;
+        }
+
+        .cc-cover-wrap {
+            min-height: 180px;
+            border-right: 0;
+            border-bottom: 1px solid #e7edf5;
+        }
+
+        .cc-cover-img {
+            min-height: 180px;
+            max-height: 240px;
+        }
+
+        .cc-sidebar-panel {
+            position: static;
+        }
+
+        .cc-hero-actions {
+            border-left: 0;
+            border-top: 1px solid #eef2f7;
+        }
+
+        .cc-action-btns {
+            flex-direction: row;
+        }
+
+        .cc-action-btns .cc-btn {
+            width: auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .cc-wrap {
+            padding: 0.75rem 0 2rem;
+        }
+
+        .cc-hero-content,
+        .cc-hero-actions {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .cc-hero-stats,
+        .cc-action-btns {
+            width: 100%;
+        }
+
+        .cc-stat-pill {
+            flex: 1 1 30%;
+            justify-content: center;
+        }
+
+        .cc-content-item {
+            align-items: flex-start !important;
+        }
+
+        .cc-item-menu-btn {
+            flex-shrink: 0;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .cc-stat-pill {
+            flex-basis: 100%;
+        }
+
+        .cc-content-item {
+            flex-wrap: nowrap;
+            padding: 0.8rem !important;
+        }
+
+        .activity-icon {
+            width: 36px !important;
+            height: 36px !important;
         }
     }
 </style>

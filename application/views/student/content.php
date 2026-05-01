@@ -6,7 +6,6 @@ $accessible_lesson_ids = array_map('intval', $accessible_lesson_ids ?? array());
 $completed_count = count($completed_lesson_ids);
 $subject_title = trim($subject->description ?: $subject->name);
 $subject_title = $subject_title !== '' ? $subject_title : 'Course content';
-$subject_system_type = strtolower($subject->system_type ?: 'general');
 $total_activities = 0;
 foreach ($modules as $module) {
     $total_activities += count($module->activities ?? array());
@@ -19,7 +18,6 @@ foreach ($modules as $module) {
 
     <div class="content-header">
         <div class="header-main">
-            <div class="subject-badge <?= htmlspecialchars($subject_system_type) ?>"><?= htmlspecialchars(strtoupper($subject_system_type)) ?></div>
             <h1 class="subject-title"><?= htmlspecialchars($subject->code) ?> - <?= htmlspecialchars($subject_title) ?></h1>
             <p class="subject-meta">
                 <span><i class="bi bi-collection"></i> <?= count($modules) ?> Modules</span>
@@ -205,38 +203,6 @@ foreach ($modules as $module) {
 .header-main {
     flex: 1;
     min-width: 0;
-}
-
-.subject-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.32rem 0.7rem;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 0.9rem;
-    letter-spacing: 0;
-}
-
-.subject-badge.deped {
-    background: #edf4ff;
-    color: #2f6fed;
-}
-
-.subject-badge.ched {
-    background: #fff6df;
-    color: #9a6700;
-}
-
-.subject-badge.tesda {
-    background: #e9f8f0;
-    color: #0f8b5f;
-}
-
-.subject-badge.general {
-    background: #eef2f7;
-    color: #475467;
 }
 
 .subject-title {

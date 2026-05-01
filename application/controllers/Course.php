@@ -149,7 +149,12 @@ class Course extends MY_Controller {
 
         $student_content_view = $this->is_student_content_view();
         $filter_unpublished = $this->should_filter_unpublished_content();
-        $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
+
+        $teacher_section_filter = null;
+        if ($this->original_role_slug === 'teacher' && $this->current_user) {
+            $teacher_section_filter = (int) $this->current_user->id;
+        }
+        $subject_sections = $this->Academic_model->get_subject_sections($subject_id, $teacher_section_filter);
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
         $has_subject_access = $this->has_subject_access($subject_id);
         
@@ -226,11 +231,12 @@ class Course extends MY_Controller {
         $back_param = $this->input->get('back', TRUE);
         if ($back_param) {
             $data['back_url'] = site_url($back_param);
+        } elseif ($this->original_role_slug === 'teacher') {
+            $data['back_url'] = site_url('course/teacher_subjects');
+        } elseif ($this->original_role_slug === 'student') {
+            $data['back_url'] = site_url('student');
         } else {
-            $referer = $this->input->server('HTTP_REFERER');
-            $data['back_url'] = ($referer && strpos($referer, base_url()) === 0)
-                ? $referer
-                : site_url('course/subjects');
+            $data['back_url'] = site_url('subjects');
         }
 
         $this->render('course/content', $data);
@@ -785,7 +791,8 @@ class Course extends MY_Controller {
         if ($this->input->method() === 'post') {
             $section_name = trim($this->input->post('section_name', TRUE));
             if ($section_name) {
-                $this->Academic_model->save_subject_section_by_name($subject_id, $section_name, $this->input->post('enrollment_key', TRUE));
+                $created_by_user_id = $this->current_user ? (int) $this->current_user->id : null;
+                $this->Academic_model->save_subject_section_by_name($subject_id, $section_name, $this->input->post('enrollment_key', TRUE), $created_by_user_id);
                 $this->session->set_flashdata('success', 'Section access saved.');
             }
         }
@@ -844,6 +851,27 @@ class Course extends MY_Controller {
         $data['students'] = $this->Academic_model->get_section_students($section_id);
 
         $this->render('course/section_attendance', $data);
+    }
+
+    public function lesson_completions($lesson_id)
+    {
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+        $this->require_section_manager($subject->id);
+
+        $data['title']        = 'Lesson Completions: ' . $lesson->title;
+        $data['lesson']       = $lesson;
+        $data['module']       = $module;
+        $data['subject']      = $subject;
+        $data['completions']  = $this->Lesson_model->get_lesson_completions($lesson_id);
+
+        $this->render('course/lesson_completions', $data);
     }
 
     public function edit_subject_section($subject_id)
@@ -1796,7 +1824,7 @@ class Course extends MY_Controller {
             return;
         }
 
-        $this->require_course_manager();
+        $this->require_section_manager($subject->id);
         $quiz = $this->get_or_create_quiz_for_activity($activity, $module, $subject);
         $questions = $this->Quiz_model->get_questions_with_choices($quiz->id);
 
@@ -1808,6 +1836,7 @@ class Course extends MY_Controller {
         $data['questions'] = $questions;
         $data['attempts'] = $this->Quiz_model->get_all_attempts($quiz->id);
         $data['student_content_view'] = false;
+        $data['can_edit_assessment'] = in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'));
         $this->render('course/assessment_manage', $data);
     }
 

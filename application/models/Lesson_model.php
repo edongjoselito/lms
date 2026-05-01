@@ -375,6 +375,18 @@ class Lesson_model extends CI_Model {
                         ->count_all_results('lesson_completions') > 0;
     }
 
+    public function get_lesson_completions($lesson_id)
+    {
+        return $this->db->select('lesson_completions.completed_at, users.id as user_id, CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE)
+            ->from('lesson_completions')
+            ->join('students', 'students.id = lesson_completions.student_id')
+            ->join('users', 'users.id = students.user_id')
+            ->where('lesson_completions.lesson_id', $lesson_id)
+            ->order_by('lesson_completions.completed_at', 'DESC')
+            ->get()
+            ->result();
+    }
+
     public function get_student_lesson_completions($student_id, $subject_id)
     {
         $this->db->select('lesson_completions.lesson_id, lesson_completions.completed_at');
