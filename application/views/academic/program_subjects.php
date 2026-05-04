@@ -114,7 +114,7 @@
                                             <?php endif; ?>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end ps-teacher-menu">
-                                            <li><span class="dropdown-header" style="font-size:0.75rem;font-weight:700;color:#6366f1;">Assign Teachers</span></li>
+                                            <li><span class="dropdown-header" style="font-size:0.75rem;font-weight:700;color:#2563eb;">Assign Teachers</span></li>
                                             <li class="px-2 pb-1">
                                                 <input type="text" class="ps-teacher-search form-control form-control-sm" placeholder="Search teacher..." autocomplete="off">
                                             </li>
@@ -175,7 +175,7 @@
             <div class="ps-card ps-form-card">
                 <div class="ps-card-head">
                     <div class="ps-card-title">
-                        <i class="bi bi-plus-circle-fill" style="color:#6366f1;"></i>
+                        <i class="bi bi-plus-circle-fill" style="color:#2563eb;"></i>
                         <span>Add Subject</span>
                     </div>
                 </div>
@@ -254,7 +254,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     display: inline-flex;
     align-items: center;
     gap: 0.2rem;
-    color: #6366f1;
+    color: #2563eb;
     font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
@@ -263,7 +263,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     border-radius: 8px;
     transition: background 0.15s, color 0.15s;
 }
-.ps-back:hover { background: #ede9fe; color: #4f46e5; text-decoration: none; }
+.ps-back:hover { background: #dbeafe; color: #1d4ed8; text-decoration: none; }
 
 /* Hero */
 .ps-hero {
@@ -271,12 +271,12 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     border-radius: 22px;
     overflow: hidden;
     margin-bottom: 1.75rem;
-    box-shadow: 0 4px 24px rgba(99,102,241,0.13);
+    box-shadow: 0 4px 24px rgba(37,99,235,0.16);
 }
 .ps-hero-bg {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+    background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
 }
 .ps-hero-bg::after {
     content: '';
@@ -422,13 +422,13 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     font-weight: 700;
     color: #1e293b;
 }
-.ps-card-title i { color: #6366f1; font-size: 1rem; }
+.ps-card-title i { color: #2563eb; font-size: 1rem; }
 .ps-count-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #ede9fe;
-    color: #6d28d9;
+    background: #dbeafe;
+    color: #1d4ed8;
     border-radius: 20px;
     font-size: 0.72rem;
     font-weight: 700;
@@ -461,7 +461,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
-.ps-search:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.ps-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
 @media (max-width: 600px) { .ps-search { width: 140px; } }
 
 /* Table header */
@@ -522,8 +522,8 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
 .ps-subject-code {
     display: inline-block;
     padding: 0.25rem 0.65rem;
-    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
-    color: #5b21b6;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
     border-radius: 7px;
     font-size: 0.75rem;
     font-weight: 800;
@@ -560,14 +560,14 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     white-space: nowrap;
     cursor: pointer;
 }
-.ps-action-view { background: #e0e7ff; color: #4338ca; }
-.ps-action-view:hover { background: #c7d2fe; color: #3730a3; text-decoration: none; transform: translateY(-1px); }
+.ps-action-view { background: #dbeafe; color: #1d4ed8; }
+.ps-action-view:hover { background: #bfdbfe; color: #1e40af; text-decoration: none; transform: translateY(-1px); }
 .ps-action-edit { background: #fef9c3; color: #a16207; }
 .ps-action-edit:hover { background: #fef08a; color: #854d0e; text-decoration: none; transform: translateY(-1px); }
 .ps-action-del { background: #fee2e2; color: #dc2626; }
 .ps-action-del:hover { background: #fecaca; color: #b91c1c; text-decoration: none; transform: translateY(-1px); }
-.ps-action-teacher { background: #dcfce7; color: #16a34a; border: none; }
-.ps-action-teacher:hover { background: #bbf7d0; color: #15803d; transform: translateY(-1px); }
+.ps-action-teacher { background: #dbeafe; color: #2563eb; border: none; }
+.ps-action-teacher:hover { background: #bfdbfe; color: #1d4ed8; transform: translateY(-1px); }
 .ps-teacher-badges { display: flex; flex-wrap: wrap; gap: 5px; }
 .ps-teacher-badge {
     display: inline-flex;
@@ -575,9 +575,9 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     gap: 6px;
     font-size: 0.78rem;
     font-weight: 600;
-    color: #065f46;
-    background: #d1fae5;
-    border: 1px solid #a7f3d0;
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
     border-radius: 20px;
     padding: 3px 10px 3px 4px;
 }
@@ -585,7 +585,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
     color: #fff;
     font-size: 0.65rem;
     font-weight: 800;
@@ -603,7 +603,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #059669;
+    background: #2563eb;
     color: #fff;
     border-radius: 10px;
     font-size: 0.6rem;
@@ -634,7 +634,7 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
     color: #fff;
     font-size: 0.7rem;
     font-weight: 800;
@@ -643,11 +643,11 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     justify-content: center;
     flex-shrink: 0;
 }
-.ps-teacher-assigned .ps-opt-avatar { background: linear-gradient(135deg, #10b981, #059669); }
+.ps-teacher-assigned .ps-opt-avatar { background: linear-gradient(135deg, #0d2453, #2563eb); }
 .ps-opt-name { flex: 1; font-weight: 500; color: #1e293b; }
-.ps-opt-check { color: #10b981; font-size: 0.9rem; margin-left: auto; font-weight: 700; }
+.ps-opt-check { color: #2563eb; font-size: 0.9rem; margin-left: auto; font-weight: 700; }
 .ps-teacher-search { font-size: 0.82rem !important; border-radius: 7px !important; }
-.ps-teacher-search:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 2px rgba(99,102,241,0.15) !important; }
+.ps-teacher-search:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 2px rgba(59,130,246,0.15) !important; }
 .ps-teacher-list { display: block; }
 @media (max-width: 768px) {
     .ps-table-head { display: none; }
@@ -682,8 +682,8 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     width: 72px;
     height: 72px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #ede9fe, #ddd6fe);
-    color: #7c3aed;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #2563eb;
     font-size: 1.9rem;
     display: flex;
     align-items: center;
@@ -720,12 +720,12 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     transition: border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
 }
-.ps-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.ps-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
 .ps-textarea { resize: vertical; }
 .ps-submit-btn {
     width: 100%;
     padding: 0.75rem;
-    background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -737,11 +737,11 @@ document.addEventListener('hidden.bs.dropdown', function (event) {
     justify-content: center;
     gap: 0.45rem;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    box-shadow: 0 4px 14px rgba(59,130,246,0.35);
     font-family: inherit;
     margin-top: 0.25rem;
     letter-spacing: 0.01em;
 }
-.ps-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(99,102,241,0.45); }
+.ps-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(59,130,246,0.45); }
 .ps-submit-btn:active { transform: translateY(0); }
 </style>

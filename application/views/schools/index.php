@@ -64,7 +64,7 @@
     <div class="col-sm-6 col-xl-3">
         <div class="metric-card">
             <div class="metric-header">
-                <div class="metric-icon" style="background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);">
+                <div class="metric-icon" style="background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);">
                     <i class="bi bi-people"></i>
                 </div>
                 <span class="metric-trend neutral">
@@ -112,7 +112,7 @@
                         <span class="distribution-value"><?= ($school_types['tesda'] + $school_types['tech_voc']) ?> schools</span>
                     </div>
                     <div class="distribution-bar">
-                        <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round((($school_types['tesda'] + $school_types['tech_voc']) / $total_schools) * 100) : 0 ?>%; background: #6366f1;"></div>
+                        <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round((($school_types['tesda'] + $school_types['tech_voc']) / $total_schools) * 100) : 0 ?>%; background: #2563eb;"></div>
                     </div>
                 </div>
             </div>
@@ -171,7 +171,7 @@
                         <?php if (!empty($schools)): ?>
                             <?php foreach ($schools as $s): ?>
                                 <?php
-                                $type_colors = array('deped' => '#3b82f6', 'basic' => '#3b82f6', 'ched' => '#10b981', 'college' => '#10b981', 'tesda' => '#8b5cf6', 'tech_voc' => '#8b5cf6', 'both' => '#f59e0b');
+                                $type_colors = array('deped' => '#3b82f6', 'basic' => '#3b82f6', 'ched' => '#10b981', 'college' => '#10b981', 'tesda' => '#2563eb', 'tech_voc' => '#2563eb', 'both' => '#f59e0b');
                                 $type_labels = array('deped' => 'DepEd', 'basic' => 'DepEd', 'ched' => 'CHED', 'college' => 'CHED', 'tesda' => 'TESDA', 'tech_voc' => 'TESDA', 'both' => 'Both');
                                 $type = isset($s->type) ? $s->type : 'deped';
                                 $type_color = isset($type_colors[$type]) ? $type_colors[$type] : '#64748b';
@@ -563,8 +563,8 @@
     }
 
     .btn-pagination:hover:not(:disabled) {
-        border-color: #0d9488;
-        color: #0d9488;
+        border-color: #3b82f6;
+        color: #2563eb;
     }
 
     .btn-pagination:disabled {
@@ -574,7 +574,7 @@
 
     /* Context Switcher Banner */
     .context-switcher-banner {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
         border-radius: 16px;
         padding: 1.5rem 2rem;
         display: flex;
@@ -624,7 +624,7 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.625rem 1.25rem;
-        background: #0d9488;
+        background: #3b82f6;
         color: white;
         border-radius: 10px;
         font-size: 0.85rem;
@@ -634,7 +634,7 @@
     }
 
     .btn-banner-primary:hover {
-        background: #0f766e;
+        background: #2563eb;
         color: white;
     }
 

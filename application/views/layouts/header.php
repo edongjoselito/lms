@@ -17,23 +17,23 @@
         :root {
             --sidebar-width: 260px;
             --sidebar-bg: #ffffff;
-            --sidebar-hover: #f5f5f9;
-            --sidebar-active: #f5f5f9;
-            --primary: #696cff;
-            --primary-dark: #5f61f4;
-            --primary-light: #e7e7ff;
-            --accent: #696cff;
-            --body-bg: #f5f5f9;
+            --sidebar-hover: #eff6ff;
+            --sidebar-active: #eff6ff;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #60a5fa;
+            --body-bg: #eff6ff;
             --card-bg: #ffffff;
-            --text-primary: #566a7f;
-            --text-secondary: #697a8d;
-            --text-tertiary: #a1acb8;
-            --text-muted: #d9dee3;
-            --border-soft: #d9dee3;
-            --border-hairline: #f5f5f9;
-            --shadow-xs: 0 2px 6px 0 rgba(67, 89, 113, 0.12);
-            --shadow-soft: 0 2px 6px 0 rgba(67, 89, 113, 0.12);
-            --shadow-medium: 0 4px 20px rgba(67, 89, 113, 0.15);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-tertiary: #64748b;
+            --text-muted: #cbd5e1;
+            --border-soft: #dbeafe;
+            --border-hairline: #eff6ff;
+            --shadow-xs: 0 2px 6px 0 rgba(37, 99, 235, 0.08);
+            --shadow-soft: 0 8px 24px rgba(37, 99, 235, 0.10);
+            --shadow-medium: 0 14px 36px rgba(37, 99, 235, 0.16);
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
@@ -56,7 +56,10 @@
 
         body {
             font-family: var(--font-sans);
-            background: var(--body-bg);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(96, 165, 250, 0.14), transparent 30%),
+                linear-gradient(145deg, #edf5ff 0%, #dde9ff 48%, #f8fbff 100%);
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.5;
@@ -109,7 +112,7 @@
         .sidebar-brand .brand-icon {
             width: 36px;
             height: 36px;
-            background: #696cff;
+            background: linear-gradient(135deg, #13367a 0%, #60a5fa 100%);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -380,7 +383,7 @@
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            border: 2px solid rgba(105, 108, 255, 0.2);
+            border: 2px solid rgba(59, 130, 246, 0.2);
             padding: 2px;
             overflow: hidden;
         }
@@ -456,9 +459,9 @@
         }
 
         .btn-switch-school:hover {
-            border-color: #d1d5db;
+            border-color: #bfdbfe;
             color: var(--text-primary);
-            background: #f9fafb;
+            background: #eff6ff;
         }
 
         /* Topbar Icon Buttons */
@@ -539,7 +542,7 @@
         .stat-card:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-soft);
-            border-color: #cbd5e1;
+            border-color: #bfdbfe;
         }
 
         .stat-card .stat-icon {
@@ -626,7 +629,7 @@
         }
 
         .table tbody tr:hover {
-            background: #f8fafc;
+            background: #f8fbff;
         }
 
         .badge-role {
@@ -640,8 +643,8 @@
         }
 
         .badge-admin {
-            background: #f4f0ff;
-            color: #6d28d9;
+            background: var(--primary-light);
+            color: var(--primary-dark);
         }
 
         .badge-user {
@@ -688,7 +691,7 @@
         .btn-action:hover {
             background: #f8fafc;
             color: var(--text-primary);
-            border-color: #d1d5db;
+            border-color: #bfdbfe;
         }
 
         .btn-action.btn-delete:hover {
@@ -753,8 +756,8 @@
 
         .form-card .form-control:focus,
         .form-card .form-select:focus {
-            border-color: #9ca3af;
-            box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.04);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
         }
 
         .form-card .form-control::placeholder {
@@ -798,8 +801,8 @@
 
         .form-control:focus,
         .form-select:focus {
-            border-color: #9ca3af;
-            box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.04);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
         }
 
         .form-control::placeholder {
@@ -847,9 +850,9 @@
         }
 
         .btn-outline-secondary:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+            border-color: #bfdbfe;
             color: var(--text-primary);
+            background: #eff6ff;
         }
 
         .btn-success {
@@ -928,8 +931,8 @@
 
         .dropdown-item:hover,
         .dropdown-item:focus {
-            background: #f5f5f7;
-            color: var(--text-primary);
+            background: #eff6ff;
+            color: var(--primary-dark);
         }
 
         .dropdown-divider {

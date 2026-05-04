@@ -47,7 +47,7 @@
                     <div class="card-body">
                         <div class="program-code"><?= htmlspecialchars($p->code) ?></div>
                         <h3 class="program-name"><?= htmlspecialchars($p->name) ?></h3>
-                        <p class="program-description"><?= htmlspecialchars($p->description) ?: '<span class="no-desc">No description provided.</span>' ?></p>
+                        <p class="program-description"><?= !empty($p->description) ? htmlspecialchars($p->description) : '<span class="no-desc">No description provided.</span>' ?></p>
                     </div>
 
                     <div class="card-stats">
@@ -131,7 +131,7 @@
 }
 .btn-add-program {
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     color: #fff;
     border-radius: 12px;
     font-size: 0.88rem;
@@ -141,11 +141,11 @@
     gap: 0.45rem;
     text-decoration: none;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 .btn-add-program:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
     color: #fff;
     text-decoration: none;
 }
@@ -178,10 +178,10 @@
 /* Accent bar */
 .card-accent {
     height: 5px;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
 }
 .program-card.type-grade_level .card-accent {
-    background: linear-gradient(90deg, #10b981, #059669);
+    background: linear-gradient(90deg, #0d2453, #2563eb);
 }
 
 /* Card top row */
@@ -197,7 +197,7 @@
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     color: #fff;
     font-size: 1rem;
     font-weight: 800;
@@ -208,7 +208,7 @@
     letter-spacing: 0.5px;
 }
 .program-card.type-grade_level .card-avatar {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #0d2453 0%, #2563eb 100%);
 }
 
 /* Badges */
@@ -226,8 +226,8 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
-.type-chip.type-program { background: #ede9fe; color: #6d28d9; }
-.type-chip.type-grade_level { background: #d1fae5; color: #047857; }
+.type-chip.type-program { background: #dbeafe; color: #1d4ed8; }
+.type-chip.type-grade_level { background: #eff6ff; color: #2563eb; }
 .degree-chip {
     padding: 0.25rem 0.65rem;
     border-radius: 20px;
@@ -270,12 +270,12 @@
 .program-code {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #6366f1;
+    color: #2563eb;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.25rem;
 }
-.program-card.type-grade_level .program-code { color: #059669; }
+.program-card.type-grade_level .program-code { color: #1d4ed8; }
 .program-name {
     font-size: 1.1rem;
     font-weight: 700;
@@ -316,8 +316,8 @@
     color: #475569;
 }
 .stat-icon { font-size: 0.82rem; color: #94a3b8; }
-.subjects-pill { border-color: #e0e7ff; background: #f5f3ff; color: #5b21b6; }
-.subjects-pill .stat-icon { color: #7c3aed; }
+.subjects-pill { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.subjects-pill .stat-icon { color: #2563eb; }
 
 /* Footer */
 .card-footer {
@@ -331,19 +331,19 @@
     gap: 0.5rem;
     width: 100%;
     padding: 0.65rem 1rem;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     color: #fff;
     border-radius: 10px;
     font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
     position: relative;
 }
 .btn-manage-subjects:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
     color: #fff;
     text-decoration: none;
 }
@@ -371,14 +371,14 @@
 .empty-icon {
     width: 90px;
     height: 90px;
-    background: #ede9fe;
+    background: #dbeafe;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.25rem;
 }
-.empty-icon i { font-size: 2.5rem; color: #7c3aed; }
+.empty-icon i { font-size: 2.5rem; color: #2563eb; }
 .empty-state h3 { font-size: 1.4rem; color: #1e293b; margin: 0 0 0.5rem; font-weight: 700; }
 .empty-state p { margin: 0 0 1.75rem; color: #64748b; }
 

@@ -149,6 +149,7 @@ class Course extends MY_Controller {
 
         $student_content_view = $this->is_student_content_view();
         $filter_unpublished = $this->should_filter_unpublished_content();
+        
 
         $teacher_section_filter = null;
         if ($this->original_role_slug === 'teacher' && $this->current_user) {
