@@ -42,7 +42,7 @@
         <div class="col-sm-6 col-xl-3">
             <div class="metric-card">
                 <div class="metric-header">
-                    <div class="metric-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">
+                    <div class="metric-icon" style="background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);">
                         <i class="bi bi-book"></i>
                     </div>
                     <span class="metric-trend neutral">
@@ -105,7 +105,7 @@
                             <span class="distribution-value"><?= $school_types['tesda'] ?> schools</span>
                         </div>
                         <div class="distribution-bar">
-                            <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round(($school_types['tesda'] / $total_schools) * 100) : 0 ?>%; background: #6366f1;"></div>
+                            <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round(($school_types['tesda'] / $total_schools) * 100) : 0 ?>%; background: #2563eb;"></div>
                         </div>
                     </div>
                 </div>
@@ -151,7 +151,7 @@
                                         </td>
                                         <td>
                                             <?php
-                                            $type_colors = array('deped' => '#3b82f6', 'ched' => '#10b981', 'tesda' => '#8b5cf6');
+                                            $type_colors = array('deped' => '#3b82f6', 'ched' => '#10b981', 'tesda' => '#2563eb');
                                             $type_labels = array('deped' => 'DepEd', 'ched' => 'CHED', 'tesda' => 'TESDA');
                                             $type = isset($school->type) ? $school->type : 'deped';
                                             ?>
@@ -588,14 +588,14 @@
 
         /* Context Switcher Banner */
         .context-switcher-banner {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
             border-radius: 16px;
             padding: 1.5rem 1.75rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-top: 2rem;
-            box-shadow: 0 4px 24px rgba(30, 41, 59, 0.15);
+            box-shadow: 0 12px 32px rgba(37, 99, 235, 0.18);
         }
 
         .banner-content {
@@ -716,7 +716,7 @@
 <?php elseif (!empty($is_teacher_view)):
 $sy_label      = isset($school_year) && $school_year ? $school_year->year_start . '-' . $school_year->year_end : 'N/A';
 $subject_count = count($subjects);
-$palette       = array('#696cff','#03c3ec','#71dd37','#ffab00','#ff3e1d','#8592a3');
+$palette       = array('#3b82f6','#0ea5e9','#22c55e','#f59e0b','#ef4444','#64748b');
 function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
 ?>
 <!-- Page title -->
@@ -730,7 +730,7 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
 <div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="stat-card">
-            <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;">
+            <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
                 <i class="bi bi-journal-bookmark-fill"></i>
             </div>
             <div class="stat-value"><?= $subject_count ?></div>
@@ -814,7 +814,7 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
                     </td>
                     <td>
                         <?php if (!empty($s->program_code)): ?>
-                            <span style="background:#ede9fe;color:#5b21b6;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:20px;">
+                            <span style="background:#dbeafe;color:#1d4ed8;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:20px;">
                                 <?= htmlspecialchars($s->program_code) ?>
                             </span>
                         <?php else: ?>
@@ -846,7 +846,7 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
     <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card">
-                <div class="stat-icon" style="background: #ede9fe; color: #6d28d9;">
+                <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
                     <i class="bi bi-people-fill"></i>
                 </div>
                 <div class="stat-value"><?= $total_users ?></div>

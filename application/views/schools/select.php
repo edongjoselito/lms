@@ -84,7 +84,7 @@
 <style>
     /* Light Clean Aesthetic - Dashboard Style */
     .hero-banner {
-        background: linear-gradient(135deg, #696cff 0%, #5f61f4 100%);
+        background: linear-gradient(135deg, #0d2453 0%, #2563eb 100%);
         border-radius: 12px;
         padding: 1.5rem 2rem;
         margin-bottom: 1.5rem;
@@ -144,7 +144,7 @@
     .school-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px 0 rgba(67, 89, 113, 0.15);
-        border-color: #696cff;
+        border-color: #3b82f6;
     }
 
     .card-inner {
@@ -165,7 +165,7 @@
         width: 44px;
         height: 44px;
         border-radius: 8px;
-        background: #e7e7ff;
+        background: #dbeafe;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -173,7 +173,7 @@
 
     .icon-box .material-symbols-outlined {
         font-size: 1.375rem;
-        color: #696cff;
+        color: #2563eb;
     }
 
     .type-tag {
@@ -261,7 +261,7 @@
     .action-link {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: #696cff;
+        color: #2563eb;
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
@@ -284,8 +284,8 @@
     }
 
     .add-card:hover {
-        border-color: #696cff;
-        background: #f8f8ff;
+        border-color: #3b82f6;
+        background: #f8fbff;
     }
 
     .add-card-inner {
@@ -303,7 +303,7 @@
         width: 56px;
         height: 56px;
         border-radius: 12px;
-        background: #e7e7ff;
+        background: #dbeafe;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -313,11 +313,11 @@
 
     .add-icon-box .material-symbols-outlined {
         font-size: 1.5rem;
-        color: #696cff;
+        color: #2563eb;
     }
 
     .add-card:hover .add-icon-box {
-        background: #696cff;
+        background: #3b82f6;
     }
 
     .add-card:hover .add-icon-box .material-symbols-outlined {
@@ -380,21 +380,21 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.625rem 1.25rem;
-        background: #696cff;
+        background: #3b82f6;
         color: white;
         border-radius: 8px;
         font-size: 0.875rem;
         font-weight: 500;
         text-decoration: none;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(105, 108, 255, 0.4);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
     }
 
     .btn-primary:hover {
-        background: #5f61f4;
+        background: #2563eb;
         color: white;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(105, 108, 255, 0.5);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
     }
 
     .btn-primary .material-symbols-outlined {
