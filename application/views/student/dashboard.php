@@ -45,18 +45,18 @@
         <?php if (!empty($enrolled_subjects)): ?>
             <div class="courses-grid">
                 <?php foreach ($enrolled_subjects as $subject): ?>
-                    <?php $system_type = strtolower($subject->system_type ?: 'general'); ?>
+                    <?php $system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general'); ?>
                     <div class="course-card">
                         <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
                             <?php if (!empty($subject->cover_photo)): ?>
-                                <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject->name) ?>">
+                                <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars(isset($subject->name) ? $subject->name : $subject->code) ?>">
                             <?php else: ?>
-                                <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
+                                <span><?= htmlspecialchars(isset($subject->code) ? $subject->code : 'Course') ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="course-body">
-                            <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>
-                            <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
+                            <div class="course-code"><?= htmlspecialchars(isset($subject->code) ? $subject->code : '') ?></div>
+                            <h3 class="course-name"><?= htmlspecialchars(isset($subject->name) ? $subject->name : (isset($subject->description) ? $subject->description : 'Course')) ?></h3>
                             <div class="course-meta">
                                 <span class="course-badge <?= htmlspecialchars($system_type) ?>"><?= htmlspecialchars(strtoupper($system_type)) ?></span>
                                 <?php if (!empty($subject->section_name)): ?>

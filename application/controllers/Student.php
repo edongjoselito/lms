@@ -321,10 +321,42 @@ class Student extends MY_Controller
             ? round((count($completed_lesson_ids) / $total_lessons) * 100)
             : 0;
 
-        $accessible_lesson_ids = array();
-        foreach ($ordered_lesson_ids as $lesson_id) {
-            $accessible_lesson_ids[] = $lesson_id;
-            if (!in_array($lesson_id, $completed_lesson_ids, true)) {
+        // Build ordered list of all items (lessons and activities) for sequential access and progress
+        $all_ordered_items = array();
+        foreach ($modules as $module) {
+            foreach ($module->lessons as $lesson) {
+                $all_ordered_items[] = (object) array(
+                    'id' => (int) $lesson->id,
+                    'type' => 'lesson',
+                    'is_completed' => in_array((int) $lesson->id, $completed_lesson_ids, true)
+                );
+            }
+            foreach ($module->activities as $activity) {
+                $all_ordered_items[] = (object) array(
+                    'id' => (int) $activity->id,
+                    'type' => $activity->type,
+                    'is_completed' => isset($activity->has_attempt) && $activity->has_attempt
+                );
+            }
+        }
+
+        // Calculate progress based on all items (lessons + activities)
+        $total_items = count($all_ordered_items);
+        $completed_items = 0;
+        foreach ($all_ordered_items as $item) {
+            if ($item->is_completed) {
+                $completed_items++;
+            }
+        }
+        $progress_percent = $total_items > 0
+            ? round(($completed_items / $total_items) * 100)
+            : 0;
+
+        // Build accessible items list - items are accessible until first incomplete item
+        $accessible_item_ids = array();
+        foreach ($all_ordered_items as $item) {
+            $accessible_item_ids[] = $item->id;
+            if (!$item->is_completed) {
                 break;
             }
         }
@@ -333,7 +365,7 @@ class Student extends MY_Controller
         $data['subject'] = $subject;
         $data['modules'] = $modules;
         $data['completed_lesson_ids'] = $completed_lesson_ids;
-        $data['accessible_lesson_ids'] = $accessible_lesson_ids;
+        $data['accessible_lesson_ids'] = $accessible_item_ids;
         $data['total_lessons'] = $total_lessons;
         $data['progress_percent'] = max(0, min(100, $progress_percent));
 
@@ -403,24 +435,64 @@ class Student extends MY_Controller
             ? round((count($completed_lesson_ids) / $total_lessons) * 100)
             : 0;
 
-        // Get previous and next lessons
-        $previous_lesson = null;
-        $next_lesson = null;
-
-        if ($lesson_index > 0) {
-            $previous_lesson = $ordered_lessons[$lesson_index - 1];
+        // Build ordered list of all items (lessons and activities) for navigation
+        $modules = $this->Student_model->get_modules_by_subject($subject_id);
+        $all_ordered_items = array();
+        foreach ($modules as $module) {
+            $module->lessons = $this->Student_model->get_lessons($module->id);
+            $module->activities = $this->Student_model->get_activities($module->id);
+            
+            foreach ($module->lessons as $l) {
+                $all_ordered_items[] = (object) array(
+                    'id' => (int) $l->id,
+                    'type' => 'lesson',
+                    'title' => $l->title,
+                    'url' => site_url('student/lesson/' . $subject_id . '/' . $l->id)
+                );
+            }
+            foreach ($module->activities as $activity) {
+                $has_attempt = $this->Quiz_model->get_student_attempts($activity->quiz_id ?? 0, $this->session->userdata('user_id'));
+                $url = $activity->type === 'quiz' 
+                    ? (!empty($has_attempt) && isset($has_attempt[0]) 
+                        ? site_url('course/assessment_result/' . $has_attempt[0]->id)
+                        : site_url('course/assessment/' . $activity->id))
+                    : site_url('course/activity/' . $activity->id);
+                $all_ordered_items[] = (object) array(
+                    'id' => (int) $activity->id,
+                    'type' => $activity->type,
+                    'title' => $activity->title,
+                    'url' => $url
+                );
+            }
         }
 
-        if ($lesson_index < count($ordered_lessons) - 1) {
-            $next_lesson = $ordered_lessons[$lesson_index + 1];
+        // Find current lesson position in all items
+        $current_item_index = null;
+        foreach ($all_ordered_items as $index => $item) {
+            if ($item->type === 'lesson' && $item->id === (int) $lesson_id) {
+                $current_item_index = $index;
+                break;
+            }
+        }
+
+        // Get previous and next items
+        $previous_item = null;
+        $next_item = null;
+
+        if ($current_item_index !== null && $current_item_index > 0) {
+            $previous_item = $all_ordered_items[$current_item_index - 1];
+        }
+
+        if ($current_item_index !== null && $current_item_index < count($all_ordered_items) - 1) {
+            $next_item = $all_ordered_items[$current_item_index + 1];
         }
 
         $data['title'] = $lesson->title;
         $data['subject'] = $subject;
         $data['lesson'] = $lesson;
         $data['is_completed'] = $is_completed;
-        $data['previous_lesson'] = $previous_lesson;
-        $data['next_lesson'] = $next_lesson;
+        $data['previous_item'] = $previous_item;
+        $data['next_item'] = $next_item;
         $data['progress_percent'] = $progress_percent;
         $data['total_lessons'] = $total_lessons;
         $data['completed_lessons'] = count($completed_lesson_ids);

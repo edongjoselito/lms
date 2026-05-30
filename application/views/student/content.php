@@ -6,10 +6,23 @@ $accessible_lesson_ids = array_map('intval', $accessible_lesson_ids ?? array());
 $completed_count = count($completed_lesson_ids);
 $subject_title = trim($subject->description ?: $subject->name);
 $subject_title = $subject_title !== '' ? $subject_title : 'Course content';
+
+// Calculate total items (lessons + activities) and completed items
+$total_items = $total_lessons;
+$completed_items = $completed_count;
 $total_activities = 0;
 foreach ($modules as $module) {
     $total_activities += count($module->activities ?? array());
+    foreach ($module->activities ?? array() as $activity) {
+        $total_items++;
+        if (isset($activity->has_attempt) && $activity->has_attempt) {
+            $completed_items++;
+        }
+    }
 }
+
+// Recalculate progress percentage based on all items
+$progress_percent = $total_items > 0 ? round(($completed_items / $total_items) * 100) : 0;
 ?>
 <div class="student-content-page">
     <a href="<?= site_url('student') ?>" class="course-back">
@@ -35,7 +48,7 @@ foreach ($modules as $module) {
                     <div class="progress-fill" style="width: <?= $progress_percent ?>%"></div>
                 </div>
                 <p class="progress-status">
-                    <?= $completed_count ?> of <?= $total_lessons ?> lessons completed
+                    <?= $completed_items ?> of <?= $total_items ?> items completed
                 </p>
             </div>
         </div>

@@ -96,27 +96,27 @@
 
     <!-- Navigation -->
     <div class="lp-nav" style="grid-column: 1 / -1;">
-        <?php if ($previous_lesson): ?>
-            <a href="<?= site_url('student/lesson/' . $subject->id . '/' . $previous_lesson->id) ?>" class="lp-nav-btn lp-nav-btn--prev">
+        <?php if ($previous_item): ?>
+            <a href="<?= $previous_item->url ?>" class="lp-nav-btn lp-nav-btn--prev">
                 <span class="lp-nav-arrow">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                         <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </span>
                 <span class="lp-nav-text">
-                    <span class="lp-nav-label">Previous Lesson</span>
-                    <span class="lp-nav-name"><?= htmlspecialchars($previous_lesson->title) ?></span>
+                    <span class="lp-nav-label">Previous <?= ucfirst($previous_item->type) ?></span>
+                    <span class="lp-nav-name"><?= htmlspecialchars($previous_item->title) ?></span>
                 </span>
             </a>
         <?php else: ?>
             <div></div>
         <?php endif; ?>
 
-        <?php if ($next_lesson): ?>
-            <a href="<?= site_url('student/lesson/' . $subject->id . '/' . $next_lesson->id) ?>" class="lp-nav-btn lp-nav-btn--next">
+        <?php if ($next_item): ?>
+            <a href="<?= $next_item->url ?>" class="lp-nav-btn lp-nav-btn--next">
                 <span class="lp-nav-text lp-nav-text--right">
-                    <span class="lp-nav-label">Next Lesson</span>
-                    <span class="lp-nav-name"><?= htmlspecialchars($next_lesson->title) ?></span>
+                    <span class="lp-nav-label">Next <?= ucfirst($next_item->type) ?></span>
+                    <span class="lp-nav-name"><?= htmlspecialchars($next_item->title) ?></span>
                 </span>
                 <span class="lp-nav-arrow">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
