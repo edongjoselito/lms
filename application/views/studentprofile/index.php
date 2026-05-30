@@ -2,6 +2,17 @@
     <div class="table-header">
         <h5><i class="bi bi-badge me-2"></i>Student Profiles</h5>
         <div style="display:flex;gap:10px;">
+            <form action="<?= site_url('studentprofile') ?>" method="get" style="display:flex;gap:10px;">
+                <input type="text" name="search" class="form-control" placeholder="Search by name or student number..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>" style="border-radius:10px;padding:0.6rem 1rem;font-size:0.875rem;width:250px;">
+                <button type="submit" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
+                    <i class="bi bi-search"></i>
+                </button>
+                <?php if (isset($_GET['search'])): ?>
+                    <a href="<?= site_url('studentprofile') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                <?php endif; ?>
+            </form>
             <a href="<?= site_url('studentprofile/download_template') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
                 <i class="bi bi-download me-1"></i> Download Template
             </a>
