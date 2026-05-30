@@ -80,12 +80,8 @@ class Student_model extends CI_Model {
         $this->db->or_where('school_id IS NULL', null, false);
         $this->db->group_end();
 
-        // Filter by student's grade level if available
-        if ($grade_level_id) {
-            $this->db->where('grade_level_id', $grade_level_id);
-        }
-        // Also filter by year_level if grade_level_id is not available
-        elseif ($year_level) {
+        // Filter by student's year level if available
+        if ($year_level) {
             $this->db->where('year_level', $year_level);
         }
 

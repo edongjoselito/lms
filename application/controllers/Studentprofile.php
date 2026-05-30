@@ -287,12 +287,37 @@ class Studentprofile extends Admin_Controller
                 redirect('studentprofile/enroll/' . $id);
             }
 
+            // Get program_id and year_level from the selected grade level
+            $program_id = $grade_level_id;
+            $year_level = null;
+            
+            $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+            if ($check_academic > 0) {
+                $check_year_level = $this->db->query("SHOW COLUMNS FROM academic_programs LIKE 'year_level'")->num_rows();
+                if ($check_year_level > 0) {
+                    $prog = $this->db->select('year_level')->where('id', $grade_level_id)->get('academic_programs')->row();
+                    if ($prog && isset($prog->year_level)) {
+                        $year_level = $prog->year_level;
+                    }
+                }
+            } else {
+                $check_year_level = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+                if ($check_year_level > 0) {
+                    $prog = $this->db->select('year_level')->where('id', $grade_level_id)->get('programs')->row();
+                    if ($prog && isset($prog->year_level)) {
+                        $year_level = $prog->year_level;
+                    }
+                }
+            }
+
             // Create enrollment record
             $enrollment_data = array(
                 'student_id' => $data['profile']->user_id,
                 'school_id' => $this->school_id,
                 'school_year_id' => $school_year->id,
                 'grade_level_id' => $grade_level_id,
+                'program_id' => $program_id,
+                'year_level' => $year_level,
                 'section_id' => $section_id,
                 'status' => 'enrolled',
                 'enrollment_date' => date('Y-m-d')

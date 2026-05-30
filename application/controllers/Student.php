@@ -86,6 +86,20 @@ class Student extends MY_Controller
             return;
         }
 
+        // Get student's current grade level from enrollment
+        $enrollment = $this->db->where('student_id', $user_id)
+            ->order_by('enrollment_date', 'DESC')
+            ->limit(1)
+            ->get('enrollments')
+            ->row();
+
+        $year_level = null;
+        if ($enrollment && isset($enrollment->year_level)) {
+            $year_level = $enrollment->year_level;
+        } elseif (isset($student->year_level)) {
+            $year_level = $student->year_level;
+        }
+
         $filters = array();
         if ($this->input->get('system_type')) {
             $filters['system_type'] = $this->input->get('system_type');
@@ -111,6 +125,7 @@ class Student extends MY_Controller
         $data['subjects'] = $grouped;
         $data['enrolled_subjects'] = $enrolled_subjects;
         $data['filter_type'] = $this->input->get('system_type');
+        $data['year_level'] = $year_level;
 
         $this->render('student/subjects', $data);
     }

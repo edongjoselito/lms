@@ -20,6 +20,12 @@ $available_count = max(0, $total_subjects - $enrolled_count);
             <span class="page-eyebrow"><i class="bi bi-compass"></i> Course catalog</span>
             <h1 class="page-title">Find Your Courses</h1>
             <p class="page-subtitle">Browse published subjects, continue enrolled courses, or join a new class.</p>
+            <?php if ($year_level): ?>
+                <div class="grade-level-badge">
+                    <i class="bi bi-mortarboard"></i>
+                    Grade <?= str_pad($year_level, 2, '0', STR_PAD_LEFT) ?>
+                </div>
+            <?php endif; ?>
         </div>
         <div class="subjects-summary">
             <div class="summary-tile">
@@ -164,10 +170,23 @@ $available_count = max(0, $total_subjects - $enrolled_count);
 
 .page-subtitle {
     color: #667085;
-    margin: 0;
+    margin: 0 0 0.75rem 0;
     font-size: 0.95rem;
     max-width: 620px;
     line-height: 1.55;
+}
+
+.grade-level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
 }
 
 .subjects-summary {
