@@ -62,13 +62,15 @@ class Academic_model extends CI_Model
     // ---- Grade Levels (DepEd) ----
     public function get_grade_levels($category = null, $school_id = null)
     {
-        if ($category) {
-            $this->db->where('category', $category);
-        }
+        // Get distinct year_level values from programs table
+        $this->db->distinct();
+        $this->db->select('id, school_id, year_level');
+        $this->db->where('year_level IS NOT NULL');
         if ($school_id) {
             $this->db->where('school_id', $school_id);
         }
-        return $this->db->where('status', 1)->order_by('level_order', 'ASC')->get('grade_levels')->result();
+        $this->db->order_by('year_level', 'ASC');
+        return $this->db->get('programs')->result();
     }
 
     public function get_grade_level($id)
@@ -105,16 +107,17 @@ class Academic_model extends CI_Model
     // ---- Programs (CHED) ----
     public function get_programs($school_id = null)
     {
-        $this->db->where('status', 1);
         if ($school_id) {
             $this->db->where('school_id', $school_id);
         }
         // Use academic_programs table if it exists, otherwise fall back to programs
         $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
         if ($checkTable > 0) {
+            $this->db->where('status', 1);
             return $this->db->order_by('type, level_order, name')->get('academic_programs')->result();
         }
-        return $this->db->get('programs')->result();
+        // Order by year_level ascending for programs table
+        return $this->db->order_by('year_level ASC, id ASC')->get('programs')->result();
     }
 
     public function get_program($id)
@@ -154,8 +157,29 @@ class Academic_model extends CI_Model
             $this->db->insert('academic_programs', $data);
         } else {
             // Fall back to programs table for compatibility
-            $legacyData = $data;
-            unset($legacyData['type'], $legacyData['category'], $legacyData['level_order']);
+            // Check which columns exist in programs table
+            $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+            $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+            $checkDesc = $this->db->query("SHOW COLUMNS FROM programs LIKE 'description'")->num_rows();
+            $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+            
+            $legacyData = array();
+            if ($checkName > 0 && isset($data['name'])) {
+                $legacyData['name'] = $data['name'];
+            }
+            if ($checkCode > 0 && isset($data['code'])) {
+                $legacyData['code'] = $data['code'];
+            }
+            if ($checkDesc > 0 && isset($data['description'])) {
+                $legacyData['description'] = $data['description'];
+            }
+            if ($checkYearLevel > 0 && isset($data['year_level'])) {
+                $legacyData['year_level'] = $data['year_level'];
+            }
+            if (isset($data['school_id'])) {
+                $legacyData['school_id'] = $data['school_id'];
+            }
+            
             $this->db->insert('programs', $legacyData);
         }
         return $this->db->insert_id();
@@ -196,7 +220,19 @@ class Academic_model extends CI_Model
     // ---- Subjects ----
     public function get_subjects($filters = array())
     {
-        $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, programs.name as program_name, learning_areas.name as learning_area_name');
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+        $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+
+        $select_fields = 'subjects.*, grade_levels.name as grade_level_name, learning_areas.name as learning_area_name';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+        if ($checkName > 0) {
+            $select_fields .= ', programs.name as program_name';
+        }
+
+        $this->db->select($select_fields);
         $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
         $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
@@ -222,8 +258,7 @@ class Academic_model extends CI_Model
 
     public function get_subjects_by_program($program_id)
     {
-        $this->db->select('subjects.*, programs.code as program_code, programs.name as program_name');
-        $this->db->join('programs', 'programs.id = subjects.program_id');
+        $this->db->select('subjects.*');
         $this->db->where('subjects.program_id', $program_id);
         $this->db->where('subjects.status', 1);
         return $this->db->order_by('semester_type, code')->get('subjects')->result();
@@ -240,7 +275,19 @@ class Academic_model extends CI_Model
 
     public function get_subject($id)
     {
-        $this->db->select('subjects.*, grade_levels.name as grade_level_name, programs.code as program_code, programs.name as program_name, learning_areas.name as learning_area_name');
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+        $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+
+        $select_fields = 'subjects.*, grade_levels.name as grade_level_name, learning_areas.name as learning_area_name';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+        if ($checkName > 0) {
+            $select_fields .= ', programs.name as program_name';
+        }
+
+        $this->db->select($select_fields);
         $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
         $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
@@ -350,7 +397,7 @@ class Academic_model extends CI_Model
     // ---- Sections ----
     public function get_sections($filters = array())
     {
-        $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
+        $this->db->select('sections.*, grade_levels.name as grade_level_name, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
         $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = sections.program_id', 'left');
         $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
@@ -372,7 +419,7 @@ class Academic_model extends CI_Model
 
     public function get_section($id)
     {
-        return $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code, CONCAT(u.first_name, " ", u.last_name) as adviser_name')
+        return $this->db->select('sections.*, grade_levels.name as grade_level_name, CONCAT(u.first_name, " ", u.last_name) as adviser_name')
             ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
             ->join('users u', 'u.id = sections.adviser_id', 'left')
@@ -449,7 +496,16 @@ class Academic_model extends CI_Model
     {
         $this->ensure_class_program_enrollment_key_column();
         $this->ensure_class_program_created_by_column();
-        $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+        
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+
+        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+
+        $this->db->select($select_fields, FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
             ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
@@ -469,7 +525,16 @@ class Academic_model extends CI_Model
     public function get_subject_section($section_id)
     {
         $this->ensure_class_program_enrollment_key_column();
-        return $this->db->select('class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, programs.code as program_code', FALSE)
+        
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+
+        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+
+        return $this->db->select($select_fields, FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
             ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
@@ -814,7 +879,16 @@ class Academic_model extends CI_Model
     public function get_teacher_classes($teacher_id, $school_year_id = null)
     {
         $this->ensure_class_program_enrollment_key_column();
-        $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, grade_levels.name as grade_level_name, programs.code as program_code', FALSE);
+        
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+
+        $select_fields = 'class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, grade_levels.name as grade_level_name';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+
+        $this->db->select($select_fields, FALSE);
         $this->db->join('subjects', 'subjects.id = class_programs.subject_id');
         $this->db->join('sections', 'sections.id = class_programs.section_id');
         $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
@@ -941,7 +1015,20 @@ class Academic_model extends CI_Model
     public function get_subjects_by_teacher_user($user_id)
     {
         $this->ensure_subject_teachers_table();
-        return $this->db->select('subjects.*, programs.code as program_code, programs.name as program_name')
+        
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+        $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+
+        $select_fields = 'subjects.*';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+        if ($checkName > 0) {
+            $select_fields .= ', programs.name as program_name';
+        }
+
+        return $this->db->select($select_fields)
             ->join('subject_teachers', 'subject_teachers.subject_id = subjects.id')
             ->join('programs', 'programs.id = subjects.program_id', 'left')
             ->where('subject_teachers.user_id', (int)$user_id)

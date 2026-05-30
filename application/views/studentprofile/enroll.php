@@ -20,6 +20,12 @@
                         <label class="form-label">Student Name</label>
                         <input type="text" class="form-control" value="<?= htmlspecialchars($profile->last_name . ', ' . $profile->first_name) ?>" readonly>
                     </div>
+                    <?php if (isset($current_enrollment) && $current_enrollment): ?>
+                    <div class="col-md-4">
+                        <label class="form-label">Current Grade Level</label>
+                        <input type="text" class="form-control" value="<?= isset($current_enrollment->grade_level_name) ? htmlspecialchars($current_enrollment->grade_level_name) : (isset($current_enrollment->year_level) ? 'Grade ' . $current_enrollment->year_level : 'N/A') ?>" readonly>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="row g-3 mt-3">
                     <div class="col-md-4">
@@ -28,10 +34,15 @@
                             <option value="">Select Grade Level</option>
                             <?php foreach ($grade_levels as $gl): ?>
                                 <?php
-                                $name = htmlspecialchars($gl->name);
-                                // Format to Grade 01-12 if it's a number
-                                if (is_numeric($name) && $name >= 1 && $name <= 12) {
-                                    $name = 'Grade ' . str_pad($name, 2, '0', STR_PAD_LEFT);
+                                // Use year_level if available, otherwise use name
+                                if (isset($gl->year_level) && $gl->year_level) {
+                                    $name = 'Grade ' . str_pad($gl->year_level, 2, '0', STR_PAD_LEFT);
+                                } else {
+                                    $name = htmlspecialchars($gl->name);
+                                    // Format to Grade 01-12 if it's a number
+                                    if (is_numeric($name) && $name >= 1 && $name <= 12) {
+                                        $name = 'Grade ' . str_pad($name, 2, '0', STR_PAD_LEFT);
+                                    }
                                 }
                                 ?>
                                 <option value="<?= $gl->id ?>"><?= $name ?></option>
@@ -80,21 +91,37 @@ document.addEventListener('DOMContentLoaded', function() {
     var gradeLevelSelect = document.getElementById('grade_level_id');
     var sectionSelect = document.getElementById('section_id');
 
+    // Store all section options on page load
+    var allSectionOptions = [];
+    sectionSelect.querySelectorAll('option').forEach(function(option) {
+        allSectionOptions.push({
+            value: option.value,
+            text: option.text,
+            gradeLevel: option.getAttribute('data-grade-level')
+        });
+    });
+
     gradeLevelSelect.addEventListener('change', function() {
         var selectedGradeLevel = this.value;
-        var sectionOptions = sectionSelect.querySelectorAll('option');
 
         // Clear section selection
         sectionSelect.value = '';
-
-        // For now, show all sections regardless of grade level
-        // since grade_level_id in sections may not match static 1-12 values
         sectionSelect.innerHTML = '<option value="">Select Section</option>';
-        sectionOptions.forEach(function(option) {
-            if (option.value !== '') {
-                sectionSelect.innerHTML += '<option value="' + option.value + '">' + option.text + '</option>';
+
+        // Filter sections by selected grade level
+        allSectionOptions.forEach(function(option) {
+            if (option.value === '') return; // Skip the default option
+
+            // Show section if no grade level selected or if it matches
+            if (!selectedGradeLevel || option.gradeLevel == selectedGradeLevel) {
+                sectionSelect.innerHTML += '<option value="' + option.value + '" data-grade-level="' + option.gradeLevel + '">' + option.text + '</option>';
             }
         });
+
+        // If no sections match, show a message
+        if (sectionSelect.options.length <= 1) {
+            sectionSelect.innerHTML += '<option value="">No sections available for this grade level</option>';
+        }
     });
 });
 </script>

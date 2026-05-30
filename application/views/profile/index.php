@@ -99,13 +99,13 @@
 
             <div class="pf-fields">
                 <div class="pf-field-group">
-                    <div class="pf-field">
+                    <div class="pf-field pf-field--col-6">
                         <label class="pf-label">First Name <span class="pf-req">*</span></label>
                         <input type="text" class="pf-input" name="first_name"
                             value="<?= htmlspecialchars($user->first_name) ?>" required
                             placeholder="Enter first name">
                     </div>
-                    <div class="pf-field">
+                    <div class="pf-field pf-field--col-6">
                         <label class="pf-label">Last Name <span class="pf-req">*</span></label>
                         <input type="text" class="pf-input" name="last_name"
                             value="<?= htmlspecialchars($user->last_name) ?>" required
@@ -113,7 +113,7 @@
                     </div>
                 </div>
                 <div class="pf-field-group">
-                    <div class="pf-field">
+                    <div class="pf-field pf-field--col-12">
                         <label class="pf-label">Email Address <span class="pf-req">*</span></label>
                         <div class="pf-input-icon-wrap">
                             <svg class="pf-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -508,7 +508,7 @@
 
     .pf-field-group {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(12, 1fr);
         gap: 1.25rem;
     }
 
@@ -517,6 +517,14 @@
         flex-direction: column;
         gap: 0.5rem;
         min-width: 0;
+    }
+
+    .pf-field--col-6 {
+        grid-column: span 6;
+    }
+
+    .pf-field--col-12 {
+        grid-column: span 12;
     }
 
     .pf-label {
@@ -711,6 +719,11 @@
         .pf-field-group {
             grid-template-columns: 1fr;
         }
+
+        .pf-field--col-6,
+        .pf-field--col-12 {
+            grid-column: span 12;
+        }
     }
 
     @media (max-width: 640px) {
@@ -724,6 +737,11 @@
 
         .pf-field-group {
             grid-template-columns: 1fr;
+        }
+
+        .pf-field--col-6,
+        .pf-field--col-12 {
+            grid-column: span 12;
         }
 
         .pf-identity-card {

@@ -29,7 +29,7 @@
                         <select class="form-select" name="grade_level_id">
                             <option value="">-- Select --</option>
                             <?php foreach ($grade_levels as $gl): ?>
-                                <option value="<?= $gl->id ?>" <?= (isset($section) && $section && $section->grade_level_id == $gl->id) ? 'selected' : '' ?>><?= $gl->name ?></option>
+                                <option value="<?= $gl->id ?>" <?= (isset($section) && $section && $section->grade_level_id == $gl->id) ? 'selected' : '' ?>><?= isset($gl->name) ? $gl->name : (isset($gl->year_level) ? $gl->year_level : '-') ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

@@ -213,12 +213,24 @@ class Academic extends MY_Controller {
             // Auto-detect type based on school type
             $type = ($school_type === 'deped') ? 'grade_level' : 'program';
 
+            $code = $this->input->post('code', TRUE);
+            $name = $this->input->post('name', TRUE);
+            
+            // Extract year level from code (e.g., G3 -> 3) or name (e.g., Grade 03 -> 3)
+            $year_level = null;
+            if (preg_match('/G(\d+)/', $code, $matches)) {
+                $year_level = (int)$matches[1];
+            } elseif (preg_match('/Grade\s*(\d+)/i', $name, $matches)) {
+                $year_level = (int)$matches[1];
+            }
+
             $d = array(
-                'name'              => $this->input->post('name', TRUE),
-                'code'              => $this->input->post('code', TRUE),
+                'name'              => $name,
+                'code'              => $code,
                 'description'       => $this->input->post('description', TRUE),
                 'type'              => $type,
                 'school_id'         => $this->school_id,
+                'year_level'        => $year_level,
             );
 
             $this->Academic_model->create_academic_program($d);
@@ -232,21 +244,84 @@ class Academic extends MY_Controller {
 
     public function edit_program($id)
     {
-        $data['program'] = $this->Academic_model->get_academic_program($id);
+        // Try to fetch from programs table first
+        $data['program'] = $this->db->where('id', $id)->get('programs')->row();
+
+        // If not found, try academic_programs table
+        if (!$data['program']) {
+            $data['program'] = $this->db->where('id', $id)->get('academic_programs')->row();
+        }
+
         if (!$data['program']) show_404();
 
+        // Get school type
+        $school = $this->db->where('id', $this->school_id)->get('schools')->row();
+        $data['school_type'] = $school ? $school->type : null;
+
+        // If program doesn't have name/code, generate from year_level
+        if (!isset($data['program']->name) && isset($data['program']->year_level)) {
+            $data['program']->name = 'Grade ' . str_pad($data['program']->year_level, 2, '0', STR_PAD_LEFT);
+        }
+        if (!isset($data['program']->code) && isset($data['program']->year_level)) {
+            $data['program']->code = 'G' . str_pad($data['program']->year_level, 2, '0', STR_PAD_LEFT);
+        }
+
         if ($this->input->method() === 'post') {
-            $type = $this->input->post('type', TRUE);
+            $name = $this->input->post('name', TRUE);
+            $code = $this->input->post('code', TRUE);
+            $description = $this->input->post('description', TRUE);
 
-            $d = array(
-                'name'              => $this->input->post('name', TRUE),
-                'code'              => $this->input->post('code', TRUE),
-                'description'       => $this->input->post('description', TRUE),
-                'type'              => $type,
-            );
+            // Extract year level from code or name
+            $year_level = null;
+            if (preg_match('/G(\d+)/', $code, $matches)) {
+                $year_level = (int)$matches[1];
+            } elseif (preg_match('/Grade\s*(\d+)/i', $name, $matches)) {
+                $year_level = (int)$matches[1];
+            }
 
-            $this->Academic_model->update_academic_program($id, $d);
-            $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level updated.' : 'Program updated.');
+            // Update in the table where the record exists
+            $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+            if ($check_academic > 0) {
+                $check_program = $this->db->where('id', $id)->get('academic_programs')->row();
+                if ($check_program) {
+                    $d = array(
+                        'name' => $name,
+                        'code' => $code,
+                        'description' => $description,
+                    );
+                    $this->db->where('id', $id)->update('academic_programs', $d);
+                } else {
+                    // Update programs table - check which columns exist
+                    $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+                    $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+                    $checkDesc = $this->db->query("SHOW COLUMNS FROM programs LIKE 'description'")->num_rows();
+                    $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+
+                    $d = array();
+                    if ($checkName > 0) $d['name'] = $name;
+                    if ($checkCode > 0) $d['code'] = $code;
+                    if ($checkDesc > 0) $d['description'] = $description;
+                    if ($checkYearLevel > 0 && $year_level) $d['year_level'] = $year_level;
+
+                    $this->db->where('id', $id)->update('programs', $d);
+                }
+            } else {
+                // Update programs table - check which columns exist
+                $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+                $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+                $checkDesc = $this->db->query("SHOW COLUMNS FROM programs LIKE 'description'")->num_rows();
+                $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+
+                $d = array();
+                if ($checkName > 0) $d['name'] = $name;
+                if ($checkCode > 0) $d['code'] = $code;
+                if ($checkDesc > 0) $d['description'] = $description;
+                if ($checkYearLevel > 0 && $year_level) $d['year_level'] = $year_level;
+
+                $this->db->where('id', $id)->update('programs', $d);
+            }
+
+            $this->session->set_flashdata('success', 'Program updated.');
             redirect('academic/programs');
         }
 
@@ -298,7 +373,7 @@ class Academic extends MY_Controller {
             $assigned_map[$s->id] = $this->Academic_model->get_subject_teacher_ids($s->id);
         }
 
-        $data['title']            = 'Manage Subjects - ' . $program->name;
+        $data['title']            = 'Manage Subjects - ' . (isset($program->name) ? $program->name : (isset($program->year_level) ? 'Grade ' . str_pad($program->year_level, 2, '0', STR_PAD_LEFT) : 'Program'));
         $data['program']          = $program;
         $data['program_subjects'] = $program_subjects;
         $data['available_subjects'] = $this->Academic_model->get_subjects(array('program_id' => null));
@@ -537,48 +612,46 @@ class Academic extends MY_Controller {
     public function create_section_for_grade($grade_level_id)
     {
         $sy = $this->Academic_model->get_active_school_year($this->school_id);
-        $grade_level = $this->Academic_model->get_program($grade_level_id);
-        
-        if (!$grade_level || (isset($grade_level->type) && $grade_level->type !== 'grade_level')) {
+        // Always fetch from programs table
+        $grade_level = $this->db->where('id', $grade_level_id)->get('programs')->row();
+
+        if (!$grade_level) {
             show_404();
         }
 
         if ($this->input->method() === 'post') {
+            $adviser_id = $this->input->post('adviser_id') ?: NULL;
+            
+            // Check if adviser is already assigned to another section
+            if ($adviser_id) {
+                $existing = $this->db->where('adviser_id', $adviser_id)
+                    ->where('school_id', $this->school_id)
+                    ->get('sections')
+                    ->row();
+                if ($existing) {
+                    $this->session->set_flashdata('error', 'This adviser is already assigned to another section.');
+                    redirect('academic/create_section_for_grade/' . $grade_level_id);
+                }
+            }
+            
             $d = array(
                 'school_year_id' => $sy->id,
                 'school_id'      => $this->school_id,
                 'name'           => $this->input->post('name', TRUE),
-                'system_type'    => $this->input->post('system_type', TRUE),
-                'grade_level_id' => $this->input->post('grade_level_id') ?: NULL,
-                'strand_id'      => $this->input->post('strand_id') ?: NULL,
-                'program_id'     => $this->input->post('program_id') ?: NULL,
-                'year_level'     => $this->input->post('year_level') ?: NULL,
-                'adviser_id'     => $this->input->post('adviser_id') ?: NULL,
-                'capacity'       => $this->input->post('capacity') ?: 40,
+                'grade_level_id' => $grade_level_id,
+                'adviser_id'     => $adviser_id,
             );
             $this->Academic_model->create_section($d);
-            $this->session->set_flashdata('success', 'Section created for ' . $grade_level->name . '.');
-            redirect('academic/programs');
+            $gl_name = isset($grade_level->name) ? $grade_level->name : (isset($grade_level->year_level) ? $grade_level->year_level : 'Grade Level');
+            $this->session->set_flashdata('success', 'Section created for ' . $gl_name . '.');
+            redirect('academic/sections');
         }
 
-        $data['title'] = 'Add Section for ' . $grade_level->name;
-        $data['section'] = (object) array(
-            'id' => null,
-            'name' => '',
-            'system_type' => isset($grade_level->category) ? $grade_level->category : 'deped',
-            'grade_level_id' => $grade_level_id,
-            'strand_id' => null,
-            'program_id' => null,
-            'year_level' => null,
-            'adviser_id' => null,
-            'capacity' => 40
-        );
-        $data['school_year'] = $sy;
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
-        $data['strands'] = $this->Academic_model->get_strands();
+        $gl_name = isset($grade_level->name) ? $grade_level->name : (isset($grade_level->year_level) ? $grade_level->year_level : 'Grade Level');
+        $data['title'] = 'Add Section for ' . $gl_name;
+        $data['grade_level'] = $grade_level;
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
-        $this->render('academic/section_form', $data);
+        $this->render('academic/section_simple_form', $data);
     }
 
     public function edit_section($id)
@@ -586,28 +659,37 @@ class Academic extends MY_Controller {
         $data['section'] = $this->Academic_model->get_section($id);
         if (!$data['section']) show_404();
 
+        // Get grade level from programs table
+        $grade_level = $this->db->where('id', $data['section']->grade_level_id)->get('programs')->row();
+
         if ($this->input->method() === 'post') {
+            $adviser_id = $this->input->post('adviser_id') ?: NULL;
+            
+            // Check if adviser is already assigned to another section (excluding current section)
+            if ($adviser_id) {
+                $existing = $this->db->where('adviser_id', $adviser_id)
+                    ->where('school_id', $this->school_id)
+                    ->where('id !=', $id)
+                    ->get('sections')
+                    ->row();
+                if ($existing) {
+                    $this->session->set_flashdata('error', 'This adviser is already assigned to another section.');
+                    redirect('academic/edit_section/' . $id);
+                }
+            }
+            
             $d = array(
-                'name'           => $this->input->post('name', TRUE),
-                'system_type'    => $this->input->post('system_type', TRUE),
-                'grade_level_id' => $this->input->post('grade_level_id') ?: NULL,
-                'strand_id'      => $this->input->post('strand_id') ?: NULL,
-                'program_id'     => $this->input->post('program_id') ?: NULL,
-                'year_level'     => $this->input->post('year_level') ?: NULL,
-                'adviser_id'     => $this->input->post('adviser_id') ?: NULL,
-                'capacity'       => $this->input->post('capacity') ?: 40,
+                'name'       => $this->input->post('name', TRUE),
+                'adviser_id' => $adviser_id,
             );
             $this->Academic_model->update_section($id, $d);
             $this->session->set_flashdata('success', 'Section updated.');
             redirect('academic/sections');
         }
         $data['title'] = 'Edit Section';
-        $data['school_year'] = $this->Academic_model->get_active_school_year($this->school_id);
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
-        $data['strands'] = $this->Academic_model->get_strands();
+        $data['grade_level'] = $grade_level;
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
-        $this->render('academic/section_form', $data);
+        $this->render('academic/section_simple_edit_form', $data);
     }
 
     public function migrate_adviser_to_user()

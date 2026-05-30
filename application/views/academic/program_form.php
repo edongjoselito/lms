@@ -196,31 +196,31 @@
             <div class="ap-row">
                 <div class="ap-field">
                     <label class="ap-label" for="ap-code">Code</label>
-                    <?php if (isset($school_type) && $school_type === 'deped'): ?>
+                    <?php if (!$program && isset($school_type) && $school_type === 'deped'): ?>
                         <select id="ap-code" class="ap-select" name="code" required onchange="syncGradeLevel('code')">
                             <option value="">Select Grade</option>
                             <?php for ($i = 1; $i <= 12; $i++): ?>
-                                <option value="G<?= $i ?>" <?= ($program && $program->code === 'G' . $i) ? 'selected' : '' ?>>G<?= $i ?></option>
+                                <option value="G<?= $i ?>">G<?= $i ?></option>
                             <?php endfor; ?>
                         </select>
                     <?php else: ?>
                         <input id="ap-code" type="text" class="ap-input" name="code"
-                               value="<?= ($program) ? htmlspecialchars($program->code) : '' ?>"
+                               value="<?= ($program && isset($program->code)) ? htmlspecialchars($program->code) : '' ?>"
                                required>
                     <?php endif; ?>
                 </div>
                 <div class="ap-field">
                     <label class="ap-label" for="ap-name">Name</label>
-                    <?php if (isset($school_type) && $school_type === 'deped'): ?>
+                    <?php if (!$program && isset($school_type) && $school_type === 'deped'): ?>
                         <select id="ap-name" class="ap-select" name="name" required onchange="syncGradeLevel('name')">
                             <option value="">Select Grade</option>
                             <?php for ($i = 1; $i <= 12; $i++): ?>
-                                <option value="Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>" <?= ($program && $program->name === 'Grade ' . str_pad($i, 2, '0', STR_PAD_LEFT)) ? 'selected' : '' ?>>Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                                <option value="Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>">Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
                             <?php endfor; ?>
                         </select>
                     <?php else: ?>
                         <input id="ap-name" type="text" class="ap-input" name="name"
-                               value="<?= ($program) ? htmlspecialchars($program->name) : '' ?>"
+                               value="<?= ($program && isset($program->name)) ? htmlspecialchars($program->name) : '' ?>"
                                required>
                     <?php endif; ?>
                 </div>

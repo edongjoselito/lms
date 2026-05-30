@@ -12,15 +12,15 @@
         <div class="ps-hero-bg"></div>
         <div class="ps-hero-content">
             <div class="ps-hero-left">
-                <div class="ps-hero-avatar"><?= strtoupper(substr($program->code, 0, 2)) ?></div>
+                <div class="ps-hero-avatar"><?= isset($program->code) ? strtoupper(substr($program->code, 0, 2)) : (isset($program->year_level) ? 'G' . str_pad($program->year_level, 2, '0', STR_PAD_LEFT) : 'PR') ?></div>
                 <div class="ps-hero-info">
                     <div class="ps-hero-meta">
                         <?php if (!empty($program->degree_type)): ?>
                             <span class="ps-tag ps-tag-degree"><?= ucfirst($program->degree_type) ?></span>
                         <?php endif; ?>
-                        <span class="ps-tag ps-tag-code"><?= htmlspecialchars($program->code) ?></span>
+                        <span class="ps-tag ps-tag-code"><?= isset($program->code) ? htmlspecialchars($program->code) : (isset($program->year_level) ? 'G' . str_pad($program->year_level, 2, '0', STR_PAD_LEFT) : '-') ?></span>
                     </div>
-                    <h1 class="ps-hero-title"><?= htmlspecialchars($program->name) ?></h1>
+                    <h1 class="ps-hero-title"><?= isset($program->name) ? htmlspecialchars($program->name) : (isset($program->year_level) ? 'Grade ' . str_pad($program->year_level, 2, '0', STR_PAD_LEFT) : 'Program') ?></h1>
                     <?php if (!empty($program->description)): ?>
                         <p class="ps-hero-desc"><?= htmlspecialchars($program->description) ?></p>
                     <?php endif; ?>

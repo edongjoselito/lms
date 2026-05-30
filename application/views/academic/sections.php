@@ -26,7 +26,7 @@
             <div class="grade-level-section">
                 <div class="grade-level-header">
                     <h3 class="grade-level-title">
-                        <i class="bi bi-layers me-2"></i><?= htmlspecialchars($gl->name) ?>
+                        <i class="bi bi-layers me-2"></i><?= isset($gl->name) ? htmlspecialchars($gl->name) : (isset($gl->year_level) ? 'Grade ' . str_pad($gl->year_level, 2, '0', STR_PAD_LEFT) : '-') ?>
                         <span class="badge bg-primary"><?= count($gl_sections) ?> Section<?= count($gl_sections) != 1 ? 's' : '' ?></span>
                     </h3>
                     <a href="<?= site_url('academic/create_section_for_grade/' . $gl->id) ?>" class="btn btn-sm btn-outline-success">
@@ -41,7 +41,6 @@
                                 <tr>
                                     <th>Section Name</th>
                                     <th>Adviser</th>
-                                    <th>Capacity</th>
                                     <th style="width: 100px;">Actions</th>
                                 </tr>
                             </thead>
@@ -50,7 +49,6 @@
                                     <tr>
                                         <td style="font-weight: 600;"><?= htmlspecialchars($sec->name) ?></td>
                                         <td style="color: #64748b;"><?= isset($sec->adviser_name) && $sec->adviser_name ? $sec->adviser_name : '<span style="color:#cbd5e1;">—</span>' ?></td>
-                                        <td style="color: #64748b;"><?= $sec->capacity ?></td>
                                         <td>
                                             <div class="action-buttons">
                                                 <a href="<?= site_url('academic/edit_section/' . $sec->id) ?>" class="btn btn-sm btn-outline-primary" title="Edit">

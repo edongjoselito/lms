@@ -54,10 +54,23 @@ class Student_model extends CI_Model {
             ->row();
 
         $grade_level_id = null;
-        if ($enrollment && $enrollment->grade_level_id) {
-            $grade_level_id = $enrollment->grade_level_id;
-        } elseif ($student->grade_level_id) {
+        $year_level = null;
+
+        if ($enrollment) {
+            if ($enrollment->grade_level_id) {
+                $grade_level_id = $enrollment->grade_level_id;
+            }
+            if ($enrollment->year_level) {
+                $year_level = $enrollment->year_level;
+            }
+        }
+
+        // Fallback to student's grade level if not found in enrollment
+        if (!$grade_level_id && $student->grade_level_id) {
             $grade_level_id = $student->grade_level_id;
+        }
+        if (!$year_level && $student->year_level) {
+            $year_level = $student->year_level;
         }
 
         $this->db->select('subjects.*');
@@ -70,6 +83,10 @@ class Student_model extends CI_Model {
         // Filter by student's grade level if available
         if ($grade_level_id) {
             $this->db->where('grade_level_id', $grade_level_id);
+        }
+        // Also filter by year_level if grade_level_id is not available
+        elseif ($year_level) {
+            $this->db->where('year_level', $year_level);
         }
 
         if (!empty($filters['system_type'])) {

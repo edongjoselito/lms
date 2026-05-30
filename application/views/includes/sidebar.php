@@ -80,6 +80,10 @@ if ($rs === 'student') {
                 <span class="material-symbols-outlined">how_to_reg</span>
                 <span>Enrollment</span>
             </a>
+            <a href="<?= site_url('teachers') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'teachers') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">school</span>
+                <span>Teacher</span>
+            </a>
             <a href="<?= site_url('users') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'users') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">group</span>
                 <span>Users</span>

@@ -13,7 +13,8 @@ class Studentprofile extends Admin_Controller
     public function index()
     {
         $data['title'] = 'Student Profiles';
-        $data['profiles'] = $this->Studentprofile_model->get_all($this->school_id);
+        $search = $this->input->get('search', TRUE);
+        $data['profiles'] = $this->Studentprofile_model->get_all($this->school_id, $search);
         $this->render('studentprofile/index', $data);
     }
 
@@ -159,21 +160,71 @@ class Studentprofile extends Admin_Controller
         $data['profile'] = $this->Studentprofile_model->get($id);
         if (!$data['profile']) show_404();
 
-        // Get grade levels/programs for current school
-        $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'");
-        if ($check_academic->num_rows() > 0) {
-            // Get all academic programs for the school (both grade levels and programs)
-            $data['grade_levels'] = $this->db->where('school_id', $this->school_id)
+        // Get student's current enrollment to show current grade level
+        $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($check_academic > 0) {
+            $data['current_enrollment'] = $this->db->select('e.*, ap.name as grade_level_name')
+                ->from('enrollments e')
+                ->join('academic_programs ap', 'ap.id = e.grade_level_id', 'left')
+                ->where('e.student_id', $data['profile']->user_id)
+                ->where('e.status', 'enrolled')
+                ->order_by('e.enrollment_date', 'DESC')
+                ->limit(1)
+                ->get()
+                ->row();
+        } else {
+            $check_grade_levels = $this->db->query("SHOW TABLES LIKE 'grade_levels'")->num_rows();
+            if ($check_grade_levels > 0) {
+                $data['current_enrollment'] = $this->db->select('e.*, gl.name as grade_level_name')
+                    ->from('enrollments e')
+                    ->join('grade_levels gl', 'gl.id = e.grade_level_id', 'left')
+                    ->where('e.student_id', $data['profile']->user_id)
+                    ->where('e.status', 'enrolled')
+                    ->order_by('e.enrollment_date', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->row();
+            } else {
+                // Get grade level name from programs table using year_level
+                $data['current_enrollment'] = $this->db->select('e.*, p.name as grade_level_name')
+                    ->from('enrollments e')
+                    ->join('programs p', 'p.year_level = e.year_level AND p.school_id = e.school_id', 'left')
+                    ->where('e.student_id', $data['profile']->user_id)
+                    ->where('e.status', 'enrolled')
+                    ->order_by('e.enrollment_date', 'DESC')
+                    ->limit(1)
+                    ->get()
+                    ->row();
+            }
+        }
+
+        // Get grade levels/programs for current school (same logic as Academic controller)
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            $data['grade_levels'] = $this->db->where('status', 1)
+                ->where('school_id', $this->school_id)
+                ->order_by('type, level_order, name')
                 ->get('academic_programs')
                 ->result();
         } else {
-            // Fallback to grade_levels table
-            $data['grade_levels'] = $this->db->where('school_id', $this->school_id)
-                ->get('grade_levels')
-                ->result();
+            // Fallback to programs table (simpler ordering for legacy table)
+            $checkStatus = $this->db->query("SHOW COLUMNS FROM programs LIKE 'status'")->num_rows();
+            $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+            $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+            
+            $query = $this->db->where('school_id', $this->school_id);
+            if ($checkStatus > 0) {
+                $query->where('status', 1);
+            }
+            if ($checkName > 0) {
+                $query->order_by('name');
+            } elseif ($checkYearLevel > 0) {
+                $query->order_by('year_level', 'ASC');
+            }
+            $data['grade_levels'] = $query->get('programs')->result();
         }
 
-        // Get sections for current school with grade level/program info
+        // Get sections for current school with grade level/program info and adviser
         $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'");
         if ($check_academic->num_rows() > 0) {
             // Check if grade_levels table exists (for backward compatibility)
@@ -183,24 +234,30 @@ class Studentprofile extends Admin_Controller
                 // Try to get grade level name from academic_programs first, then grade_levels as fallback
                 $data['sections'] = $this->db->query("
                     SELECT s.*,
-                           COALESCE(ap.name, gl.name) as grade_level_name
+                           COALESCE(ap.name, gl.name) as grade_level_name,
+                           CONCAT(t.last_name, ', ', t.first_name) as adviser_name
                     FROM sections s
                     LEFT JOIN academic_programs ap ON ap.id = s.grade_level_id
                     LEFT JOIN grade_levels gl ON gl.id = s.grade_level_id
+                    LEFT JOIN teachers t ON t.id = s.adviser_id
                     WHERE s.school_id = ?
                 ", array($this->school_id))->result();
             } else {
                 // Only academic_programs exists
-                $data['sections'] = $this->db->select('sections.*, academic_programs.name as grade_level_name')
+                $data['sections'] = $this->db->select('sections.*, academic_programs.name as grade_level_name, CONCAT(t.last_name, ", ", t.first_name) as adviser_name', FALSE)
                     ->from('sections')
                     ->join('academic_programs', 'academic_programs.id = sections.grade_level_id', 'left')
+                    ->join('teachers t', 't.id = sections.adviser_id', 'left')
                     ->where('sections.school_id', $this->school_id)
                     ->get()
                     ->result();
             }
         } else {
-            $data['sections'] = $this->db->where('school_id', $this->school_id)
-                ->get('sections')
+            $data['sections'] = $this->db->select('sections.*, CONCAT(t.last_name, ", ", t.first_name) as adviser_name', FALSE)
+                ->from('sections')
+                ->join('teachers t', 't.id = sections.adviser_id', 'left')
+                ->where('sections.school_id', $this->school_id)
+                ->get()
                 ->result();
         }
 

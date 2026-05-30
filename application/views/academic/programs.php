@@ -28,11 +28,11 @@
                         ?>
                         <tr>
                             <td>
-                                <span class="code-badge"><?= htmlspecialchars($p->code) ?></span>
+                                <span class="code-badge"><?= isset($p->code) ? htmlspecialchars($p->code) : (isset($p->year_level) ? 'G' . str_pad($p->year_level, 2, '0', STR_PAD_LEFT) : '-') ?></span>
                             </td>
                             <td>
                                 <div class="program-name-cell">
-                                    <?= htmlspecialchars($p->name) ?>
+                                    <?= isset($p->name) ? htmlspecialchars($p->name) : (isset($p->year_level) ? 'Grade ' . str_pad($p->year_level, 2, '0', STR_PAD_LEFT) : '-') ?>
                                     <?php if ($type == 'grade_level'): ?>
                                         <span class="badge bg-primary ms-2">Grade Level</span>
                                     <?php endif; ?>

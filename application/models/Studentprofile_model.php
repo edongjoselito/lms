@@ -36,12 +36,22 @@ class Studentprofile_model extends CI_Model
         }
     }
 
-    public function get_all($school_id = null)
+    public function get_all($school_id = null, $search = null)
     {
         $this->db->select('studentprofile.*, studentprofile.email as profile_email, users.email as user_email, users.status as user_status');
         $this->db->join('users', 'users.id = studentprofile.user_id', 'left');
         if ($school_id) {
             $this->db->where('studentprofile.school_id', $school_id);
+        }
+        if ($search) {
+            $this->db->group_start();
+            $this->db->like('studentprofile.student_number', $search);
+            $this->db->or_like('studentprofile.first_name', $search);
+            $this->db->or_like('studentprofile.middle_name', $search);
+            $this->db->or_like('studentprofile.last_name', $search);
+            $this->db->or_like('CONCAT(studentprofile.first_name, " ", studentprofile.last_name)', $search, FALSE);
+            $this->db->or_like('CONCAT(studentprofile.last_name, ", ", studentprofile.first_name)', $search, FALSE);
+            $this->db->group_end();
         }
         return $this->db->order_by('studentprofile.last_name, studentprofile.first_name')->get('studentprofile')->result();
     }
