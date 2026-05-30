@@ -17,7 +17,7 @@
             $gl_sections = array();
             if (!empty($sections)) {
                 foreach ($sections as $sec) {
-                    if ($sec->grade_level_id == $gl->id) {
+                    if (isset($sec->program_id) && $sec->program_id == $gl->id) {
                         $gl_sections[] = $sec;
                     }
                 }

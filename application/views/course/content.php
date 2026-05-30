@@ -100,6 +100,11 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                 <?php if (!empty($subject->name)): ?>
                     <p class="cc-hero-subtitle"><?= htmlspecialchars($subject->name) ?></p>
                 <?php endif; ?>
+                <?php if (!empty($subject->year_level)): ?>
+                    <p class="cc-hero-subtitle text-muted small">
+                        <i class="bi bi-mortarboard"></i> Grade <?= str_pad((int) $subject->year_level, 2, '0', STR_PAD_LEFT) ?>
+                    </p>
+                <?php endif; ?>
                 <div class="cc-hero-stats" aria-label="Course summary">
                     <span class="cc-stat-pill">
                         <strong><?= (int) $course_module_count ?></strong>
@@ -853,6 +858,28 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($edit_mode && !empty($subject_sections)): ?>
+                    <div class="cc-panel-header mt-4">
+                        <h5 class="cc-panel-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5" />
+                                <path d="M23 21v-2a4 4 0 00-3-3.87" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Sections
+                        </h5>
+                    </div>
+                    <div class="cc-section-list">
+                        <?php foreach ($subject_sections as $section): ?>
+                            <a href="<?= site_url('academic/section_students/' . $section->id) ?>" class="cc-nav-item">
+                                <span class="cc-nav-text"><?= htmlspecialchars($section->name ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
             </div>
         </div>

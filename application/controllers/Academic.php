@@ -648,13 +648,9 @@ class Academic extends MY_Controller {
                 'school_year_id' => $sy->id,
                 'school_id'      => $this->school_id,
                 'name'           => $this->input->post('name', TRUE),
-                'system_type'    => $this->input->post('system_type', TRUE),
-                'grade_level_id' => $this->input->post('grade_level_id') ?: NULL,
-                'strand_id'      => $this->input->post('strand_id') ?: NULL,
                 'program_id'     => $this->input->post('program_id') ?: NULL,
                 'year_level'     => $this->input->post('year_level') ?: NULL,
                 'adviser_id'     => $this->input->post('adviser_id') ?: NULL,
-                'capacity'       => $this->input->post('capacity') ?: 40,
             );
             $this->Academic_model->create_section($d);
             $this->session->set_flashdata('success', 'Section created.');
@@ -699,7 +695,8 @@ class Academic extends MY_Controller {
                 'school_year_id' => $sy->id,
                 'school_id'      => $this->school_id,
                 'name'           => $this->input->post('name', TRUE),
-                'grade_level_id' => $grade_level_id,
+                'program_id'     => $grade_level_id,
+                'year_level'     => isset($grade_level->year_level) ? $grade_level->year_level : NULL,
                 'adviser_id'     => $adviser_id,
             );
             $this->Academic_model->create_section($d);
@@ -721,7 +718,10 @@ class Academic extends MY_Controller {
         if (!$data['section']) show_404();
 
         // Get grade level from programs table
-        $grade_level = $this->db->where('id', $data['section']->grade_level_id)->get('programs')->row();
+        $grade_level = null;
+        if (!empty($data['section']->program_id)) {
+            $grade_level = $this->db->where('id', $data['section']->program_id)->get('programs')->row();
+        }
 
         if ($this->input->method() === 'post') {
             $adviser_id = $this->input->post('adviser_id') ?: NULL;
@@ -741,6 +741,8 @@ class Academic extends MY_Controller {
             
             $d = array(
                 'name'       => $this->input->post('name', TRUE),
+                'program_id' => $this->input->post('program_id') ?: NULL,
+                'year_level' => $this->input->post('year_level') ?: NULL,
                 'adviser_id' => $adviser_id,
             );
             $this->Academic_model->update_section($id, $d);
@@ -751,6 +753,19 @@ class Academic extends MY_Controller {
         $data['grade_level'] = $grade_level;
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $this->render('academic/section_simple_edit_form', $data);
+    }
+
+    public function section_students($section_id)
+    {
+        $section = $this->Academic_model->get_section($section_id);
+        if (!$section) show_404();
+
+        $students = $this->Academic_model->get_section_students($section_id);
+        
+        $data['title'] = 'Section Students - ' . htmlspecialchars($section->name);
+        $data['section'] = $section;
+        $data['students'] = $students;
+        $this->render('academic/section_students', $data);
     }
 
     public function migrate_adviser_to_user()

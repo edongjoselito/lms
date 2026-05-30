@@ -276,6 +276,7 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+        $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
 
         $select_fields = 'subjects.*';
         if ($checkCode > 0) {
@@ -283,6 +284,9 @@ class Academic_model extends CI_Model
         }
         if ($checkName > 0) {
             $select_fields .= ', programs.name as program_name';
+        }
+        if ($checkYearLevel > 0) {
+            $select_fields .= ', programs.year_level';
         }
 
         $this->db->select($select_fields);
@@ -393,8 +397,13 @@ class Academic_model extends CI_Model
     // ---- Sections ----
     public function get_sections($filters = array())
     {
-        $this->db->select('sections.*, grade_levels.name as grade_level_name, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
-        $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
+        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
+        
+        $this->db->select('sections.*, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
+        if ($checkGradeLevel > 0) {
+            $this->db->select('grade_levels.name as grade_level_name');
+            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
+        }
         $this->db->join('programs', 'programs.id = sections.program_id', 'left');
         $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
 
@@ -404,7 +413,7 @@ class Academic_model extends CI_Model
         if (!empty($filters['system_type'])) {
             $this->db->where('sections.system_type', $filters['system_type']);
         }
-        if (!empty($filters['grade_level_id'])) {
+        if (!empty($filters['grade_level_id']) && $checkGradeLevel > 0) {
             $this->db->where('sections.grade_level_id', $filters['grade_level_id']);
         }
         if (!empty($filters['school_id'])) {
@@ -496,7 +505,8 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
 
-        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name';
+        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, 
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = class_programs.section_id AND enrollments.status = 1) as student_count';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
@@ -515,6 +525,33 @@ class Academic_model extends CI_Model
         }
         return $this->db->order_by('sections.name', 'ASC')
             ->get('class_programs')
+            ->result();
+    }
+
+    public function get_sections_by_program($program_id)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+        
+        // Check which columns exist in programs table
+        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
+        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
+
+        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
+        if ($checkCode > 0) {
+            $select_fields .= ', programs.code as program_code';
+        }
+        if ($checkGradeLevel > 0) {
+            $select_fields .= ', grade_levels.name as grade_level_name';
+        }
+
+        $this->db->select($select_fields, FALSE);
+        if ($checkGradeLevel > 0) {
+            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
+        }
+        $this->db->join('programs', 'programs.id = sections.program_id', 'left')
+            ->where('sections.program_id', $program_id);
+        return $this->db->order_by('sections.name', 'ASC')
+            ->get('sections')
             ->result();
     }
 
