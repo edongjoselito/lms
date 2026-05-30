@@ -17,7 +17,7 @@
                 <?php
                 $type = isset($p->type) ? $p->type : 'program';
                 $subject_count = ($type === 'program') ? count($this->Academic_model->get_subjects_by_program($p->id)) : 0;
-                $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', trim($p->name)), 0, 2)));
+                $initials = implode('', array_map(function ($w) { return strtoupper($w[0]); }, array_slice(explode(' ', trim($p->name)), 0, 2)));
                 ?>
                 <div class="program-card type-<?= $type ?>">
                     <div class="card-accent"></div>
