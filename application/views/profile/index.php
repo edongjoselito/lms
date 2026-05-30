@@ -97,33 +97,29 @@
                 </div>
             </div>
 
-            <div class="pf-fields">
-                <div class="pf-field-group">
-                    <div class="pf-field pf-field--col-6">
-                        <label class="pf-label">First Name <span class="pf-req">*</span></label>
-                        <input type="text" class="pf-input" name="first_name"
-                            value="<?= htmlspecialchars($user->first_name) ?>" required
-                            placeholder="Enter first name">
-                    </div>
-                    <div class="pf-field pf-field--col-6">
-                        <label class="pf-label">Last Name <span class="pf-req">*</span></label>
-                        <input type="text" class="pf-input" name="last_name"
-                            value="<?= htmlspecialchars($user->last_name) ?>" required
-                            placeholder="Enter last name">
-                    </div>
+            <div class="pf-fields pf-field-group">
+                <div class="pf-field pf-field--col-6">
+                    <label class="pf-label">First Name <span class="pf-req">*</span></label>
+                    <input type="text" class="pf-input" name="first_name"
+                        value="<?= htmlspecialchars($user->first_name) ?>" required
+                        placeholder="Enter first name">
                 </div>
-                <div class="pf-field-group">
-                    <div class="pf-field pf-field--col-12">
-                        <label class="pf-label">Email Address <span class="pf-req">*</span></label>
-                        <div class="pf-input-icon-wrap">
-                            <svg class="pf-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.8" />
-                                <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.8" />
-                            </svg>
-                            <input type="email" class="pf-input pf-input--icon" name="email"
-                                value="<?= htmlspecialchars($user->email) ?>" required
-                                placeholder="your@email.com">
-                        </div>
+                <div class="pf-field pf-field--col-6">
+                    <label class="pf-label">Last Name <span class="pf-req">*</span></label>
+                    <input type="text" class="pf-input" name="last_name"
+                        value="<?= htmlspecialchars($user->last_name) ?>" required
+                        placeholder="Enter last name">
+                </div>
+                <div class="pf-field pf-field--col-12">
+                    <label class="pf-label">Email Address <span class="pf-req">*</span></label>
+                    <div class="pf-input-icon-wrap">
+                        <svg class="pf-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.8" />
+                            <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.8" />
+                        </svg>
+                        <input type="email" class="pf-input pf-input--icon" name="email"
+                            value="<?= htmlspecialchars($user->email) ?>" required
+                            placeholder="your@email.com">
                     </div>
                 </div>
             </div>
@@ -501,12 +497,6 @@
 
     /* ── Fields ────────────────────────────────────── */
     .pf-fields {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    .pf-field-group {
         display: grid;
         grid-template-columns: repeat(12, 1fr);
         gap: 1.25rem;
@@ -581,11 +571,12 @@
     /* ── Read-only Grid ────────────────────────────── */
     .pf-readonly-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        grid-template-columns: repeat(12, 1fr);
         gap: 1rem;
     }
 
     .pf-readonly-item {
+        grid-column: span 4;
         background: #fff;
         border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 12px;
@@ -724,6 +715,10 @@
         .pf-field--col-12 {
             grid-column: span 12;
         }
+
+        .pf-readonly-item {
+            grid-column: span 12;
+        }
     }
 
     @media (max-width: 640px) {
@@ -741,6 +736,10 @@
 
         .pf-field--col-6,
         .pf-field--col-12 {
+            grid-column: span 12;
+        }
+
+        .pf-readonly-item {
             grid-column: span 12;
         }
 

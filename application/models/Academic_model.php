@@ -410,9 +410,6 @@ class Academic_model extends CI_Model
         if (!empty($filters['school_year_id'])) {
             $this->db->where('sections.school_year_id', $filters['school_year_id']);
         }
-        if (!empty($filters['system_type'])) {
-            $this->db->where('sections.system_type', $filters['system_type']);
-        }
         if (!empty($filters['grade_level_id']) && $checkGradeLevel > 0) {
             $this->db->where('sections.grade_level_id', $filters['grade_level_id']);
         }
@@ -424,13 +421,17 @@ class Academic_model extends CI_Model
 
     public function get_section($id)
     {
-        return $this->db->select('sections.*, grade_levels.name as grade_level_name, CONCAT(u.first_name, " ", u.last_name) as adviser_name')
-            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
-            ->join('programs', 'programs.id = sections.program_id', 'left')
-            ->join('users u', 'u.id = sections.adviser_id', 'left')
-            ->where('sections.id', $id)
-            ->get('sections')
-            ->row();
+        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
+        
+        $this->db->select('sections.*, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
+        if ($checkGradeLevel > 0) {
+            $this->db->select('grade_levels.name as grade_level_name');
+            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
+        }
+        $this->db->join('programs', 'programs.id = sections.program_id', 'left');
+        $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
+        $this->db->where('sections.id', $id);
+        return $this->db->get('sections')->row();
     }
 
     public function create_section($data)
@@ -480,7 +481,7 @@ class Academic_model extends CI_Model
     public function get_class_program($id)
     {
         $this->ensure_class_program_enrollment_key_column();
-        return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, sections.system_type')
+        return $this->db->select('class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name')
             ->join('subjects', 'subjects.id = class_programs.subject_id')
             ->join('sections', 'sections.id = class_programs.section_id')
             ->where('class_programs.id', $id)
@@ -505,7 +506,7 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
 
-        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name, 
+        $select_fields = 'class_programs.*, sections.name as section_name, 
                           (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = class_programs.section_id AND enrollments.status = 1) as student_count';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
@@ -513,7 +514,6 @@ class Academic_model extends CI_Model
 
         $this->db->select($select_fields, FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
-            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
             ->where('class_programs.subject_id', $subject_id)
             ->where('class_programs.status', 1);
@@ -530,26 +530,22 @@ class Academic_model extends CI_Model
 
     public function get_sections_by_program($program_id)
     {
-        $this->ensure_class_program_enrollment_key_column();
+        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
         
-        // Check which columns exist in programs table
-        $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
-        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
-
-        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
-        if ($checkCode > 0) {
-            $select_fields .= ', programs.code as program_code';
-        }
-        if ($checkGradeLevel > 0) {
-            $select_fields .= ', grade_levels.name as grade_level_name';
-        }
-
-        $this->db->select($select_fields, FALSE);
-        if ($checkGradeLevel > 0) {
-            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
-        }
-        $this->db->join('programs', 'programs.id = sections.program_id', 'left')
+        $this->db->select($select_fields, FALSE)
+            ->join('programs', 'programs.id = sections.program_id', 'left')
             ->where('sections.program_id', $program_id);
+        return $this->db->order_by('sections.name', 'ASC')
+            ->get('sections')
+            ->result();
+    }
+
+    public function get_sections_by_year_level($year_level)
+    {
+        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
+        
+        $this->db->select($select_fields, FALSE)
+            ->where('sections.year_level', $year_level);
         return $this->db->order_by('sections.name', 'ASC')
             ->get('sections')
             ->result();
@@ -562,14 +558,13 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
 
-        $select_fields = 'class_programs.*, sections.name as section_name, sections.system_type, grade_levels.name as grade_level_name';
+        $select_fields = 'class_programs.*, sections.name as section_name';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
 
         return $this->db->select($select_fields, FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
-            ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
             ->where('class_programs.id', $section_id)
             ->where('class_programs.status', 1)
@@ -579,88 +574,17 @@ class Academic_model extends CI_Model
 
     public function get_section_students($section_id)
     {
-        $section = $this->get_subject_section($section_id);
+        $section = $this->get_section($section_id);
         if (!$section) {
             return array();
         }
 
-        $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, course_enrollments.enrolled_at as enrolled_date, course_enrollments.user_id', FALSE)
-            ->join('course_enrollments', 'course_enrollments.course_id = class_programs.subject_id')
-            ->join('students', 'students.user_id = course_enrollments.user_id')
-            ->join('users', 'users.id = students.user_id')
-            ->where('class_programs.id', $section_id)
-            ->where('course_enrollments.status', 'active')
-            ->get('class_programs')
+        $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, enrollments.created_at as enrolled_date, enrollments.student_id as user_id', FALSE)
+            ->from('enrollments')
+            ->join('users', 'users.id = enrollments.student_id')
+            ->where('enrollments.section_id', $section_id)
+            ->get()
             ->result();
-
-        // Calculate progress for each student
-        foreach ($students as $student) {
-            $student_id = $this->db->select('id')->where('user_id', $student->user_id)->get('students')->row()->id;
-
-            // Get total lessons (published only)
-            $total_lessons = $this->db->select('COUNT(l.id) as count')
-                ->from('lessons l')
-                ->join('modules m', 'm.id = l.module_id')
-                ->where('m.subject_id', $section->subject_id)
-                ->where('l.is_published', 1)
-                ->where('m.is_published', 1)
-                ->get()
-                ->row()->count;
-
-            // Get completed lessons (published only)
-            $completed_lessons = $this->db->select('COUNT(lc.lesson_id) as count')
-                ->from('lesson_completions lc')
-                ->join('lessons l', 'l.id = lc.lesson_id')
-                ->join('modules m', 'm.id = l.module_id')
-                ->where('lc.student_id', $student_id)
-                ->where('m.subject_id', $section->subject_id)
-                ->where('l.is_published', 1)
-                ->where('m.is_published', 1)
-                ->get()
-                ->row()->count;
-
-            $student->progress_percent = $total_lessons > 0 ? round(($completed_lessons / $total_lessons) * 100) : 0;
-
-            // Get completed lesson details
-            $student->completed_lessons = $this->db->select('l.title, m.title as module_title')
-                ->from('lesson_completions lc')
-                ->join('lessons l', 'l.id = lc.lesson_id')
-                ->join('modules m', 'm.id = l.module_id')
-                ->where('lc.student_id', $student_id)
-                ->where('m.subject_id', $section->subject_id)
-                ->where('l.is_published', 1)
-                ->where('m.is_published', 1)
-                ->order_by('m.order_num, l.order_num')
-                ->get()
-                ->result();
-
-            // Get all lessons for the subject
-            $student->all_lessons = $this->db->select('l.title, l.id, m.title as module_title, m.id as module_id')
-                ->from('lessons l')
-                ->join('modules m', 'm.id = l.module_id')
-                ->where('m.subject_id', $section->subject_id)
-                ->where('l.is_published', 1)
-                ->where('m.is_published', 1)
-                ->order_by('m.order_num, l.order_num')
-                ->get()
-                ->result();
-
-            // Get last course access time from activity_logs
-            $last_access = $this->db->select('created_at')
-                ->where('user_id', $student->user_id)
-                ->where('action', 'view_course')
-                ->where('module', 'student')
-                ->order_by('created_at', 'DESC')
-                ->limit(1)
-                ->get('activity_logs')
-                ->row();
-
-            $student->last_access = $last_access ? $last_access->created_at : null;
-
-            // Get attendance data (login/logout times)
-            $student->attendance_percent = 100; // Default to 100% for now
-            $student->days_present = 1; // Default to 1 day for now
-        }
 
         return $students;
     }

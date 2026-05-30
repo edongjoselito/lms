@@ -761,10 +761,12 @@ class Academic extends MY_Controller {
         if (!$section) show_404();
 
         $students = $this->Academic_model->get_section_students($section_id);
+        $subject_id = $this->input->get('subject_id', TRUE);
         
         $data['title'] = 'Section Students - ' . htmlspecialchars($section->name);
         $data['section'] = $section;
         $data['students'] = $students;
+        $data['subject_id'] = $subject_id;
         $this->render('academic/section_students', $data);
     }
 

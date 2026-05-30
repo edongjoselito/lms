@@ -8,9 +8,15 @@
             </div>
         </div>
         <div>
-            <a href="<?= site_url('course/content/' . $section->subject_id . '?edit=1') ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Back to Course
-            </a>
+            <?php if (isset($subject_id) && $subject_id): ?>
+                <a href="<?= site_url('course/content/' . $subject_id . '?edit=1') ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Course
+                </a>
+            <?php else: ?>
+                <a href="<?= site_url('academic/sections') ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Sections
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 

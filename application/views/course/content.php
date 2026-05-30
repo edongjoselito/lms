@@ -873,7 +873,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                     </div>
                     <div class="cc-section-list">
                         <?php foreach ($subject_sections as $section): ?>
-                            <a href="<?= site_url('academic/section_students/' . $section->id) ?>" class="cc-nav-item">
+                            <a href="<?= site_url('academic/section_students/' . $section->id . '?subject_id=' . $subject->id) ?>" class="cc-nav-item">
                                 <span class="cc-nav-text"><?= htmlspecialchars($section->name ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
                             </a>

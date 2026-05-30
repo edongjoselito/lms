@@ -1,7 +1,18 @@
 <div class="data-table">
     <div class="table-header">
         <h5><i class="bi bi-person-badge me-2"></i>Teachers</h5>
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:10px;align-items:center;">
+            <form method="GET" action="<?= site_url('teachers') ?>" style="display:flex;gap:10px;">
+                <input type="text" name="search" value="<?= isset($search) ? htmlspecialchars($search) : '' ?>" placeholder="Search teachers..." style="border:1px solid #e2e8f0;border-radius:10px;padding:0.6rem 1rem;font-size:0.875rem;width:250px;">
+                <button type="submit" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
+                    <i class="bi bi-search"></i>
+                </button>
+                <?php if (isset($search) && !empty($search)): ?>
+                    <a href="<?= site_url('teachers') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
+                        <i class="bi bi-x-lg"></i> Clear
+                    </a>
+                <?php endif; ?>
+            </form>
             <a href="<?= site_url('teachers/download_template') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">
                 <i class="bi bi-download me-1"></i> Download Template
             </a>

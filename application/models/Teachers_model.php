@@ -3,7 +3,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Teachers_model extends CI_Model {
 
-    public function get_all($school_id = null)
+    public function get_all($school_id = null, $search = null)
     {
         // Check if staff table exists
         $checkTable = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows();
@@ -13,6 +13,14 @@ class Teachers_model extends CI_Model {
             if ($school_id) {
                 $this->db->where('staff.school_id', $school_id);
             }
+            if ($search) {
+                $this->db->group_start()
+                    ->like('users.first_name', $search)
+                    ->or_like('users.last_name', $search)
+                    ->or_like('users.email', $search)
+                    ->or_like('staff.IDNumber', $search)
+                    ->group_end();
+            }
             return $this->db->order_by('staff.created_at DESC')->get('staff')->result();
         } else {
             // Fallback to teachers table
@@ -20,6 +28,14 @@ class Teachers_model extends CI_Model {
             $this->db->join('users', 'users.id = teachers.user_id');
             if ($school_id) {
                 $this->db->where('teachers.school_id', $school_id);
+            }
+            if ($search) {
+                $this->db->group_start()
+                    ->like('users.first_name', $search)
+                    ->or_like('users.last_name', $search)
+                    ->or_like('users.email', $search)
+                    ->or_like('teachers.id', $search)
+                    ->group_end();
             }
             return $this->db->order_by('teachers.created_at DESC')->get('teachers')->result();
         }

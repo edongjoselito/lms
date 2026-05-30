@@ -58,7 +58,7 @@ function ts_color($str, $palette) {
                 <?php foreach ($subjects as $s):
                     $color = ts_color($s->code, $palette);
                     $initials = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $s->code), 0, 2) ?: substr($s->code, 0, 2));
-                    $type = strtolower($s->system_type ?: 'general');
+                    $type = strtolower(isset($s->system_type) ? $s->system_type : 'general');
                 ?>
                 <div class="ts-card">
                     <div class="ts-card-top" style="background:<?= $color ?>18;border-bottom:2px solid <?= $color ?>30;">

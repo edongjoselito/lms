@@ -12,7 +12,9 @@ class Teachers extends Admin_Controller {
     public function index()
     {
         $data['title'] = 'Teachers';
-        $data['teachers'] = $this->Teachers_model->get_all($this->school_id);
+        $search = $this->input->get('search', TRUE);
+        $data['search'] = $search;
+        $data['teachers'] = $this->Teachers_model->get_all($this->school_id, $search);
         $this->render('teachers/index', $data);
     }
 
