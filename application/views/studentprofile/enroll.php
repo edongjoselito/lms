@@ -57,7 +57,7 @@
                                 <option value="">No sections available</option>
                             <?php else: ?>
                                 <?php foreach ($sections as $s): ?>
-                                    <option value="<?= $s->id ?>" data-grade-level="<?= $s->grade_level_id ?>">
+                                    <option value="<?= $s->id ?>" data-grade-level="<?= $s->grade_level_id ?>" data-adviser="<?= isset($s->adviser_id) ? $s->adviser_id : '' ?>" data-adviser-name="<?= isset($s->adviser_name) ? htmlspecialchars($s->adviser_name) : '' ?>">
                                         <?= htmlspecialchars($s->name) ?>
                                         <?php if (isset($s->grade_level_name) && !empty($s->grade_level_name)): ?>
                                             (<?= htmlspecialchars($s->grade_level_name) ?>)
@@ -90,6 +90,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var gradeLevelSelect = document.getElementById('grade_level_id');
     var sectionSelect = document.getElementById('section_id');
+    var adviserSelect = document.querySelector('select[name="adviser_id"]');
 
     // Store all section options on page load
     var allSectionOptions = [];
@@ -97,7 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
         allSectionOptions.push({
             value: option.value,
             text: option.text,
-            gradeLevel: option.getAttribute('data-grade-level')
+            gradeLevel: option.getAttribute('data-grade-level'),
+            adviserId: option.getAttribute('data-adviser'),
+            adviserName: option.getAttribute('data-adviser-name')
         });
     });
 
@@ -114,13 +117,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Show section if no grade level selected or if it matches
             if (!selectedGradeLevel || option.gradeLevel == selectedGradeLevel) {
-                sectionSelect.innerHTML += '<option value="' + option.value + '" data-grade-level="' + option.gradeLevel + '">' + option.text + '</option>';
+                sectionSelect.innerHTML += '<option value="' + option.value + '" data-grade-level="' + option.gradeLevel + '" data-adviser="' + option.adviserId + '" data-adviser-name="' + option.adviserName + '">' + option.text + '</option>';
             }
         });
 
         // If no sections match, show a message
         if (sectionSelect.options.length <= 1) {
             sectionSelect.innerHTML += '<option value="">No sections available for this grade level</option>';
+        }
+
+        // Clear adviser when grade level changes
+        adviserSelect.value = '';
+    });
+
+    sectionSelect.addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var adviserId = selectedOption.getAttribute('data-adviser');
+        var adviserName = selectedOption.getAttribute('data-adviser-name');
+
+        // Clear adviser selection
+        adviserSelect.value = '';
+
+        // If section has an adviser, select it
+        if (adviserId) {
+            // Check if the adviser exists in the dropdown
+            var adviserExists = false;
+            for (var i = 0; i < adviserSelect.options.length; i++) {
+                if (adviserSelect.options[i].value == adviserId) {
+                    adviserExists = true;
+                    break;
+                }
+            }
+
+            if (adviserExists) {
+                adviserSelect.value = adviserId;
+            } else {
+                // If adviser doesn't exist in dropdown, add it
+                var option = document.createElement('option');
+                option.value = adviserId;
+                option.text = adviserName || 'Adviser';
+                adviserSelect.add(option);
+                adviserSelect.value = adviserId;
+            }
         }
     });
 });

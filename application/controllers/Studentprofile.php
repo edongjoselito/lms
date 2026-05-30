@@ -235,27 +235,30 @@ class Studentprofile extends Admin_Controller
                 $data['sections'] = $this->db->query("
                     SELECT s.*,
                            COALESCE(ap.name, gl.name) as grade_level_name,
-                           CONCAT(t.last_name, ', ', t.first_name) as adviser_name
+                           CONCAT(u.last_name, ', ', u.first_name) as adviser_name
                     FROM sections s
                     LEFT JOIN academic_programs ap ON ap.id = s.grade_level_id
                     LEFT JOIN grade_levels gl ON gl.id = s.grade_level_id
-                    LEFT JOIN teachers t ON t.id = s.adviser_id
+                    LEFT JOIN staff t ON t.IDNumber = s.adviser_id
+                    LEFT JOIN users u ON u.id = t.user_id
                     WHERE s.school_id = ?
                 ", array($this->school_id))->result();
             } else {
                 // Only academic_programs exists
-                $data['sections'] = $this->db->select('sections.*, academic_programs.name as grade_level_name, CONCAT(t.last_name, ", ", t.first_name) as adviser_name', FALSE)
+                $data['sections'] = $this->db->select('sections.*, academic_programs.name as grade_level_name, CONCAT(u.last_name, ", ", u.first_name) as adviser_name', FALSE)
                     ->from('sections')
                     ->join('academic_programs', 'academic_programs.id = sections.grade_level_id', 'left')
-                    ->join('teachers t', 't.id = sections.adviser_id', 'left')
+                    ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
+                    ->join('users u', 'u.id = t.user_id', 'left')
                     ->where('sections.school_id', $this->school_id)
                     ->get()
                     ->result();
             }
         } else {
-            $data['sections'] = $this->db->select('sections.*, CONCAT(t.last_name, ", ", t.first_name) as adviser_name', FALSE)
+            $data['sections'] = $this->db->select('sections.*, CONCAT(u.last_name, ", ", u.first_name) as adviser_name', FALSE)
                 ->from('sections')
-                ->join('teachers t', 't.id = sections.adviser_id', 'left')
+                ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
+                ->join('users u', 'u.id = t.user_id', 'left')
                 ->where('sections.school_id', $this->school_id)
                 ->get()
                 ->result();
