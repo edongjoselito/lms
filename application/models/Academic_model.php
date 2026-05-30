@@ -572,7 +572,7 @@ class Academic_model extends CI_Model
             ->row();
     }
 
-    public function get_section_students($section_id)
+    public function get_section_students($section_id, $subject_id = null)
     {
         $section = $this->get_section($section_id);
         if (!$section) {
@@ -585,6 +585,75 @@ class Academic_model extends CI_Model
             ->where('enrollments.section_id', $section_id)
             ->get()
             ->result();
+
+        // Calculate progress for each student if subject_id is provided
+        if ($subject_id) {
+            foreach ($students as $student) {
+                // Get the student record to get the proper student_id for lesson_completions
+                $student_record = $this->db->where('user_id', $student->user_id)->get('students')->row();
+                $student_db_id = $student_record ? $student_record->id : null;
+                
+                // Get all items (lessons, activities, assessments) for the subject
+                $modules = $this->db->select('id')
+                    ->where('subject_id', $subject_id)
+                    ->where('is_published', 1)
+                    ->get('modules')
+                    ->result();
+                
+                $total_items = 0;
+                $completed_items = 0;
+                
+                foreach ($modules as $module) {
+                    // Count lessons
+                    $lesson_count = $this->db->select('COUNT(id) as count')
+                        ->where('module_id', $module->id)
+                        ->where('is_published', 1)
+                        ->get('lessons')
+                        ->row()->count;
+                    $total_items += $lesson_count;
+                    
+                    // Count activities (including assessments)
+                    $activity_count = $this->db->select('COUNT(id) as count')
+                        ->where('module_id', $module->id)
+                        ->where('is_published', 1)
+                        ->get('activities')
+                        ->row()->count;
+                    $total_items += $activity_count;
+                    
+                    // Count completed lessons
+                    if ($student_db_id) {
+                        $completed_lesson_count = $this->db->select('COUNT(lc.lesson_id) as count')
+                            ->from('lesson_completions lc')
+                            ->join('lessons l', 'l.id = lc.lesson_id')
+                            ->where('lc.student_id', $student_db_id)
+                            ->where('l.module_id', $module->id)
+                            ->where('l.is_published', 1)
+                            ->get()
+                            ->row()->count;
+                        $completed_items += $completed_lesson_count;
+                    }
+                    
+                    // Count completed activities
+                    $checkActivityProgress = $this->db->query("SHOW TABLES LIKE 'activity_progress'")->num_rows();
+                    if ($checkActivityProgress > 0) {
+                        $completed_activity_count = $this->db->select('COUNT(id) as count')
+                            ->where('student_id', $student->user_id)
+                            ->where('status', 'completed')
+                            ->from('activity_progress ap')
+                            ->join('activities a', 'a.id = ap.activity_id')
+                            ->where('a.module_id', $module->id)
+                            ->where('a.is_published', 1)
+                            ->get()
+                            ->row()->count;
+                        $completed_items += $completed_activity_count;
+                    }
+                }
+                
+                $student->progress_percent = $total_items > 0 ? round(($completed_items / $total_items) * 100) : 0;
+                $student->completed_items = $completed_items;
+                $student->total_items = $total_items;
+            }
+        }
 
         return $students;
     }

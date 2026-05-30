@@ -32,6 +32,9 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Enrolled Date</th>
+                        <?php if (isset($subject_id) && $subject_id): ?>
+                            <th>Progress</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,6 +43,16 @@
                             <td><?= htmlspecialchars($student->name) ?></td>
                             <td><?= htmlspecialchars($student->email) ?></td>
                             <td><?= htmlspecialchars($student->enrolled_date) ?></td>
+                            <?php if (isset($subject_id) && $subject_id): ?>
+                                <td>
+                                    <div class="progress" style="height: 20px; background-color: #e9ecef;">
+                                        <div class="progress-bar" role="progressbar" style="width: <?= $student->progress_percent ?>%; background-color: #28a745;" aria-valuenow="<?= $student->progress_percent ?>" aria-valuemin="0" aria-valuemax="100">
+                                            <?= $student->progress_percent ?>%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted"><?= $student->completed_items ?> / <?= $student->total_items ?> items</small>
+                                </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

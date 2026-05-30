@@ -760,8 +760,8 @@ class Academic extends MY_Controller {
         $section = $this->Academic_model->get_section($section_id);
         if (!$section) show_404();
 
-        $students = $this->Academic_model->get_section_students($section_id);
         $subject_id = $this->input->get('subject_id', TRUE);
+        $students = $this->Academic_model->get_section_students($section_id, $subject_id);
         
         $data['title'] = 'Section Students - ' . htmlspecialchars($section->name);
         $data['section'] = $section;
