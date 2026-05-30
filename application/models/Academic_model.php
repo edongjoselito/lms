@@ -877,7 +877,11 @@ class Academic_model extends CI_Model
     {
         $this->ensure_subject_teachers_table();
         $rows = $this->db->select('user_id')->where('subject_id', (int)$subject_id)->get('subject_teachers')->result();
-        return array_map(function($r) { return (int)$r->user_id; }, $rows);
+        $ids = array();
+        foreach ($rows as $r) {
+            $ids[] = (int)$r->user_id;
+        }
+        return $ids;
     }
 
     public function get_subject_teachers($subject_id)
@@ -921,6 +925,8 @@ class Academic_model extends CI_Model
                 ));
             }
         }
+        
+        return true;
     }
 
     public function get_subjects_by_teacher_user($user_id)

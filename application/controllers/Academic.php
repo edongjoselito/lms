@@ -381,6 +381,7 @@ class Academic extends MY_Controller {
             if ($teacher_id) {
                 $this->Academic_model->set_subject_teachers($subject_id, array($teacher_id));
             } else {
+                // Clear assignment if no teacher selected
                 $this->Academic_model->set_subject_teachers($subject_id, array());
             }
             
