@@ -44,22 +44,31 @@
                     <?php
                     $answer = $answer_map[(int) $question->id] ?? null;
                     $selected_choice = null;
-                    $correct_choices = array();
+                    $is_correct = false;
                     foreach ($question->choices as $choice) {
                         if ($answer && (int) $answer->choice_id === (int) $choice->id) {
                             $selected_choice = $choice;
-                        }
-                        if ($choice->is_correct) {
-                            $correct_choices[] = $choice->choice_text;
+                            if ($choice->is_correct) {
+                                $is_correct = true;
+                            }
                         }
                     }
                     ?>
                     <div class="assessment-question">
                         <div class="d-flex justify-content-between gap-3 mb-2">
                             <h6 class="mb-0">Question <?= $idx + 1 ?></h6>
-                            <span class="badge bg-light text-dark border">
-                                <?= $answer && $answer->score !== null ? number_format((float) $answer->score, 2) : '-' ?> / <?= number_format((float) $question->points, 2) ?> pts
-                            </span>
+                            <div class="d-flex gap-2">
+                                <?php if ($question->question_type !== 'essay'): ?>
+                                    <span class="badge <?= $is_correct ? 'bg-success' : 'bg-danger' ?>">
+                                        <?= $is_correct ? 'Correct' : 'Incorrect' ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark">Pending Review</span>
+                                <?php endif; ?>
+                                <span class="badge bg-light text-dark border">
+                                    <?= $answer && $answer->score !== null ? number_format((float) $answer->score, 2) : '-' ?> / <?= number_format((float) $question->points, 2) ?> pts
+                                </span>
+                            </div>
                         </div>
                         <p class="question-text"><?= nl2br(htmlspecialchars($question->question_text, ENT_QUOTES, 'UTF-8')) ?></p>
                         <div class="answer-review">
@@ -73,11 +82,6 @@
                                     <span class="text-muted">No answer</span>
                                 <?php endif; ?>
                             </div>
-                            <?php if ($question->question_type !== 'essay' && !empty($correct_choices)): ?>
-                                <div><strong>Correct Answer:</strong> <?= htmlspecialchars(implode(', ', $correct_choices)) ?></div>
-                            <?php elseif ($question->question_type === 'essay'): ?>
-                                <div class="text-muted">Essay answers require manual review.</div>
-                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>

@@ -38,9 +38,6 @@ foreach ($modules as $module) {
                     <?= $completed_count ?> of <?= $total_lessons ?> lessons completed
                 </p>
             </div>
-            <a href="<?= site_url('student/unenroll/' . $subject->id) ?>" class="btn-unenroll">
-                <i class="bi bi-x-circle"></i> Unenroll
-            </a>
         </div>
     </div>
     
@@ -281,29 +278,6 @@ foreach ($modules as $module) {
     margin: 0;
     font-size: 0.8rem;
     color: #667085;
-}
-
-.btn-unenroll {
-    min-width: 118px;
-    padding: 0.8rem 1rem;
-    background: #fff5f5;
-    color: #c24132;
-    border: 1px solid #ffd6d1;
-    border-radius: 12px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.btn-unenroll:hover {
-    background: #ffe8e5;
-    color: #a83225;
 }
 
 .modules-container {

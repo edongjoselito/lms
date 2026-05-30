@@ -1,9 +1,9 @@
-<?php $subject_system_type = strtolower($subject->system_type ?: 'general'); ?>
+<?php $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general'); ?>
 
 <div class="lp-wrap">
 
     <!-- Breadcrumb -->
-    <div class="lp-breadcrumb">
+    <div class="lp-breadcrumb" style="grid-column: 1 / -1;">
         <a href="<?= site_url('student/content/' . $subject->id) ?>" class="lp-back-link">
             <span class="lp-back-icon">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -15,7 +15,7 @@
     </div>
 
     <!-- Header Card -->
-    <div class="lp-header-card">
+    <div class="lp-header-card" style="grid-column: 1 / -1;">
         <div class="lp-header-left">
             <div class="lp-badge lp-badge--<?= htmlspecialchars($subject_system_type) ?>">
                 <?php
@@ -48,6 +48,10 @@
         </div>
 
         <div class="lp-header-right">
+            <div class="lp-progress-indicator">
+                <span class="lp-progress-percent"><?= isset($progress_percent) ? $progress_percent : 0 ?>%</span>
+                <span class="lp-progress-label">Complete</span>
+            </div>
             <div class="lp-completed-pill">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                     <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
@@ -58,7 +62,7 @@
     </div>
 
     <!-- Lesson Body -->
-    <div class="lp-body">
+    <div class="lp-body" style="grid-column: 1 / -1;">
 
         <?php if ($lesson->content_type === 'file' && !empty($lesson->file_path)): ?>
             <div class="lp-file-block">
@@ -91,7 +95,7 @@
     </div>
 
     <!-- Navigation -->
-    <div class="lp-nav">
+    <div class="lp-nav" style="grid-column: 1 / -1;">
         <?php if ($previous_lesson): ?>
             <a href="<?= site_url('student/lesson/' . $subject->id . '/' . $previous_lesson->id) ?>" class="lp-nav-btn lp-nav-btn--prev">
                 <span class="lp-nav-arrow">
@@ -134,11 +138,14 @@
     }
 
     .lp-wrap {
-        max-width: 960px;
+        max-width: 1400px;
         margin: 0 auto;
         padding: 1.5rem 1.5rem 4rem;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
         color: #1d1d1f;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
     }
 
     /* ── Breadcrumb ────────────────────────────────────── */
@@ -280,8 +287,31 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 16px;
         overflow: hidden;
-        margin-bottom: 1.5rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    /* ── Progress Indicator ─────────────────────────────── */
+    .lp-progress-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        margin-right: 1rem;
+    }
+
+    .lp-progress-percent {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #3b82f6;
+        line-height: 1;
+    }
+
+    .lp-progress-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #86868b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
 
     /* ── File Block ────────────────────────────────────── */
@@ -518,6 +548,14 @@
 
         .lp-header-right {
             align-self: flex-start;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .lp-progress-indicator {
+            align-items: flex-start;
+            margin-right: 0;
         }
 
         .lp-content-body {

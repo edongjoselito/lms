@@ -5,12 +5,6 @@
             <p class="page-subtitle">Manage and organize your academic subjects</p>
         </div>
         <div class="header-actions">
-            <div class="filter-tabs">
-                <a href="<?= site_url('academic/subjects') ?>" class="filter-tab <?= empty($filter_type) ? 'active' : '' ?>">All</a>
-                <a href="<?= site_url('academic/subjects?system_type=deped') ?>" class="filter-tab <?= ($filter_type == 'deped') ? 'active' : '' ?>">DepEd</a>
-                <a href="<?= site_url('academic/subjects?system_type=ched') ?>" class="filter-tab <?= ($filter_type == 'ched') ? 'active' : '' ?>">CHED</a>
-                <a href="<?= site_url('academic/subjects?system_type=tesda') ?>" class="filter-tab <?= ($filter_type == 'tesda') ? 'active' : '' ?>">TESDA</a>
-            </div>
             <a href="<?= site_url('academic/create_subject') ?>" class="btn-primary-modern">
                 <i class="bi bi-plus-lg"></i> Add Subject
             </a>
@@ -22,9 +16,6 @@
             <?php foreach ($subjects as $s): ?>
                 <div class="subject-card">
                     <div class="subject-card-header">
-                        <div class="subject-badge <?= $s->system_type ?>">
-                            <?= strtoupper($s->system_type) ?>
-                        </div>
                         <div class="subject-actions">
                             <a href="<?= site_url('academic/edit_subject/' . $s->id) ?>" class="action-btn" title="Edit">
                                 <i class="bi bi-pencil-fill"></i>
@@ -38,11 +29,7 @@
                             <div class="meta-item">
                                 <i class="bi bi-mortarboard"></i>
                                 <span>
-                                    <?php if ($s->system_type == 'deped'): ?>
-                                        <?= isset($s->grade_level_name) ? $s->grade_level_name : '-' ?>
-                                    <?php else: ?>
-                                        <?= isset($s->program_code) ? $s->program_code : '-' ?><?= $s->year_level ? ' / Year ' . $s->year_level : '' ?>
-                                    <?php endif; ?>
+                                    <?= isset($s->program_code) ? $s->program_code : '-' ?><?= $s->year_level ? ' / Year ' . $s->year_level : '' ?>
                                 </span>
                             </div>
                             <div class="meta-item">
@@ -178,24 +165,6 @@
     padding: 1rem 1.25rem !important;
     background: #f8fafc !important;
     border-bottom: 1px solid #e2e8f0 !important;
-}
-
-.subject-badge {
-    padding: 0.375rem 0.75rem !important;
-    border-radius: 8px !important;
-    font-size: 0.7rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
-}
-
-.subject-badge.deped {
-    background: #dbeafe !important;
-    color: #1e40af !important;
-}
-
-.subject-badge.ched {
-    background: #fef3c7 !important;
-    color: #92400e !important;
 }
 
 .subject-actions {

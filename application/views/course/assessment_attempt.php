@@ -5,7 +5,23 @@
         </a>
     </div>
 
-    <form action="<?= site_url('course/submit_assessment/' . $attempt->id) ?>" method="post" class="data-table">
+    <?php if (isset($remaining_seconds) && $remaining_seconds !== null): ?>
+        <div class="timer-bar" id="timerBar">
+            <div class="timer-container">
+                <i class="bi bi-clock"></i>
+                <span class="timer-label">Time Remaining:</span>
+                <span class="timer-display" id="timerDisplay">--:--</span>
+            </div>
+        </div>
+        <div class="timer-bar-compact" id="timerBarCompact">
+            <div class="timer-container-compact">
+                <i class="bi bi-clock"></i>
+                <span class="timer-display-compact" id="timerDisplayCompact">--:--</span>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <form action="<?= site_url('course/submit_assessment/' . $attempt->id) ?>" method="post" class="data-table" id="assessmentForm">
         <div class="table-header d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
                 <div class="text-muted small mb-1"><?= htmlspecialchars($subject->code) ?> &middot; Attempt <?= (int) $attempt->attempt_number ?></div>
@@ -66,6 +82,90 @@
     font-weight: 700;
     font-size: 0.9rem;
 }
+.timer-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+    transition: opacity 0.3s ease;
+}
+.timer-bar.hidden {
+    display: none;
+}
+.timer-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+}
+.timer-container i {
+    font-size: 1.25rem;
+}
+.timer-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.timer-display {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: 'Courier New', monospace;
+    min-width: 80px;
+    text-align: center;
+}
+.timer-display.warning {
+    color: #ffd700;
+}
+.timer-display.danger {
+    color: #ff6b6b;
+    animation: pulse 1s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Compact sticky timer */
+.timer-bar-compact {
+    position: fixed;
+    top: 0;
+    right: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.timer-bar-compact.visible {
+    opacity: 1;
+    visibility: visible;
+}
+.timer-container-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #fff;
+}
+.timer-container-compact i {
+    font-size: 1rem;
+}
+.timer-display-compact {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    min-width: 60px;
+    text-align: center;
+}
+.timer-display-compact.warning {
+    color: #ffd700;
+}
+.timer-display-compact.danger {
+    color: #ff6b6b;
+    animation: pulse 1s infinite;
+}
 .assessment-question {
     border: 1px solid #e4e7ec;
     border-radius: 8px;
@@ -100,3 +200,67 @@
     margin-top: 0.25rem;
 }
 </style>
+
+<?php if (isset($remaining_seconds) && $remaining_seconds !== null): ?>
+<script>
+const remainingSeconds = <?= $remaining_seconds ?>;
+const endTime = <?= $end_time ?>;
+const timerDisplay = document.getElementById('timerDisplay');
+const timerDisplayCompact = document.getElementById('timerDisplayCompact');
+const timerBar = document.getElementById('timerBar');
+const timerBarCompact = document.getElementById('timerBarCompact');
+const assessmentForm = document.getElementById('assessmentForm');
+
+function updateTimer() {
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = Math.max(0, endTime - now);
+    
+    if (remaining <= 0) {
+        timerDisplay.textContent = '00:00';
+        timerDisplayCompact.textContent = '00:00';
+        timerDisplay.classList.add('danger');
+        timerDisplayCompact.classList.add('danger');
+        assessmentForm.submit();
+        return;
+    }
+    
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    const display = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    
+    timerDisplay.textContent = display;
+    timerDisplayCompact.textContent = display;
+    
+    if (remaining <= 60) {
+        timerDisplay.classList.add('danger');
+        timerDisplayCompact.classList.add('danger');
+    } else if (remaining <= 300) {
+        timerDisplay.classList.add('warning');
+        timerDisplayCompact.classList.add('warning');
+    }
+}
+
+// Handle scroll to show/hide compact timer
+function handleScroll() {
+    const timerBarRect = timerBar.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    if (scrollTop > timerBarRect.bottom) {
+        timerBar.classList.add('hidden');
+        timerBarCompact.classList.add('visible');
+    } else {
+        timerBar.classList.remove('hidden');
+        timerBarCompact.classList.remove('visible');
+    }
+}
+
+// Initial update
+updateTimer();
+
+// Update every second
+setInterval(updateTimer, 1000);
+
+// Handle scroll
+window.addEventListener('scroll', handleScroll);
+</script>
+<?php endif; ?>

@@ -88,10 +88,10 @@ foreach ($subjects as $subject) {
                 <tbody>
                     <?php foreach ($subjects as $subject): ?>
                         <?php
-                        $scope_label = $subject->program_code
-                            ? $subject->program_code . ' - ' . $subject->program_name
-                            : ($subject->grade_level_name ?: 'Unassigned');
-                        $semester_label = $subject->semester_type === '1st_sem' ? '1st Sem' : ($subject->semester_type === '2nd_sem' ? '2nd Sem' : '-');
+                        $scope_label = (isset($subject->program_code) && $subject->program_code)
+                            ? $subject->program_code . ' - ' . (isset($subject->program_name) ? $subject->program_name : '')
+                            : (isset($subject->grade_level_name) ? $subject->grade_level_name : 'Unassigned');
+                        $semester_label = (isset($subject->semester_type) && $subject->semester_type === '1st_sem') ? '1st Sem' : ((isset($subject->semester_type) && $subject->semester_type === '2nd_sem') ? '2nd Sem' : '-');
                         $lesson_count = (int) ($subject->lesson_count ?? 0);
                         $has_lessons = $lesson_count > 0;
                         ?>

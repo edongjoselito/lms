@@ -1942,6 +1942,20 @@ class Course extends MY_Controller {
         $data['attempt'] = $attempt;
         $data['questions'] = $questions;
         $data['answer_map'] = $this->Quiz_model->get_attempt_answers_map($attempt->id);
+        
+        // Calculate remaining time
+        if (!empty($context['quiz']->time_limit_minutes) && !empty($attempt->started_at)) {
+            $start_time = strtotime($attempt->started_at);
+            $end_time = $start_time + ($context['quiz']->time_limit_minutes * 60);
+            $current_time = time();
+            $remaining_seconds = max(0, $end_time - $current_time);
+            $data['remaining_seconds'] = $remaining_seconds;
+            $data['end_time'] = $end_time;
+        } else {
+            $data['remaining_seconds'] = null;
+            $data['end_time'] = null;
+        }
+        
         $this->render('course/assessment_attempt', $data);
     }
 

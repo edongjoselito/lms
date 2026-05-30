@@ -100,6 +100,35 @@ class Student extends MY_Controller
             $year_level = $student->year_level;
         }
 
+        // Auto-enroll student in subjects matching their year_level
+        if ($year_level) {
+            $matching_subjects = $this->db->where('year_level', $year_level)
+                ->where('school_id', $student->school_id)
+                ->where('status', 1)
+                ->get('subjects')
+                ->result();
+
+            foreach ($matching_subjects as $subject) {
+                // Check if already enrolled using course_enrollments table
+                $existing = $this->db->where('user_id', $student->user_id)
+                    ->where('course_id', $subject->id)
+                    ->where('role', 'student')
+                    ->get('course_enrollments')
+                    ->row();
+
+                if (!$existing) {
+                    // Auto-enroll using course_enrollments table
+                    $this->db->insert('course_enrollments', array(
+                        'user_id' => $student->user_id,
+                        'course_id' => $subject->id,
+                        'role' => 'student',
+                        'status' => 'active',
+                        'enrolled_at' => date('Y-m-d H:i:s')
+                    ));
+                }
+            }
+        }
+
         $filters = array();
         if ($this->input->get('system_type')) {
             $filters['system_type'] = $this->input->get('system_type');
@@ -356,7 +385,16 @@ class Student extends MY_Controller
         if (!$is_completed) {
             $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
             $is_completed = true;
+            // Recalculate completed lessons after marking
+            $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
+            $completed_lesson_ids = array_values(array_intersect($lesson_ids, array_map('intval', $completed_lesson_ids)));
         }
+
+        // Calculate progress percentage
+        $total_lessons = count($lesson_ids);
+        $progress_percent = $total_lessons > 0
+            ? round((count($completed_lesson_ids) / $total_lessons) * 100)
+            : 0;
 
         // Get previous and next lessons
         $previous_lesson = null;
@@ -376,6 +414,9 @@ class Student extends MY_Controller
         $data['is_completed'] = $is_completed;
         $data['previous_lesson'] = $previous_lesson;
         $data['next_lesson'] = $next_lesson;
+        $data['progress_percent'] = $progress_percent;
+        $data['total_lessons'] = $total_lessons;
+        $data['completed_lessons'] = count($completed_lesson_ids);
 
         $this->render('student/lesson', $data);
     }
