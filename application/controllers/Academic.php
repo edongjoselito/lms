@@ -434,8 +434,8 @@ class Academic extends MY_Controller {
     {
         $subject = $this->Academic_model->get_subject($subject_id);
         if ($subject) {
-            $this->Academic_model->update_subject($subject_id, array('program_id' => null));
-            $this->session->set_flashdata('success', 'Subject removed from program.');
+            $this->Academic_model->delete_subject($subject_id, $this->school_id, true);
+            $this->session->set_flashdata('success', 'Subject deleted successfully.');
         }
         redirect('academic/program_subjects/' . $program_id);
     }
