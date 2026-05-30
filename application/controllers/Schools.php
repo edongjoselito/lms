@@ -62,13 +62,41 @@ class Schools extends MY_Controller
         $this->require_role(array('super_admin'));
 
         if ($this->input->method() === 'post') {
+            $school_id_number = $this->input->post('school_id_number', TRUE);
+            $email = $this->input->post('email', TRUE);
+
+            // Validate required fields
+            if (empty($school_id_number)) {
+                $this->session->set_flashdata('error', 'School ID Number is required.');
+                redirect('schools/create');
+            }
+
+            if (empty($email)) {
+                $this->session->set_flashdata('error', 'Email Address is required.');
+                redirect('schools/create');
+            }
+
+            // Check if school_id_number already exists
+            $existing = $this->School_model->get_by_school_id_number($school_id_number);
+            if ($existing) {
+                $this->session->set_flashdata('error', 'School ID Number already exists.');
+                redirect('schools/create');
+            }
+
+            // Check if email already exists
+            $existing_email = $this->db->where('email', $email)->get('users')->row();
+            if ($existing_email) {
+                $this->session->set_flashdata('error', 'Email address already exists in the system.');
+                redirect('schools/create');
+            }
+
             $d = array(
                 'name'             => $this->input->post('name', TRUE),
-                'school_id_number' => $this->input->post('school_id_number', TRUE),
+                'school_id_number' => $school_id_number,
                 'type'             => $this->input->post('type', TRUE),
                 'address'          => $this->input->post('address', TRUE),
                 'contact_number'   => $this->input->post('contact_number', TRUE),
-                'email'            => $this->input->post('email', TRUE),
+                'email'            => $email,
                 'division'         => $this->input->post('division', TRUE),
                 'region'           => $this->input->post('region', TRUE),
             );
@@ -84,60 +112,90 @@ class Schools extends MY_Controller
 
             // Create school admin user account
             $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
+            $admin_credentials = null;
             if ($school_admin_role) {
                 $school_name = $this->input->post('name', TRUE);
-                $school_email = $this->input->post('email', TRUE);
+                $school_email = $email;
 
-                // Generate email if not provided
-                if (empty($school_email)) {
-                    $school_email = 'admin@' . strtolower(preg_replace('/[^a-z0-9]/', '', $school_name)) . '.lms';
+                // Generate random password
+                $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+                $random_password = '';
+                for ($i = 0; $i < 12; $i++) {
+                    $random_password .= $characters[rand(0, strlen($characters) - 1)];
                 }
 
-                // Generate default password (school name in lowercase)
-                $default_password = strtolower(str_replace(' ', '', $school_name)) . '123';
+                $this->db->insert('users', array(
+                    'first_name' => 'School',
+                    'last_name'  => 'Admin',
+                    'email'      => $school_email,
+                    'password'   => password_hash($random_password, PASSWORD_DEFAULT),
+                    'role_id'    => $school_admin_role->id,
+                    'school_id'  => $school_id,
+                    'status'     => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ));
 
-                // Check if email already exists
-                $existing_user = $this->db->where('email', $school_email)->get('users')->row();
-                if (!$existing_user) {
-                    $this->db->insert('users', array(
-                        'first_name' => 'School',
-                        'last_name'  => 'Admin',
-                        'email'      => $school_email,
-                        'password'   => password_hash($default_password, PASSWORD_DEFAULT),
-                        'role_id'    => $school_admin_role->id,
-                        'school_id'  => $school_id,
-                        'status'     => 1,
-                        'created_at' => date('Y-m-d H:i:s'),
-                    ));
-
-                    // Send email with password
-                    $this->load->library('email');
-                    $this->config->load('email');
-                    $this->email->from($this->config->item('smtp_user'), 'LMS Portal');
-                    $this->email->to($school_email);
-                    $this->email->subject('Your LMS School Admin Account');
-
-                    $message = $this->load->view('emails/school_admin_password', array(
-                        'school_name' => $school_name,
-                        'email' => $school_email,
-                        'password' => $default_password
-                    ), true);
-
-                    $this->email->message($message);
-                    $this->email->send();
-                }
+                $admin_credentials = array(
+                    'school_name' => $school_name,
+                    'email' => $school_email,
+                    'password' => $random_password
+                );
             }
 
             // Audit log
             $this->Audit_model->log('create', 'school', $school_id, $d['name'], 'Created school: ' . $d['name'] . ' (' . $d['type'] . ')');
 
-            $this->session->set_flashdata('success', 'School created successfully.' . (!$existing_user ? ' A school admin account has been created automatically.' : ''));
-            redirect('schools/select');
+            if ($admin_credentials) {
+                $this->session->set_flashdata('admin_credentials', $admin_credentials);
+                redirect('schools/admin_credentials');
+            } else {
+                $this->session->set_flashdata('success', 'School created successfully.' . (!$existing_user ? ' A school admin account has been created automatically.' : ''));
+                redirect('schools/select');
+            }
         }
 
         $data['title'] = 'Add School';
         $data['school'] = null;
         $this->render('schools/form', $data);
+    }
+
+    public function admin_credentials()
+    {
+        $this->require_role(array('super_admin'));
+        $admin_credentials = $this->session->flashdata('admin_credentials');
+        
+        if (!$admin_credentials) {
+            $this->session->set_flashdata('error', 'No credentials found.');
+            redirect('schools');
+        }
+
+        $data['title'] = 'School Admin Credentials';
+        $data['credentials'] = $admin_credentials;
+        $this->render('schools/admin_credentials', $data);
+    }
+
+    public function download_credentials()
+    {
+        $this->require_role(array('super_admin'));
+        $admin_credentials = $this->session->flashdata('admin_credentials');
+        
+        if (!$admin_credentials) {
+            $this->session->set_flashdata('error', 'No credentials found.');
+            redirect('schools');
+        }
+
+        $content = "School Admin Login Credentials\n";
+        $content .= "=============================\n\n";
+        $content .= "School Name: " . $admin_credentials['school_name'] . "\n";
+        $content .= "Email/Username: " . $admin_credentials['email'] . "\n";
+        $content .= "Password: " . $admin_credentials['password'] . "\n\n";
+        $content .= "Login URL: " . site_url('auth/login') . "\n";
+        $content .= "Generated on: " . date('Y-m-d H:i:s') . "\n";
+
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="school_admin_credentials.txt"');
+        echo $content;
+        exit;
     }
 
     public function edit($id)

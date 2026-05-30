@@ -25,11 +25,16 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">School Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" name="name" placeholder="Enter full school name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required>
+                            <input type="text" class="form-control form-control-lg" name="name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">School ID Number</label>
-                            <input type="text" class="form-control" name="school_id_number" placeholder="e.g., SCH-001" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>">
+                            <label class="form-label">School ID Number <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="school_id_number" id="school_id_number" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>" required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="generateSchoolId()">
+                                    <i class="bi bi-shuffle"></i> Generate
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">School Type <span class="text-danger">*</span></label>
@@ -48,12 +53,12 @@
                     <h6 class="section-title"><i class="bi bi-telephone me-2"></i>Contact Information</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" class="form-control" name="email" placeholder="school@example.com" value="<?= ($school) ? htmlspecialchars($school->email) : '' ?>">
+                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" name="email" value="<?= ($school) ? htmlspecialchars($school->email) : '' ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Contact Number</label>
-                            <input type="text" class="form-control" name="contact_number" placeholder="e.g., +63 912 345 6789" value="<?= ($school) ? htmlspecialchars($school->contact_number) : '' ?>">
+                            <input type="text" class="form-control" name="contact_number" value="<?= ($school) ? htmlspecialchars($school->contact_number) : '' ?>">
                         </div>
                     </div>
                 </div>
@@ -64,15 +69,15 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Division</label>
-                            <input type="text" class="form-control" name="division" placeholder="e.g., NCR" value="<?= ($school) ? htmlspecialchars($school->division) : '' ?>">
+                            <input type="text" class="form-control" name="division" value="<?= ($school) ? htmlspecialchars($school->division) : '' ?>">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Region</label>
-                            <input type="text" class="form-control" name="region" placeholder="e.g., Metro Manila" value="<?= ($school) ? htmlspecialchars($school->region) : '' ?>">
+                            <input type="text" class="form-control" name="region" value="<?= ($school) ? htmlspecialchars($school->region) : '' ?>">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Complete Address</label>
-                            <textarea class="form-control" name="address" rows="3" placeholder="Enter street address, city, zip code"><?= ($school) ? htmlspecialchars($school->address) : '' ?></textarea>
+                            <textarea class="form-control" name="address" rows="3"><?= ($school) ? htmlspecialchars($school->address) : '' ?></textarea>
                         </div>
                     </div>
                 </div>
@@ -138,7 +143,6 @@
         border-radius: 12px;
         border: 1px solid #e2e8f0;
         padding: 1.75rem;
-        max-width: 720px;
     }
 
     .form-card-title {
@@ -226,4 +230,22 @@
         background-color: #3b82f6;
         border-color: #3b82f6;
     }
+
+    .input-group .btn-outline-secondary {
+        border-radius: 0 8px 8px 0;
+        border-left: none;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 0 0 8px;
+    }
 </style>
+
+<script>
+function generateSchoolId() {
+    const prefix = 'SCH';
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const schoolId = prefix + '-' + randomNum;
+    document.getElementById('school_id_number').value = schoolId;
+}
+</script>
