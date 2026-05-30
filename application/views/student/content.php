@@ -90,11 +90,18 @@ foreach ($modules as $module) {
                                 $item_id = (int) $item->id;
                                 $is_completed = $is_lesson_item && in_array($item_id, $completed_lesson_ids, true);
                                 $is_locked = $is_lesson_item && !in_array($item_id, $accessible_lesson_ids, true);
+                                // Quizzes and activities are never locked - only lessons require sequential completion
+                                $is_locked = $is_locked && $is_lesson_item;
                                 $item_excerpt = trim(substr(strip_tags($item->content), 0, 120));
                                 $item_excerpt = $item_excerpt !== '' ? $item_excerpt . '...' : ($is_quiz_item ? 'Assessment' : 'Activity');
+                                // Check if quiz has been attempted
+                                $has_attempt = $is_quiz_item && isset($item->has_attempt) && $item->has_attempt;
+                                $latest_attempt_id = $has_attempt && isset($item->latest_attempt) ? $item->latest_attempt->id : null;
                                 $item_url = $is_lesson_item
                                     ? site_url('student/lesson/' . $subject->id . '/' . $item->id)
-                                    : site_url('course/' . ($is_quiz_item ? 'assessment' : 'activity') . '/' . $item->id);
+                                    : ($has_attempt && $latest_attempt_id
+                                        ? site_url('course/assessment_result/' . $latest_attempt_id)
+                                        : site_url('course/' . ($is_quiz_item ? 'assessment' : 'activity') . '/' . $item->id));
                                 $lesson_badges = array(
                                     'text'  => array('icon' => 'bi-file-text', 'label' => 'Lesson'),
                                     'page'  => array('icon' => 'bi-file-earmark-text', 'label' => 'Page'),
@@ -141,7 +148,7 @@ foreach ($modules as $module) {
                                                 </span>
                                             <?php elseif ($is_quiz_item): ?>
                                                 <span class="view-badge">
-                                                    <i class="bi bi-pencil-square"></i> Take
+                                                    <i class="bi bi-<?= $has_attempt ? 'clipboard-check' : 'pencil-square' ?>"></i> <?= $has_attempt ? 'Result' : 'Take' ?>
                                                 </span>
                                             <?php else: ?>
                                                 <span class="view-badge">

@@ -296,6 +296,13 @@ class Student extends MY_Controller
                 }
 
                 $activity->question_count = $this->Quiz_model->count_questions($activity->quiz->id);
+                
+                // Check if student has attempted this quiz
+                $activity->attempts = $this->Quiz_model->get_student_attempts($activity->quiz->id, $user_id);
+                $activity->has_attempt = !empty($activity->attempts);
+                if ($activity->has_attempt) {
+                    $activity->latest_attempt = $activity->attempts[0];
+                }
             }
             unset($activity);
             $module->activities = array_values($module->activities);
