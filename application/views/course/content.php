@@ -78,9 +78,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                 <?php if (!empty($subject->cover_photo)): ?>
                     <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Course Cover" class="cc-cover-img">
                 <?php else: ?>
-                    <div class="cc-cover-fallback" aria-hidden="true">
-                        <span><?= htmlspecialchars($subject->code) ?></span>
-                    </div>
+                    <img src="<?= base_url('assets/images/default.jpg') ?>" alt="Default Course Cover" class="cc-cover-img">
                 <?php endif; ?>
             </div>
             <div class="cc-hero-content">
@@ -622,7 +620,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label">Title</label>
-                                                <input type="text" class="form-control" name="title" required placeholder="e.g., Introduction to Topic">
+                                                <input type="text" class="form-control" name="title" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Content Type</label>
@@ -639,7 +637,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                                     <label class="form-label">Video URL</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text"><i class="bi bi-play-btn"></i></span>
-                                                        <input type="url" class="form-control lesson-video-url" name="video_url" placeholder="YouTube, Vimeo, or direct MP4/WebM URL">
+                                                        <input type="url" class="form-control lesson-video-url" name="video_url">
                                                     </div>
                                                     <div class="form-text">Supported: YouTube, Vimeo, and direct video files such as MP4 or WebM.</div>
                                                     <div class="video-url-preview mt-2"></div>
@@ -692,7 +690,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label">Title</label>
-                                                <input type="text" class="form-control" name="title" required placeholder="e.g., Midterm Exam">
+                                                <input type="text" class="form-control" name="title" required>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">Type</label>
@@ -707,7 +705,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Time Limit</label>
-                                                <input type="number" class="form-control" name="time_limit_minutes" min="0" placeholder="Minutes">
+                                                <input type="number" class="form-control" name="time_limit_minutes" min="0">
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label">Available From</label>
@@ -780,11 +778,11 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                             </div>
                                             <div class="col-md-8">
                                                 <label class="form-label">Title</label>
-                                                <input type="text" class="form-control" name="title" required placeholder="e.g., Week 1 Assignment">
+                                                <input type="text" class="form-control" name="title" required>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label activity-content-label">Description/Instructions</label>
-                                                <textarea class="form-control wysiwyg-content" name="content" rows="3" placeholder="Enter instructions or description..."></textarea>
+                                                <textarea class="form-control wysiwyg-content" name="content" rows="3"></textarea>
                                             </div>
                                             <div class="col-12 activity-quiz-import-fields">
                                                 <div class="quiz-import-box">
@@ -799,9 +797,14 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                                                         <div class="col-md-8">
                                                             <label class="form-label">Question File</label>
                                                             <input type="file" class="form-control" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml">
-                                                            <div class="form-text">Supported question types: multiple choice, true/false, identification, and essay.</div>
+                                                            <div class="form-text">Upload a GIFT or XML file, or paste content below.</div>
                                                         </div>
                                                     </div>
+                                                </div>
+                                                <div class="quiz-paste-box mt-3">
+                                                    <label class="form-label fw-bold">Paste Quiz Content</label>
+                                                    <textarea class="form-control" name="question_content" rows="8" style="font-family: monospace; font-size: 0.9rem;" placeholder="Paste your GIFT or XML quiz content here..."></textarea>
+                                                    <div class="form-text">Paste GIFT or Moodle XML format content directly. Supported: multiple choice, true/false, identification, and essay questions.</div>
                                                 </div>
                                             </div>
                                             <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -906,11 +909,11 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" required placeholder="e.g., Week 1: Introduction">
+                        <input type="text" class="form-control" name="title" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3" placeholder="Brief description of this module..."></textarea>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="is_published" value="1" id="pubNewMod">
@@ -1804,6 +1807,13 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
         border: 1px solid #fde68a;
         border-radius: 8px;
         background: #fffbeb;
+    }
+
+    .quiz-paste-box {
+        padding: 1rem;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        background: #eff6ff;
     }
 
     .lesson-form-is-link .lesson-link-fields {

@@ -352,7 +352,14 @@ class Academic extends MY_Controller {
                 'program_id'  => $program_id,
                 'status'      => 1,
             );
-            $this->Academic_model->create_subject($d);
+            $subject_id = $this->Academic_model->create_subject($d);
+            
+            // Handle teacher assignment
+            $teacher_id = $this->input->post('teacher_id');
+            if ($teacher_id && $subject_id) {
+                $this->Academic_model->set_subject_teachers($subject_id, array($teacher_id));
+            }
+            
             $this->session->set_flashdata('success', 'Subject created and added to program.');
             redirect('academic/program_subjects/' . $program_id);
         }

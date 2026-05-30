@@ -188,6 +188,21 @@
                         <label class="ps-label">Description <span class="ps-req">*</span></label>
                         <textarea class="ps-input ps-textarea" name="description" rows="3" required></textarea>
                     </div>
+                    <div class="ps-field">
+                        <label class="ps-label">Assigned Teacher</label>
+                        <select class="ps-input select2-teacher-add" name="teacher_id">
+                            <option value="">Select a teacher...</option>
+                            <?php if (!empty($teachers)): ?>
+                                <?php foreach ($teachers as $t): ?>
+                                    <option value="<?= $t->id ?>">
+                                        <?= htmlspecialchars(trim($t->first_name . ' ' . $t->last_name)) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="">No teachers available</option>
+                            <?php endif; ?>
+                        </select>
+                    </div>
                     <button type="submit" class="ps-submit-btn">
                         <i class="bi bi-plus-lg"></i> Create & Add Subject
                     </button>
@@ -239,6 +254,15 @@ document.addEventListener('shown.bs.dropdown', function (event) {
 document.addEventListener('hidden.bs.dropdown', function (event) {
     var item = event.target.closest('.ps-subject-item');
     if (item) item.classList.remove('ps-dropdown-open');
+});
+
+// Initialize Select2 for teacher dropdowns
+$(document).ready(function() {
+    $('.select2-teacher-add').select2({
+        placeholder: 'Select a teacher...',
+        allowClear: true,
+        width: '100%'
+    });
 });
 </script>
 

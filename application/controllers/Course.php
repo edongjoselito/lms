@@ -1552,31 +1552,46 @@ class Course extends MY_Controller {
 
     private function import_assessment_questions_from_upload($quiz_id)
     {
-        if (empty($_FILES['question_file']['name'])) {
+        $content = '';
+        $format = strtolower($this->input->post('import_format', TRUE));
+        
+        // Check for pasted content first
+        $pasted_content = $this->input->post('question_content', TRUE);
+        if (!empty($pasted_content) && trim($pasted_content) !== '') {
+            $content = $pasted_content;
+        } 
+        // Fall back to file upload
+        elseif (!empty($_FILES['question_file']['name'])) {
+            if ($_FILES['question_file']['error'] !== UPLOAD_ERR_OK) {
+                return array('success' => false, 'count' => 0, 'message' => 'Question file upload failed.');
+            }
+
+            if ($_FILES['question_file']['size'] > 2097152) {
+                return array('success' => false, 'count' => 0, 'message' => 'Question file must be 2MB or smaller.');
+            }
+
+            $extension = strtolower(pathinfo($_FILES['question_file']['name'], PATHINFO_EXTENSION));
+            if (!in_array($extension, array('gift', 'txt', 'xml'))) {
+                return array('success' => false, 'count' => 0, 'message' => 'Only GIFT, TXT, and XML files are allowed.');
+            }
+
+            $content = file_get_contents($_FILES['question_file']['tmp_name']);
+            
+            // If format not specified, infer from extension
+            if (!in_array($format, array('gift', 'xml'))) {
+                $format = $extension === 'xml' ? 'xml' : 'gift';
+            }
+        } else {
             return array('success' => true, 'count' => 0, 'message' => '');
         }
 
-        if ($_FILES['question_file']['error'] !== UPLOAD_ERR_OK) {
-            return array('success' => false, 'count' => 0, 'message' => 'Question file upload failed.');
-        }
-
-        if ($_FILES['question_file']['size'] > 2097152) {
-            return array('success' => false, 'count' => 0, 'message' => 'Question file must be 2MB or smaller.');
-        }
-
-        $extension = strtolower(pathinfo($_FILES['question_file']['name'], PATHINFO_EXTENSION));
-        if (!in_array($extension, array('gift', 'txt', 'xml'))) {
-            return array('success' => false, 'count' => 0, 'message' => 'Only GIFT, TXT, and XML files are allowed.');
-        }
-
-        $content = file_get_contents($_FILES['question_file']['tmp_name']);
         if (trim((string) $content) === '') {
-            return array('success' => false, 'count' => 0, 'message' => 'Question file is empty.');
+            return array('success' => false, 'count' => 0, 'message' => 'Question content is empty.');
         }
 
-        $format = strtolower($this->input->post('import_format', TRUE));
+        // Ensure format is valid
         if (!in_array($format, array('gift', 'xml'))) {
-            $format = $extension === 'xml' ? 'xml' : 'gift';
+            $format = 'gift';
         }
 
         $parsed = $format === 'xml'
