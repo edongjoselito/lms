@@ -90,8 +90,8 @@ foreach ($modules as $module) {
                                 $item_id = (int) $item->id;
                                 $is_completed = $is_lesson_item && in_array($item_id, $completed_lesson_ids, true);
                                 $is_locked = $is_lesson_item && !in_array($item_id, $accessible_lesson_ids, true);
-                                // Quizzes and activities are never locked - only lessons require sequential completion
-                                $is_locked = $is_locked && $is_lesson_item;
+                                // All items (lessons, quizzes, activities) require previous item completion
+                                $is_locked = !in_array($item_id, $accessible_lesson_ids, true);
                                 $item_excerpt = trim(substr(strip_tags($item->content), 0, 120));
                                 $item_excerpt = $item_excerpt !== '' ? $item_excerpt . '...' : ($is_quiz_item ? 'Assessment' : 'Activity');
                                 // Check if quiz has been attempted
