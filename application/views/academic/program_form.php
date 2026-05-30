@@ -1,7 +1,5 @@
 <style>
     .ap-shell {
-        max-width: 640px;
-        margin: 0 auto;
         padding: 1rem 1.25rem 4rem;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
@@ -119,11 +117,11 @@
 
     .ap-row {
         display: grid;
-        grid-template-columns: 0.7fr 1.3fr;
+        grid-template-columns: 1fr 1fr;
         gap: 0.85rem;
         margin-bottom: 1.4rem;
     }
-    @media (max-width: 520px) {
+    @media (max-width: 768px) {
         .ap-row { grid-template-columns: 1fr; }
     }
     .ap-row .ap-field { margin-bottom: 0; }
@@ -183,7 +181,13 @@
     <div class="ap-header">
         <div class="ap-eyebrow"><?= ($program) ? 'Edit' : 'New' ?></div>
         <h1 class="ap-title"><?= ($program) ? 'Edit Program' : 'Create a Program' ?></h1>
-        <p class="ap-subtitle">A few essentials. Nothing more.</p>
+        <p class="ap-subtitle">
+            <?php if (isset($school_type) && $school_type === 'deped'): ?>
+                Grade Level (DepEd)
+            <?php else: ?>
+                Program (CHED)
+            <?php endif; ?>
+        </p>
     </div>
 
     <div class="ap-card">
@@ -192,24 +196,34 @@
             <div class="ap-row">
                 <div class="ap-field">
                     <label class="ap-label" for="ap-code">Code</label>
-                    <input id="ap-code" type="text" class="ap-input" name="code"
-                           value="<?= ($program) ? htmlspecialchars($program->code) : '' ?>"
-                           required placeholder="BSIT">
+                    <?php if (isset($school_type) && $school_type === 'deped'): ?>
+                        <select id="ap-code" class="ap-select" name="code" required onchange="syncGradeLevel('code')">
+                            <option value="">Select Grade</option>
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="G<?= $i ?>" <?= ($program && $program->code === 'G' . $i) ? 'selected' : '' ?>>G<?= $i ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    <?php else: ?>
+                        <input id="ap-code" type="text" class="ap-input" name="code"
+                               value="<?= ($program) ? htmlspecialchars($program->code) : '' ?>"
+                               required>
+                    <?php endif; ?>
                 </div>
                 <div class="ap-field">
                     <label class="ap-label" for="ap-name">Name</label>
-                    <input id="ap-name" type="text" class="ap-input" name="name"
-                           value="<?= ($program) ? htmlspecialchars($program->name) : '' ?>"
-                           required placeholder="Bachelor of Science in Information Technology">
+                    <?php if (isset($school_type) && $school_type === 'deped'): ?>
+                        <select id="ap-name" class="ap-select" name="name" required onchange="syncGradeLevel('name')">
+                            <option value="">Select Grade</option>
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?>" <?= ($program && $program->name === 'Grade ' . str_pad($i, 2, '0', STR_PAD_LEFT)) ? 'selected' : '' ?>>Grade <?= str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    <?php else: ?>
+                        <input id="ap-name" type="text" class="ap-input" name="name"
+                               value="<?= ($program) ? htmlspecialchars($program->name) : '' ?>"
+                               required>
+                    <?php endif; ?>
                 </div>
-            </div>
-
-            <div class="ap-field">
-                <label class="ap-label" for="ap-type">Type</label>
-                <select id="ap-type" class="ap-select" name="type" required>
-                    <option value="program" <?= ($program && (isset($program->type) && $program->type == 'program' || !isset($program->type))) ? 'selected' : '' ?>>Program (CHED)</option>
-                    <option value="grade_level" <?= ($program && isset($program->type) && $program->type == 'grade_level') ? 'selected' : '' ?>>Grade Level (DepEd)</option>
-                </select>
             </div>
 
             <div class="ap-field">
@@ -217,8 +231,7 @@
                     Description
                     <span class="ap-optional">Optional</span>
                 </label>
-                <textarea id="ap-description" class="ap-textarea" name="description" rows="3"
-                          placeholder="A short summary of this program."><?= ($program) ? htmlspecialchars($program->description) : '' ?></textarea>
+                <textarea id="ap-description" class="ap-textarea" name="description" rows="3"><?= ($program) ? htmlspecialchars($program->description) : '' ?></textarea>
             </div>
 
             <div class="ap-divider"></div>
@@ -232,3 +245,56 @@
         </form>
     </div>
 </div>
+
+<script>
+const schoolType = '<?= isset($school_type) ? $school_type : '' ?>';
+const existingProgram = <?= ($program) ? 'true' : 'false' ?>;
+
+// Auto-detect and set defaults for DepEd schools
+if (!existingProgram && schoolType === 'deped') {
+    setDepEdDefaults();
+}
+
+function setDepEdDefaults() {
+    const codeInput = document.getElementById('ap-code');
+    const nameInput = document.getElementById('ap-name');
+    
+    // For DepEd, set dropdowns to G1 and Grade 01
+    if (codeInput && codeInput.tagName === 'SELECT') {
+        codeInput.value = 'G1';
+    }
+    
+    if (nameInput && nameInput.tagName === 'SELECT') {
+        nameInput.value = 'Grade 01';
+    }
+}
+
+function syncGradeLevel(source) {
+    const codeSelect = document.getElementById('ap-code');
+    const nameSelect = document.getElementById('ap-name');
+    
+    if (codeSelect && nameSelect && codeSelect.tagName === 'SELECT' && nameSelect.tagName === 'SELECT') {
+        if (source === 'code') {
+            // Extract grade number from code (e.g., G1 -> 1)
+            const gradeNum = codeSelect.value.replace('G', '');
+            if (gradeNum) {
+                nameSelect.value = 'Grade ' + strPad(gradeNum, 2, '0');
+            }
+        } else if (source === 'name') {
+            // Extract grade number from name (e.g., Grade 01 -> 1)
+            const gradeNum = nameSelect.value.replace('Grade ', '').replace(/^0+/, '');
+            if (gradeNum) {
+                codeSelect.value = 'G' + gradeNum;
+            }
+        }
+    }
+}
+
+function strPad(str, length, padStr) {
+    str = String(str);
+    while (str.length < length) {
+        str = padStr + str;
+    }
+    return str;
+}
+</script>

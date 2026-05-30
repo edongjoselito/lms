@@ -904,6 +904,25 @@ class Academic_model extends CI_Model
         return 'added';
     }
 
+    public function set_subject_teachers($subject_id, $teacher_ids)
+    {
+        $this->ensure_subject_teachers_table();
+        $subject_id = (int)$subject_id;
+        
+        // Delete all existing assignments
+        $this->db->where('subject_id', $subject_id)->delete('subject_teachers');
+        
+        // Insert new assignments
+        if (!empty($teacher_ids) && is_array($teacher_ids)) {
+            foreach ($teacher_ids as $user_id) {
+                $this->db->insert('subject_teachers', array(
+                    'subject_id' => $subject_id,
+                    'user_id' => (int)$user_id
+                ));
+            }
+        }
+    }
+
     public function get_subjects_by_teacher_user($user_id)
     {
         $this->ensure_subject_teachers_table();

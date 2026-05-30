@@ -1,92 +1,91 @@
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 <div class="programs-page">
     <div class="page-header">
         <div>
             <h1 class="page-title">Academic Programs</h1>
             <p class="page-subtitle">Manage programs, grade levels, and their subjects</p>
         </div>
-        <a href="<?= site_url('academic/create_program') ?>" class="btn-add-program">
+        <a href="<?= site_url('academic/create_program') ?>" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> Add Program
         </a>
     </div>
 
     <?php if (!empty($programs)): ?>
-        <div class="programs-grid">
-            <?php foreach ($programs as $p): ?>
-                <?php
-                $type = isset($p->type) ? $p->type : 'program';
-                $subject_count = ($type === 'program') ? count($this->Academic_model->get_subjects_by_program($p->id)) : 0;
-                $initials = implode('', array_map(function ($w) { return strtoupper($w[0]); }, array_slice(explode(' ', trim($p->name)), 0, 2)));
-                ?>
-                <div class="program-card type-<?= $type ?>">
-                    <div class="card-accent"></div>
-
-                    <div class="card-top">
-                        <div class="card-avatar">
-                            <?= htmlspecialchars($initials) ?>
-                        </div>
-                        <div class="card-meta-badges">
-                            <span class="type-chip type-<?= $type ?>">
-                                <?= $type == 'grade_level' ? 'Grade Level' : 'Program' ?>
-                            </span>
-                            <?php if ($type == 'program' && !empty($p->degree_type)): ?>
-                                <span class="degree-chip"><?= ucfirst($p->degree_type) ?></span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="card-actions">
-                            <a href="<?= site_url('academic/edit_program/' . $p->id) ?>" class="btn-icon" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="<?= site_url('academic/delete_program/' . $p->id) ?>" class="btn-icon btn-delete" title="Delete" onclick="return confirm('Delete this program?');">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="program-code"><?= htmlspecialchars($p->code) ?></div>
-                        <h3 class="program-name"><?= htmlspecialchars($p->name) ?></h3>
-                        <p class="program-description"><?= !empty($p->description) ? htmlspecialchars($p->description) : '<span class="no-desc">No description provided.</span>' ?></p>
-                    </div>
-
-                    <div class="card-stats">
-                        <?php if ($type == 'program'): ?>
-                            <div class="stat-pill">
-                                <span class="stat-icon"><i class="bi bi-clock-history"></i></span>
-                                <span><?= $p->years_to_complete ?> yrs</span>
-                            </div>
-                            <div class="stat-pill">
-                                <span class="stat-icon"><i class="bi bi-calculator"></i></span>
-                                <span><?= $p->total_units ?> units</span>
-                            </div>
-                            <div class="stat-pill subjects-pill">
-                                <span class="stat-icon"><i class="bi bi-journal-bookmark"></i></span>
-                                <span><?= $subject_count ?> subjects</span>
-                            </div>
-                        <?php else: ?>
-                            <div class="stat-pill">
-                                <span class="stat-icon"><i class="bi bi-layers"></i></span>
-                                <span><?= ucfirst($p->category) ?></span>
-                            </div>
-                            <div class="stat-pill">
-                                <span class="stat-icon"><i class="bi bi-sort-numeric-down"></i></span>
-                                <span>Level <?= $p->level_order ?></span>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if ($type == 'program'): ?>
-                    <div class="card-footer">
-                        <a href="<?= site_url('academic/program_subjects/' . $p->id) ?>" class="btn-manage-subjects">
-                            <i class="bi bi-book-half"></i>
-                            Manage Subjects
-                            <span class="subject-count-badge"><?= $subject_count ?></span>
-                        </a>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%;">Code</th>
+                        <th style="width: 40%;">Name</th>
+                        <th style="width: 35%;">Details</th>
+                        <th style="width: 10%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($programs as $p): ?>
+                        <?php
+                        $type = isset($p->type) ? $p->type : 'program';
+                        $subject_count = ($type === 'program') ? count($this->Academic_model->get_subjects_by_program($p->id)) : 0;
+                        ?>
+                        <tr>
+                            <td>
+                                <span class="code-badge"><?= htmlspecialchars($p->code) ?></span>
+                            </td>
+                            <td>
+                                <div class="program-name-cell">
+                                    <?= htmlspecialchars($p->name) ?>
+                                    <?php if ($type == 'grade_level'): ?>
+                                        <span class="badge bg-primary ms-2">Grade Level</span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ($type == 'program'): ?>
+                                    <span class="detail-item">
+                                        <i class="bi bi-journal-bookmark text-primary"></i>
+                                        <?= $subject_count ?> subjects
+                                    </span>
+                                <?php else: ?>
+                                    <span class="detail-item">
+                                        <i class="bi bi-layers text-primary"></i>
+                                        <?= ucfirst($p->category) ?>
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="bi bi-sort-numeric-down text-primary"></i>
+                                        Level <?= $p->level_order ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots-vertical"></i> Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="<?= site_url('academic/edit_program/' . $p->id) ?>">
+                                                <i class="bi bi-pencil me-2"></i> Edit
+                                            </a>
+                                        </li>
+                                        <?php if ($type == 'program'): ?>
+                                            <li>
+                                                <a class="dropdown-item" href="<?= site_url('academic/program_subjects/' . $p->id) ?>">
+                                                    <i class="bi bi-book-half me-2"></i> Manage Subjects
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="<?= site_url('academic/delete_program/' . $p->id) ?>" onclick="return confirm('Delete this program?');">
+                                                <i class="bi bi-trash me-2"></i> Delete
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
     <?php else: ?>
         <div class="empty-state">
@@ -95,7 +94,7 @@
             </div>
             <h3>No programs yet</h3>
             <p>Create your first academic program or grade level to get started.</p>
-            <a href="<?= site_url('academic/create_program') ?>" class="btn-add-program">
+            <a href="<?= site_url('academic/create_program') ?>" class="btn btn-primary">
                 <i class="bi bi-plus-lg"></i> Add Program
             </a>
         </div>
@@ -104,286 +103,163 @@
 
 <style>
 .programs-page {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    padding: 2rem 1rem;
+    padding: 1.5rem;
 }
 
-/* Header */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
 }
+
 .page-title {
-    font-size: 1.85rem;
-    font-weight: 800;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #0f172a;
     margin: 0;
-    letter-spacing: -0.02em;
 }
+
 .page-subtitle {
     font-size: 0.9rem;
     color: #64748b;
     margin: 0.3rem 0 0;
 }
-.btn-add-program {
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-    color: #fff;
-    border-radius: 12px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
-}
-.btn-add-program:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
-    color: #fff;
-    text-decoration: none;
-}
 
-/* Grid */
-.programs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-}
-
-/* Card */
-.program-card {
+.table-responsive {
     background: #fff;
-    border-radius: 18px;
-    border: 1px solid #e8edf5;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.22s ease;
-    position: relative;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-.program-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.1);
-    border-color: #d1d5db;
-}
-
-/* Accent bar */
-.card-accent {
-    height: 5px;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-}
-.program-card.type-grade_level .card-accent {
-    background: linear-gradient(90deg, #0d2453, #2563eb);
-}
-
-/* Card top row */
-.card-top {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 1.25rem 0;
-}
-
-/* Avatar */
-.card-avatar {
-    width: 48px;
-    height: 48px;
     border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    overflow: visible;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border: none;
+    padding: 1rem;
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.code-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
     background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     color: #fff;
-    font-size: 1rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    letter-spacing: 0.5px;
-}
-.program-card.type-grade_level .card-avatar {
-    background: linear-gradient(135deg, #0d2453 0%, #2563eb 100%);
-}
-
-/* Badges */
-.card-meta-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    flex: 1;
-}
-.type-chip {
-    padding: 0.25rem 0.65rem;
-    border-radius: 20px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-.type-chip.type-program { background: #dbeafe; color: #1d4ed8; }
-.type-chip.type-grade_level { background: #eff6ff; color: #2563eb; }
-.degree-chip {
-    padding: 0.25rem 0.65rem;
-    border-radius: 20px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    background: #f0f9ff;
-    color: #0369a1;
-    text-transform: capitalize;
-}
-
-/* Actions */
-.card-actions {
-    display: flex;
-    gap: 0.4rem;
-    flex-shrink: 0;
-}
-.btn-icon {
-    width: 32px;
-    height: 32px;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-decoration: none;
-}
-.btn-icon:hover { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
-.btn-icon.btn-delete:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
-
-/* Card body */
-.card-body {
-    padding: 1rem 1.25rem 0.75rem;
-    flex: 1;
-}
-.program-code {
-    font-size: 0.72rem;
     font-weight: 700;
-    color: #2563eb;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.25rem;
-}
-.program-card.type-grade_level .program-code { color: #1d4ed8; }
-.program-name {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 0.45rem;
-    line-height: 1.3;
-}
-.program-description {
     font-size: 0.85rem;
-    color: #64748b;
-    margin: 0;
-    line-height: 1.55;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.no-desc { font-style: italic; color: #94a3b8; }
-
-/* Stats row */
-.card-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid #f1f5f9;
-}
-.stat-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.7rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: #475569;
-}
-.stat-icon { font-size: 0.82rem; color: #94a3b8; }
-.subjects-pill { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
-.subjects-pill .stat-icon { color: #2563eb; }
-
-/* Footer */
-.card-footer {
-    padding: 1rem 1.25rem;
-    border-top: 1px solid #f1f5f9;
-}
-.btn-manage-subjects {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.65rem 1rem;
-    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-    color: #fff;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
-    position: relative;
-}
-.btn-manage-subjects:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-    color: #fff;
-    text-decoration: none;
-}
-.subject-count-badge {
-    position: absolute;
-    right: 0.9rem;
-    background: rgba(255,255,255,0.25);
-    color: #fff;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 0.15rem 0.55rem;
-    border-radius: 20px;
-    min-width: 22px;
+    letter-spacing: 0.05em;
+    min-width: 60px;
     text-align: center;
 }
 
-/* Empty state */
+.program-name-cell {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.detail-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #475569;
+    margin-right: 1rem;
+}
+
+.detail-item i {
+    font-size: 0.9rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+}
+
 .empty-state {
     text-align: center;
-    padding: 5rem 2rem;
+    padding: 4rem 2rem;
     background: #f8fafc;
-    border-radius: 20px;
+    border-radius: 12px;
     border: 2px dashed #e2e8f0;
 }
+
 .empty-icon {
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     background: #dbeafe;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
 }
-.empty-icon i { font-size: 2.5rem; color: #2563eb; }
-.empty-state h3 { font-size: 1.4rem; color: #1e293b; margin: 0 0 0.5rem; font-weight: 700; }
-.empty-state p { margin: 0 0 1.75rem; color: #64748b; }
+
+.empty-icon i {
+    font-size: 2rem;
+    color: #2563eb;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    color: #1e293b;
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+}
+
+.empty-state p {
+    margin: 0 0 1.5rem;
+    color: #64748b;
+}
 
 @media (max-width: 768px) {
-    .programs-grid { grid-template-columns: 1fr; }
-    .page-header { flex-direction: column; align-items: stretch; }
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .table thead th,
+    .table tbody td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
 }
 </style>

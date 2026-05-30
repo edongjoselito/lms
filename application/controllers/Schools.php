@@ -91,7 +91,7 @@ class Schools extends MY_Controller
             }
 
             $d = array(
-                'name'             => $this->input->post('name', TRUE),
+                'name'             => strtoupper($this->input->post('name', TRUE)),
                 'school_id_number' => $school_id_number,
                 'type'             => $this->input->post('type', TRUE),
                 'address'          => $this->input->post('address', TRUE),
@@ -204,9 +204,23 @@ class Schools extends MY_Controller
         $data['school'] = $this->School_model->get($id);
         if (!$data['school']) show_404();
 
+        // Get school admin user
+        $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
+        if ($school_admin_role) {
+            $data['school_admin'] = $this->db->where(array(
+                'school_id' => $id,
+                'role_id' => $school_admin_role->id
+            ))->get('users')->row();
+        } else {
+            $data['school_admin'] = null;
+        }
+
+        // Check if there's a recently reset password in session
+        $data['reset_password'] = $this->session->flashdata('reset_password_' . $id);
+
         if ($this->input->method() === 'post') {
             $d = array(
-                'name'             => $this->input->post('name', TRUE),
+                'name'             => strtoupper($this->input->post('name', TRUE)),
                 'school_id_number' => $this->input->post('school_id_number', TRUE),
                 'type'             => $this->input->post('type', TRUE),
                 'address'          => $this->input->post('address', TRUE),
@@ -227,6 +241,56 @@ class Schools extends MY_Controller
 
         $data['title'] = 'Edit School';
         $this->render('schools/form', $data);
+    }
+
+    public function reset_admin_password($school_id)
+    {
+        $this->require_role(array('super_admin'));
+
+        // Get school admin user
+        $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
+        if (!$school_admin_role) {
+            $this->session->set_flashdata('error', 'School Admin role not found.');
+            redirect('schools');
+        }
+
+        $school_admin = $this->db->where(array(
+            'school_id' => $school_id,
+            'role_id' => $school_admin_role->id
+        ))->get('users')->row();
+
+        if (!$school_admin) {
+            $this->session->set_flashdata('error', 'School Admin account not found.');
+            redirect('schools');
+        }
+
+        // Generate new random password
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        $new_password = '';
+        for ($i = 0; $i < 12; $i++) {
+            $new_password .= $characters[rand(0, strlen($characters) - 1)];
+        }
+
+        // Update password
+        $this->db->where('id', $school_admin->id)->update('users', array(
+            'password' => password_hash($new_password, PASSWORD_DEFAULT)
+        ));
+
+        // Get school name
+        $school = $this->School_model->get($school_id);
+
+        // Set credentials for display
+        $admin_credentials = array(
+            'school_name' => $school ? $school->name : 'Unknown',
+            'email' => $school_admin->email,
+            'password' => $new_password
+        );
+
+        // Store password in session for the edit form
+        $this->session->set_flashdata('reset_password_' . $school_id, $new_password);
+
+        $this->session->set_flashdata('admin_credentials', $admin_credentials);
+        redirect('schools/admin_credentials');
     }
 
     public function select()

@@ -27,22 +27,22 @@
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
                             <label class="form-label">First Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="first_name" placeholder="Enter first name"
+                            <input type="text" class="form-control" name="first_name"
                                 value="<?= ($user) ? htmlspecialchars($user->first_name) : '' ?>" required>
                         </div>
                         <div class="col-lg-3 col-md-6">
-                            <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="last_name" placeholder="Enter last name"
-                                value="<?= ($user) ? htmlspecialchars($user->last_name) : '' ?>" required>
-                        </div>
-                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Middle Name <span class="text-muted">(Optional)</span></label>
-                            <input type="text" class="form-control" name="middle_name" placeholder="Middle name"
+                            <input type="text" class="form-control" name="middle_name"
                                 value="<?= ($user && isset($user->middle_name)) ? htmlspecialchars($user->middle_name) : '' ?>">
                         </div>
                         <div class="col-lg-3 col-md-6">
+                            <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="last_name"
+                                value="<?= ($user) ? htmlspecialchars($user->last_name) : '' ?>" required>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
                             <label class="form-label">Suffix <span class="text-muted">(Optional)</span></label>
-                            <input type="text" class="form-control" name="suffix" placeholder="Jr., Sr., III"
+                            <input type="text" class="form-control" name="suffix"
                                 value="<?= ($user && isset($user->suffix)) ? htmlspecialchars($user->suffix) : '' ?>">
                         </div>
                     </div>
@@ -54,20 +54,28 @@
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
                             <label class="form-label">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" name="email" placeholder="user@example.com"
+                            <input type="email" class="form-control" name="email"
                                 value="<?= ($user) ? htmlspecialchars($user->email) : '' ?>" required>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label class="form-label">Phone Number</label>
-                            <input type="text" class="form-control" name="phone" placeholder="+63 912 345 6789"
+                            <input type="text" class="form-control" name="phone"
                                 value="<?= ($user && isset($user->phone)) ? htmlspecialchars($user->phone) : '' ?>">
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label class="form-label">
                                 Password <?= ($user) ? '<span class="text-muted">(Optional)</span>' : '<span class="text-danger">*</span>' ?>
                             </label>
-                            <input type="password" class="form-control" name="password" placeholder="<?= ($user) ? 'New password' : 'Create password' ?>"
-                                <?= ($user) ? '' : 'required' ?> minlength="6">
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" id="userPassword"
+                                    <?= ($user) ? '' : 'required' ?> minlength="6">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleUserPasswordVisibility()" id="toggleUserPasswordBtn">
+                                    <i class="bi bi-eye" id="toggleUserPasswordIcon"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="generateUserPassword()">
+                                    <i class="bi bi-shuffle"></i> Generate
+                                </button>
+                            </div>
                         </div>
                         <div class="col-lg-3 col-md-6">
                             <label class="form-label">Role <span class="text-danger">*</span></label>
@@ -238,4 +246,46 @@
         font-size: 0.8rem;
         color: #94a3b8;
     }
+
+    .input-group .btn-outline-secondary {
+        border-left: none;
+    }
+
+    .input-group .btn-outline-secondary:first-of-type {
+        border-radius: 0;
+    }
+
+    .input-group .btn-outline-secondary:last-of-type {
+        border-radius: 0 8px 8px 0;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 0 0 8px;
+    }
 </style>
+
+<script>
+function generateUserPassword() {
+    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    document.getElementById('userPassword').value = password;
+}
+
+function toggleUserPasswordVisibility() {
+    const passwordInput = document.getElementById('userPassword');
+    const toggleIcon = document.getElementById('toggleUserPasswordIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+}
+</script>

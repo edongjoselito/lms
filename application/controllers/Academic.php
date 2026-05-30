@@ -204,8 +204,14 @@ class Academic extends MY_Controller {
 
     public function create_program()
     {
+        // Get school type
+        $school = $this->db->where('id', $this->school_id)->get('schools')->row();
+        $school_type = $school ? $school->type : null;
+        $data['school_type'] = $school_type;
+
         if ($this->input->method() === 'post') {
-            $type = $this->input->post('type', TRUE);
+            // Auto-detect type based on school type
+            $type = ($school_type === 'deped') ? 'grade_level' : 'program';
 
             $d = array(
                 'name'              => $this->input->post('name', TRUE),
@@ -369,6 +375,15 @@ class Academic extends MY_Controller {
                 'description' => $this->input->post('description', TRUE),
             );
             $this->Academic_model->update_subject($subject_id, $d);
+            
+            // Handle teacher assignment
+            $teacher_id = $this->input->post('teacher_id');
+            if ($teacher_id) {
+                $this->Academic_model->set_subject_teachers($subject_id, array($teacher_id));
+            } else {
+                $this->Academic_model->set_subject_teachers($subject_id, array());
+            }
+            
             $this->session->set_flashdata('success', 'Subject updated successfully.');
             redirect('academic/program_subjects/' . $program_id);
         }
@@ -376,6 +391,8 @@ class Academic extends MY_Controller {
         $data['title']   = 'Edit Subject';
         $data['program'] = $this->Academic_model->get_program($program_id);
         $data['subject'] = $subject;
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
+        $data['assigned_teachers'] = $this->Academic_model->get_subject_teachers($subject_id);
         $this->render('academic/edit_program_subject', $data);
     }
 

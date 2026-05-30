@@ -182,11 +182,11 @@
                 <form action="<?= site_url('academic/create_program_subject/' . $program->id) ?>" method="post" class="ps-form">
                     <div class="ps-field">
                         <label class="ps-label">Course Code <span class="ps-req">*</span></label>
-                        <input type="text" class="ps-input" name="code" required placeholder="e.g. CS101" autocomplete="off">
+                        <input type="text" class="ps-input" name="code" required autocomplete="off">
                     </div>
                     <div class="ps-field">
-                        <label class="ps-label">Description</label>
-                        <textarea class="ps-input ps-textarea" name="description" rows="3" placeholder="Enter subject description..."></textarea>
+                        <label class="ps-label">Description <span class="ps-req">*</span></label>
+                        <textarea class="ps-input ps-textarea" name="description" rows="3" required></textarea>
                     </div>
                     <button type="submit" class="ps-submit-btn">
                         <i class="bi bi-plus-lg"></i> Create & Add Subject

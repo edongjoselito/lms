@@ -2,7 +2,7 @@
 <div class="dashboard-hero">
     <div class="hero-content">
         <h1 class="hero-title"><?= ($school) ? 'Edit School' : 'Add New School' ?></h1>
-        <p class="hero-subtitle"><?= ($school) ? 'Update school information and settings' : 'Register a new educational institution' ?></p>
+        <p class="hero-subtitle"><?= ($school) ? 'Update school information and settings' : '' ?></p>
     </div>
 </div>
 
@@ -25,7 +25,7 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">School Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" name="name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required>
+                            <input type="text" class="form-control form-control-lg" name="name" id="school_name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required oninput="this.value = this.value.toUpperCase()">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">School ID Number <span class="text-danger">*</span></label>
@@ -90,6 +90,54 @@
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="statusSwitch" <?= ($school->status) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="statusSwitch">School is active and can be accessed</label>
                         </div>
+                    </div>
+
+                    <!-- School Admin Account -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-person-lock me-2"></i>School Admin Account</h6>
+                        <?php if (isset($school_admin) && $school_admin): ?>
+                            <div class="admin-info-box">
+                                <div class="admin-info-item">
+                                    <label class="admin-info-label">Email / Username</label>
+                                    <div class="admin-info-value-with-copy">
+                                        <span class="admin-info-value"><?= htmlspecialchars($school_admin->email) ?></span>
+                                        <button type="button" class="btn-copy-small" onclick="copyAdminEmail('<?= htmlspecialchars($school_admin->email) ?>')">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="admin-info-item">
+                                    <label class="admin-info-label">Password</label>
+                                    <div class="admin-info-value-with-copy">
+                                        <span class="admin-info-value password-display" id="adminPasswordDisplay">
+                                            <?php if (isset($reset_password) && $reset_password): ?>
+                                                <span id="passwordText"><?= htmlspecialchars($reset_password) ?></span>
+                                            <?php else: ?>
+                                                <span id="passwordText">••••••••••••</span>
+                                            <?php endif; ?>
+                                        </span>
+                                        <button type="button" class="btn-copy-small" onclick="togglePasswordVisibility()" id="togglePasswordBtn">
+                                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                                        </button>
+                                        <?php if (isset($reset_password) && $reset_password): ?>
+                                            <button type="button" class="btn-copy-small" onclick="copyAdminPassword('<?= htmlspecialchars($reset_password) ?>')">
+                                                <i class="bi bi-copy"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="admin-actions">
+                                    <a href="<?= site_url('schools/reset_admin_password/' . $school->id) ?>" class="btn btn-warning-custom">
+                                        <i class="bi bi-key me-2"></i>Reset Password
+                                    </a>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No School Admin account found for this school.
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
@@ -239,6 +287,104 @@
     .input-group .form-control {
         border-radius: 8px 0 0 8px;
     }
+
+    .admin-info-box {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-info-item {
+        margin-bottom: 1.25rem;
+    }
+
+    .admin-info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .admin-info-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .admin-info-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        word-break: break-all;
+    }
+
+    .password-masked {
+        font-family: monospace;
+        letter-spacing: 2px;
+    }
+
+    .admin-actions {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn-warning-custom {
+        background: #f59e0b;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s;
+    }
+
+    .btn-warning-custom:hover {
+        background: #d97706;
+        color: #ffffff;
+    }
+
+    .alert-info {
+        background: #e0f2fe;
+        border: 1px solid #bae6fd;
+        border-radius: 10px;
+        padding: 1rem;
+        color: #0369a1;
+        font-size: 0.9rem;
+    }
+
+    .admin-info-value-with-copy {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn-copy-small {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .btn-copy-small:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+        border-color: #cbd5e1;
+    }
 </style>
 
 <script>
@@ -247,5 +393,58 @@ function generateSchoolId() {
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     const schoolId = prefix + '-' + randomNum;
     document.getElementById('school_id_number').value = schoolId;
+}
+
+function copyAdminEmail(email) {
+    navigator.clipboard.writeText(email).then(function() {
+        const btn = event.target.closest('.btn-copy-small');
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i>';
+        btn.style.background = '#10b981';
+        btn.style.color = '#ffffff';
+        btn.style.borderColor = '#10b981';
+        
+        setTimeout(function() {
+            btn.innerHTML = originalIcon;
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 2000);
+    });
+}
+
+function togglePasswordVisibility() {
+    const passwordText = document.getElementById('passwordText');
+    const toggleIcon = document.getElementById('togglePasswordIcon');
+    
+    if (passwordText.textContent === '••••••••••••') {
+        // Password is masked, show it if available
+        passwordText.textContent = 'Password not available (reset required)';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        // Password is shown, mask it
+        passwordText.textContent = '••••••••••••';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+}
+
+function copyAdminPassword(password) {
+    navigator.clipboard.writeText(password).then(function() {
+        const btn = event.target.closest('.btn-copy-small');
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i>';
+        btn.style.background = '#10b981';
+        btn.style.color = '#ffffff';
+        btn.style.borderColor = '#10b981';
+        
+        setTimeout(function() {
+            btn.innerHTML = originalIcon;
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 2000);
+    });
 }
 </script>
