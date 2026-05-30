@@ -72,6 +72,14 @@ if ($rs === 'student') {
 
         <?php if (in_array($nav_role, array('super_admin', 'school_admin'))): ?>
             <div class="nav-section-title">Administration</div>
+            <a href="<?= site_url('studentprofile') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'studentprofile') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">badge</span>
+                <span>Student Profile</span>
+            </a>
+            <a href="<?= site_url('enrollment') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'enrollment') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">how_to_reg</span>
+                <span>Enrollment</span>
+            </a>
             <a href="<?= site_url('users') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'users') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">group</span>
                 <span>Users</span>
@@ -119,6 +127,10 @@ if ($rs === 'student') {
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">school</span>
                 <span>Programs</span>
+            </a>
+            <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">groups</span>
+                <span>Sections</span>
             </a>
         <?php endif; ?>
 

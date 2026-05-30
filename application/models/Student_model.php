@@ -45,12 +45,32 @@ class Student_model extends CI_Model {
             return array();
         }
 
+        // Get student's grade level from enrollments table
+        $enrollment = $this->db->where('student_id', $student->user_id)
+            ->where('status', 'enrolled')
+            ->order_by('enrollment_date', 'DESC')
+            ->limit(1)
+            ->get('enrollments')
+            ->row();
+
+        $grade_level_id = null;
+        if ($enrollment && $enrollment->grade_level_id) {
+            $grade_level_id = $enrollment->grade_level_id;
+        } elseif ($student->grade_level_id) {
+            $grade_level_id = $student->grade_level_id;
+        }
+
         $this->db->select('subjects.*');
         $this->db->from('subjects');
         $this->db->group_start();
         $this->db->where('school_id', $student->school_id);
         $this->db->or_where('school_id IS NULL', null, false);
         $this->db->group_end();
+
+        // Filter by student's grade level if available
+        if ($grade_level_id) {
+            $this->db->where('grade_level_id', $grade_level_id);
+        }
 
         if (!empty($filters['system_type'])) {
             $this->db->where('system_type', $filters['system_type']);

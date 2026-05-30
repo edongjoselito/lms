@@ -124,6 +124,12 @@ class User_model extends CI_Model
         return $this->db->where('id', $id)->get('roles')->row();
     }
 
+    public function get_role_id_by_slug($slug)
+    {
+        $role = $this->db->where('slug', $slug)->get('roles')->row();
+        return $role ? $role->id : null;
+    }
+
     public function count_all($filters = array())
     {
         $this->db->join('roles', 'roles.id = users.role_id');

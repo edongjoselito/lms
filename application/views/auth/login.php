@@ -1029,10 +1029,10 @@
 
                     <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
                         <div class="field-group">
-                            <label class="field-label" for="email">Email Address</label>
+                            <label class="field-label" for="email">Username</label>
                             <div class="input-wrap">
-                                <span class="input-icon"><i class="bi bi-envelope-fill"></i></span>
-                                <input type="email" class="form-control" id="email" name="email" autocomplete="email" required autofocus>
+                                <span class="input-icon"><i class="bi bi-person-fill"></i></span>
+                                <input type="text" class="form-control" id="email" name="email" autocomplete="username" required autofocus>
                             </div>
                         </div>
 

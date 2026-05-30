@@ -353,8 +353,7 @@ class Academic_model extends CI_Model
         $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
         $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = sections.program_id', 'left');
-        $this->db->join('teachers', 'teachers.id = sections.adviser_id', 'left');
-        $this->db->join('users u', 'u.id = teachers.user_id', 'left');
+        $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
 
         if (!empty($filters['school_year_id'])) {
             $this->db->where('sections.school_year_id', $filters['school_year_id']);
@@ -373,9 +372,10 @@ class Academic_model extends CI_Model
 
     public function get_section($id)
     {
-        return $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code')
+        return $this->db->select('sections.*, grade_levels.name as grade_level_name, programs.code as program_code, CONCAT(u.first_name, " ", u.last_name) as adviser_name')
             ->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left')
             ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->join('users u', 'u.id = sections.adviser_id', 'left')
             ->where('sections.id', $id)
             ->get('sections')
             ->row();
@@ -827,13 +827,15 @@ class Academic_model extends CI_Model
     }
 
     // ---- Teachers ----
-    public function get_teachers()
+    public function get_teachers($school_id = null)
     {
-        return $this->db->select('teachers.*, users.first_name, users.last_name, users.email')
+        $this->db->select('teachers.*, users.first_name, users.last_name, users.email')
             ->join('users', 'users.id = teachers.user_id')
-            ->where('users.status', 1)
-            ->get('teachers')
-            ->result();
+            ->where('users.status', 1);
+        if ($school_id) {
+            $this->db->where('users.school_id', $school_id);
+        }
+        return $this->db->get('teachers')->result();
     }
 
     public function get_teacher_by_user($user_id)
@@ -870,7 +872,14 @@ class Academic_model extends CI_Model
         if ($school_id) {
             $q->where('users.school_id', $school_id);
         }
-        return $q->order_by('users.last_name, users.first_name')->get('users')->result();
+        $result = $q->order_by('users.last_name, users.first_name')->get('users')->result();
+        
+        // Debug: log if no teachers found
+        if (empty($result)) {
+            error_log("No teachers found for school_id: " . ($school_id ?: 'NULL'));
+        }
+        
+        return $result;
     }
 
     public function get_subject_teacher_ids($subject_id)

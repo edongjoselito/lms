@@ -500,7 +500,7 @@ class Academic extends MY_Controller {
         $data['sections'] = $this->Academic_model->get_sections($filters);
         $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs();
-        $data['teachers'] = $this->Academic_model->get_teachers();
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $this->render('academic/sections', $data);
     }
 
@@ -530,7 +530,54 @@ class Academic extends MY_Controller {
         $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs();
         $data['strands'] = $this->Academic_model->get_strands();
-        $data['teachers'] = $this->Academic_model->get_teachers();
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
+        $this->render('academic/section_form', $data);
+    }
+
+    public function create_section_for_grade($grade_level_id)
+    {
+        $sy = $this->Academic_model->get_active_school_year($this->school_id);
+        $grade_level = $this->Academic_model->get_program($grade_level_id);
+        
+        if (!$grade_level || (isset($grade_level->type) && $grade_level->type !== 'grade_level')) {
+            show_404();
+        }
+
+        if ($this->input->method() === 'post') {
+            $d = array(
+                'school_year_id' => $sy->id,
+                'school_id'      => $this->school_id,
+                'name'           => $this->input->post('name', TRUE),
+                'system_type'    => $this->input->post('system_type', TRUE),
+                'grade_level_id' => $this->input->post('grade_level_id') ?: NULL,
+                'strand_id'      => $this->input->post('strand_id') ?: NULL,
+                'program_id'     => $this->input->post('program_id') ?: NULL,
+                'year_level'     => $this->input->post('year_level') ?: NULL,
+                'adviser_id'     => $this->input->post('adviser_id') ?: NULL,
+                'capacity'       => $this->input->post('capacity') ?: 40,
+            );
+            $this->Academic_model->create_section($d);
+            $this->session->set_flashdata('success', 'Section created for ' . $grade_level->name . '.');
+            redirect('academic/programs');
+        }
+
+        $data['title'] = 'Add Section for ' . $grade_level->name;
+        $data['section'] = (object) array(
+            'id' => null,
+            'name' => '',
+            'system_type' => isset($grade_level->category) ? $grade_level->category : 'deped',
+            'grade_level_id' => $grade_level_id,
+            'strand_id' => null,
+            'program_id' => null,
+            'year_level' => null,
+            'adviser_id' => null,
+            'capacity' => 40
+        );
+        $data['school_year'] = $sy;
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
+        $data['programs'] = $this->Academic_model->get_programs();
+        $data['strands'] = $this->Academic_model->get_strands();
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $this->render('academic/section_form', $data);
     }
 
@@ -559,7 +606,22 @@ class Academic extends MY_Controller {
         $data['grade_levels'] = $this->Academic_model->get_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs();
         $data['strands'] = $this->Academic_model->get_strands();
-        $data['teachers'] = $this->Academic_model->get_teachers();
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $this->render('academic/section_form', $data);
+    }
+
+    public function migrate_adviser_to_user()
+    {
+        // Migration: Change sections.adviser_id to reference users.id instead of teachers.id
+        // First, try to drop the existing foreign key (ignore error if it doesn't exist)
+        try {
+            $this->db->query("ALTER TABLE `sections` DROP FOREIGN KEY `fk_sec_adviser`");
+        } catch (Exception $e) {
+            // Ignore if constraint doesn't exist
+        }
+        
+        // Add new foreign key to users table
+        $this->db->query("ALTER TABLE `sections` ADD CONSTRAINT `fk_sec_adviser_user` FOREIGN KEY (`adviser_id`) REFERENCES `users`(`id`) ON DELETE SET NULL");
+        echo "Migration completed: sections.adviser_id now references users.id";
     }
 }

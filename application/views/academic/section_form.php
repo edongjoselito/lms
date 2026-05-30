@@ -1,5 +1,5 @@
-<div class="row justify-content-center">
-    <div class="col-lg-7">
+<div class="row">
+    <div class="col-12">
         <div class="mb-3">
             <a href="<?= site_url('academic/sections') ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Sections
@@ -10,11 +10,11 @@
                 <i class="bi bi-diagram-3-fill me-2" style="color:#6366f1;"></i>
                 <?= (isset($section) && $section) ? 'Edit Section' : 'Add Section' ?>
             </h5>
-            <form action="<?= (isset($section) && $section) ? site_url('academic/edit_section/' . $section->id) : site_url('academic/create_section') ?>" method="post">
+            <form action="<?= (isset($section) && $section && $section->id) ? site_url('academic/edit_section/' . $section->id) : site_url('academic/create_section') ?>" method="post">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Section Name</label>
-                        <input type="text" class="form-control" name="name" value="<?= (isset($section) && $section) ? htmlspecialchars($section->name) : '' ?>" required placeholder="e.g. Einstein, Section A">
+                        <input type="text" class="form-control" name="name" value="<?= (isset($section) && $section) ? htmlspecialchars($section->name) : '' ?>" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">System Type</label>
@@ -60,7 +60,7 @@
                         <select class="form-select" name="adviser_id">
                             <option value="">-- None --</option>
                             <?php foreach ($teachers as $t): ?>
-                                <option value="<?= $t->id ?>" <?= (isset($section) && $section && $section->adviser_id == $t->id) ? 'selected' : '' ?>><?= $t->first_name . ' ' . $t->last_name ?></option>
+                                <option value="<?= $t->id ?>" <?= (isset($section) && $section && $section->adviser_id == $t->id) ? 'selected' : '' ?>><?= htmlspecialchars($t->first_name . ' ' . $t->last_name) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

@@ -145,4 +145,60 @@ class Enrollment_model extends CI_Model {
                         ->get('enrollments')
                         ->result();
     }
+
+    // Methods for studentprofile-based enrollment system
+    public function get_all($school_id = null)
+    {
+        $this->db->select('enrollments.*, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, sp.email as profile_email, u.email as user_email, u.status as user_status, sections.name as section_name, enrollments.grade_level_id, CONCAT(school_years.year_start, "-", school_years.year_end) as school_year_name');
+        $this->db->from('enrollments');
+        $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
+        $this->db->join('users u', 'u.id = enrollments.student_id', 'left');
+        $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
+        $this->db->join('school_years', 'school_years.id = enrollments.school_year_id', 'left');
+        if ($school_id) {
+            $this->db->where('enrollments.school_id', $school_id);
+        }
+        return $this->db->order_by('sp.last_name, sp.first_name')->get()->result();
+    }
+
+    public function get_stats($school_id = null)
+    {
+        $stats = array(
+            'total_enrolled' => 0,
+            'total_sections' => 0,
+            'total_grade_levels' => 0
+        );
+
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        $stats['total_enrolled'] = $this->db->where('status', 'enrolled')->count_all_results('enrollments');
+
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        $stats['total_sections'] = $this->db->count_all_results('sections');
+
+        // Count distinct grade levels from enrollments
+        $this->db->select('COUNT(DISTINCT grade_level_id) as count');
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        $result = $this->db->where('status', 'enrolled')->get('enrollments')->row();
+        $stats['total_grade_levels'] = $result ? $result->count : 0;
+
+        return $stats;
+    }
+
+    public function get_grade_level_counts($school_id = null)
+    {
+        $this->db->select('grade_level_id, COUNT(*) as count');
+        $this->db->where('status', 'enrolled');
+        if ($school_id) {
+            $this->db->where('school_id', $school_id);
+        }
+        $this->db->group_by('grade_level_id');
+        $this->db->order_by('grade_level_id', 'ASC');
+        return $this->db->get('enrollments')->result();
+    }
 }

@@ -115,4 +115,22 @@ class Migrate extends CI_Controller {
             echo "Migration failed: " . $e->getMessage();
         }
     }
+
+    public function add_email_to_studentprofile()
+    {
+        try {
+            // Check if email column exists in studentprofile table
+            $check = $this->db->query("SHOW COLUMNS FROM studentprofile LIKE 'email'");
+
+            if ($check->num_rows() == 0) {
+                // Add email column if it doesn't exist
+                $this->db->query("ALTER TABLE studentprofile ADD COLUMN email varchar(255) DEFAULT NULL AFTER birth_date");
+                echo "Email column added to studentprofile table successfully.";
+            } else {
+                echo "Email column already exists in studentprofile table.";
+            }
+        } catch (Exception $e) {
+            echo "Migration failed: " . $e->getMessage();
+        }
+    }
 }

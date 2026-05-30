@@ -72,6 +72,12 @@
                                                     <i class="bi bi-book-half me-2"></i> Manage Subjects
                                                 </a>
                                             </li>
+                                        <?php else: ?>
+                                            <li>
+                                                <a class="dropdown-item" href="<?= site_url('academic/create_section_for_grade/' . $p->id) ?>">
+                                                    <i class="bi bi-people me-2"></i> Add Section
+                                                </a>
+                                            </li>
                                         <?php endif; ?>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>

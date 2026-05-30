@@ -838,14 +838,6 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                         </svg>
                         Course Structure
                     </h5>
-                    <?php if (!empty($can_manage_sections)): ?>
-                        <button class="cc-btn cc-btn--ghost cc-btn--sm" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                            </svg>
-                            Section
-                        </button>
-                    <?php endif; ?>
                 </div>
 
                 <!-- Module List -->
@@ -862,36 +854,6 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                     <?php endif; ?>
                 </div>
 
-                <?php if (!empty($can_manage_sections) && !empty($subject_sections)): ?>
-                    <div class="cc-panel-divider"></div>
-                    <div class="cc-sections-list">
-                        <h6 class="cc-subtitle">Sections</h6>
-                        <?php foreach ($subject_sections as $section_access): ?>
-                            <?php $has_key = trim((string) ($section_access->enrollment_key ?? '')) !== ''; ?>
-                            <div class="cc-section-row"
-                                id="sectionItem<?= $section_access->id ?>"
-                                data-id="<?= (int) $section_access->id ?>"
-                                data-section-name="<?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?>"
-                                data-enrollment-key="<?= htmlspecialchars((string) ($section_access->enrollment_key ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-                                <div class="cc-section-info">
-                                    <span class="cc-section-name"><?= htmlspecialchars($section_access->section_name, ENT_QUOTES, 'UTF-8') ?></span>
-                                    <span class="cc-section-badge <?= $has_key ? 'locked' : 'open' ?>"><?= $has_key ? 'Locked' : 'Open' ?></span>
-                                </div>
-                                <div class="cc-section-actions">
-                                    <a class="cc-action-btn" href="<?= site_url('course/section_students/' . $section_access->id) ?>" title="View Students">
-                                        <i class="bi bi-people"></i>
-                                    </a>
-                                    <a class="cc-action-btn" href="<?= site_url('course/section_progress/' . $section_access->id) ?>" title="View Lesson Progress">
-                                        <i class="bi bi-graph-up"></i>
-                                    </a>
-                                    <button class="cc-action-btn" onclick="showEditSectionModal(<?= $section_access->id ?>)" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -959,73 +921,6 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Upload Cover Photo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php if (!empty($can_manage_sections)): ?>
-    <!-- Add Section Modal -->
-    <div class="modal fade" id="addSectionModal" tabindex="-1">
-        <div class="modal-dialog">
-            <form action="<?= site_url('course/add_subject_section/' . $subject->id) ?>" method="post" class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Section</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Section Name</label>
-                        <input type="text" class="form-control" name="section_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Enrollment Key</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" name="enrollment_key" maxlength="50" id="enrollmentKeyInput">
-                            <button class="btn btn-outline-secondary" type="button" onclick="toggleEnrollmentKeyVisibility()">
-                                <i class="bi bi-eye" id="enrollmentKeyIcon"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">Leave blank for open access (no enrollment key required)</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Add Section</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit Section Modal -->
-    <div class="modal fade" id="editSectionModal" tabindex="-1">
-        <div class="modal-dialog">
-            <form action="<?= site_url('course/edit_subject_section/' . $subject->id) ?>" method="post" class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Section</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="class_program_id" id="editClassProgramId">
-                    <div class="mb-3">
-                        <label class="form-label">Section Name</label>
-                        <input type="text" class="form-control" name="section_name" required id="editSectionName">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Enrollment Key</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" name="enrollment_key" maxlength="50" id="editEnrollmentKeyInput">
-                            <button class="btn btn-outline-secondary" type="button" onclick="toggleEditEnrollmentKeyVisibility()">
-                                <i class="bi bi-eye" id="editEnrollmentKeyIcon"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">Leave blank for open access (no enrollment key required)</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
