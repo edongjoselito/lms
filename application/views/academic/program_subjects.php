@@ -189,13 +189,22 @@
                         <textarea class="ps-input ps-textarea" name="description" rows="3" required></textarea>
                     </div>
                     <div class="ps-field">
+                        <label class="ps-label">Year Level</label>
+                        <select class="ps-input" name="year_level">
+                            <option value="">Select Year Level</option>
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="<?= $i ?>" <?= (isset($program->year_level) && $program->year_level == $i) ? 'selected' : '' ?>><?= 'Grade ' . str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="ps-field">
                         <label class="ps-label">Assigned Teacher</label>
                         <select class="ps-input select2-teacher-add" name="teacher_id">
                             <option value="">Select a teacher...</option>
                             <?php if (!empty($teachers)): ?>
                                 <?php foreach ($teachers as $t): ?>
                                     <option value="<?= $t->id ?>">
-                                        <?= htmlspecialchars(trim($t->first_name . ' ' . $t->last_name)) ?>
+                                        <?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?>
                                     </option>
                                 <?php endforeach; ?>
                             <?php else: ?>

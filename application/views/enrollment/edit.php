@@ -28,18 +28,25 @@
                             <option value="">Select Grade Level</option>
                             <?php if (empty($grade_levels)): ?>
                                 <?php for ($i = 1; $i <= 12; $i++): ?>
-                                    <option value="<?= $i ?>" <?= $enrollment->grade_level_id == $i ? 'selected' : '' ?>><?= 'Grade ' . str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
+                                    <option value="<?= $i ?>" <?= (isset($enrollment->year_level) && $enrollment->year_level == $i) ? 'selected' : '' ?>><?= 'Grade ' . str_pad($i, 2, '0', STR_PAD_LEFT) ?></option>
                                 <?php endfor; ?>
                             <?php else: ?>
                                 <?php foreach ($grade_levels as $gl): ?>
                                     <?php
-                                    $name = htmlspecialchars($gl->name);
-                                    // Format to Grade 01-12 if it's a number
-                                    if (is_numeric($name) && $name >= 1 && $name <= 12) {
-                                        $name = 'Grade ' . str_pad($name, 2, '0', STR_PAD_LEFT);
+                                    // Use year_level if available, otherwise use name
+                                    if (isset($gl->year_level) && $gl->year_level) {
+                                        $name = 'Grade ' . str_pad($gl->year_level, 2, '0', STR_PAD_LEFT);
+                                        $value = $gl->year_level;
+                                    } else {
+                                        $name = htmlspecialchars($gl->name);
+                                        $value = $gl->id;
+                                        // Format to Grade 01-12 if it's a number
+                                        if (is_numeric($name) && $name >= 1 && $name <= 12) {
+                                            $name = 'Grade ' . str_pad($name, 2, '0', STR_PAD_LEFT);
+                                        }
                                     }
                                     ?>
-                                    <option value="<?= $gl->id ?>" <?= $enrollment->grade_level_id == $gl->id ? 'selected' : '' ?>><?= $name ?></option>
+                                    <option value="<?= $value ?>" <?= (isset($enrollment->year_level) && $enrollment->year_level == $value) ? 'selected' : '' ?>><?= $name ?></option>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
@@ -63,7 +70,16 @@
                         <select class="form-select" name="adviser_id">
                             <option value="">Select Adviser</option>
                             <?php foreach ($advisers as $a): ?>
-                                <option value="<?= $a->id ?>"><?= htmlspecialchars($a->last_name . ', ' . $a->first_name) ?></option>
+                                <?php 
+                                $is_selected = false;
+                                // Match by staff_id if available (when using staff table), otherwise by user_id
+                                if (isset($current_section->adviser_staff_id) && isset($a->staff_id) && $current_section->adviser_staff_id == $a->staff_id) {
+                                    $is_selected = true;
+                                } elseif (isset($current_section->adviser_user_id) && $current_section->adviser_user_id == $a->id) {
+                                    $is_selected = true;
+                                }
+                                ?>
+                                <option value="<?= $a->id ?>" <?= $is_selected ? 'selected' : '' ?>><?= htmlspecialchars($a->last_name . ', ' . $a->first_name) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

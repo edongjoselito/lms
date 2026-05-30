@@ -82,19 +82,11 @@ class Subjects extends MY_Controller
         if ($this->input->method() === 'post') {
             $program_id = $this->input->post('program_id');
             $grade_level_id = $this->input->post('grade_level_id');
-            $semester_type = $this->input->post('semester_type', TRUE);
-
-            // Only require semester if program is selected (CHED)
-            if (!$program_id) {
-                $semester_type = null;
-            }
-
             $d = array(
                 'code'            => $this->input->post('code', TRUE),
                 'description'     => $this->input->post('description'),
                 'program_id'      => $program_id,
                 'grade_level_id'  => $grade_level_id,
-                'semester_type'   => $semester_type,
             );
             $this->Academic_model->update_subject($id, $d);
 

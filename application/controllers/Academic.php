@@ -149,7 +149,6 @@ class Academic extends MY_Controller {
                 'code'            => $this->input->post('code', TRUE),
                 'description'     => $this->input->post('description', TRUE),
                 'grade_level_id'  => $grade_level_id,
-                'semester_type'   => $this->input->post('semester_type', TRUE),
                 'units'           => $this->input->post('units'),
                 'lec_hours'       => $this->input->post('lec_hours'),
                 'lab_hours'       => $this->input->post('lab_hours'),
@@ -169,7 +168,6 @@ class Academic extends MY_Controller {
 
         if ($this->input->method() === 'post') {
             $d = array(
-                'semester_type'   => $this->input->post('semester_type', TRUE),
                 'units'           => $this->input->post('units'),
                 'lec_hours'       => $this->input->post('lec_hours'),
                 'lab_hours'       => $this->input->post('lab_hours'),
@@ -347,15 +345,49 @@ class Academic extends MY_Controller {
             $semester_type = $this->input->post('semester_type', TRUE);
             $year_level = $this->input->post('year_level');
             $units = $this->input->post('units');
+            $teacher_id = $this->input->post('teacher_id');
 
             if ($subject_id) {
+                // Get year_level from program if not provided
+                if (!$year_level) {
+                    // Check if year_level column exists in the program table
+                    $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+                    if ($check_academic > 0) {
+                        $check_year_level = $this->db->query("SHOW COLUMNS FROM academic_programs LIKE 'year_level'")->num_rows();
+                        if ($check_year_level > 0) {
+                            $prog = $this->db->select('year_level')->where('id', $program_id)->get('academic_programs')->row();
+                            if ($prog && isset($prog->year_level)) {
+                                $year_level = $prog->year_level;
+                            }
+                        }
+                    } else {
+                        $check_year_level = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+                        if ($check_year_level > 0) {
+                            $prog = $this->db->select('year_level')->where('id', $program_id)->get('programs')->row();
+                            if ($prog && isset($prog->year_level)) {
+                                $year_level = $prog->year_level;
+                            }
+                        }
+                    }
+                }
+
                 $d = array(
                     'program_id'      => $program_id,
-                    'semester_type'   => $semester_type,
+                    'school_id'       => $this->school_id,
                     'year_level'      => $year_level,
                     'units'           => $units,
                 );
+                
                 $this->Academic_model->update_subject($subject_id, $d);
+                
+                // Handle teacher assignment using subject_teachers table
+                if ($teacher_id) {
+                    // Clear existing teachers for this subject
+                    $this->Academic_model->clear_subject_teachers($subject_id);
+                    // Add the new teacher
+                    $this->Academic_model->add_subject_teacher($subject_id, $teacher_id);
+                }
+                
                 $this->session->set_flashdata('success', 'Subject added to program.');
             }
             redirect('academic/program_subjects/' . $program_id);
@@ -402,7 +434,7 @@ class Academic extends MY_Controller {
     {
         $subject = $this->Academic_model->get_subject($subject_id);
         if ($subject) {
-            $this->Academic_model->update_subject($subject_id, array('program_id' => null, 'semester_type' => null));
+            $this->Academic_model->update_subject($subject_id, array('program_id' => null));
             $this->session->set_flashdata('success', 'Subject removed from program.');
         }
         redirect('academic/program_subjects/' . $program_id);
@@ -421,10 +453,36 @@ class Academic extends MY_Controller {
                 $this->session->set_flashdata('error', 'Course code "' . $code . '" already exists in this program.');
                 redirect('academic/program_subjects/' . $program_id);
             }
+            
+            // Get year_level from POST or from program
+            $year_level = $this->input->post('year_level');
+            if (!$year_level) {
+                $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+                if ($check_academic > 0) {
+                    $check_year_level = $this->db->query("SHOW COLUMNS FROM academic_programs LIKE 'year_level'")->num_rows();
+                    if ($check_year_level > 0) {
+                        $prog = $this->db->select('year_level')->where('id', $program_id)->get('academic_programs')->row();
+                        if ($prog && isset($prog->year_level)) {
+                            $year_level = $prog->year_level;
+                        }
+                    }
+                } else {
+                    $check_year_level = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+                    if ($check_year_level > 0) {
+                        $prog = $this->db->select('year_level')->where('id', $program_id)->get('programs')->row();
+                        if ($prog && isset($prog->year_level)) {
+                            $year_level = $prog->year_level;
+                        }
+                    }
+                }
+            }
+            
             $d = array(
                 'code'        => $code,
                 'description' => $this->input->post('description', TRUE),
                 'program_id'  => $program_id,
+                'school_id'   => $this->school_id,
+                'year_level'  => $year_level,
                 'status'      => 1,
             );
             $subject_id = $this->Academic_model->create_subject($d);
@@ -433,6 +491,8 @@ class Academic extends MY_Controller {
             $teacher_id = $this->input->post('teacher_id');
             if ($teacher_id && $subject_id) {
                 $this->Academic_model->set_subject_teachers($subject_id, array($teacher_id));
+                // Save teacher_id directly to subjects table
+                $this->Academic_model->update_subject($subject_id, array('teacher_id' => $teacher_id));
             }
             
             $this->session->set_flashdata('success', 'Subject created and added to program.');
@@ -462,9 +522,12 @@ class Academic extends MY_Controller {
             $teacher_id = $this->input->post('teacher_id');
             if ($teacher_id) {
                 $this->Academic_model->set_subject_teachers($subject_id, array($teacher_id));
+                // Save teacher_id directly to subjects table
+                $this->Academic_model->update_subject($subject_id, array('teacher_id' => $teacher_id));
             } else {
                 // Clear assignment if no teacher selected
                 $this->Academic_model->set_subject_teachers($subject_id, array());
+                $this->Academic_model->update_subject($subject_id, array('teacher_id' => null));
             }
             
             $this->session->set_flashdata('success', 'Subject updated successfully.');
@@ -511,7 +574,6 @@ class Academic extends MY_Controller {
                 'strand_id'       => $this->input->post('strand_id') ?: NULL,
                 'program_id'      => $this->input->post('program_id') ?: NULL,
                 'year_level'      => $this->input->post('year_level') ?: NULL,
-                'semester_type'   => $this->input->post('semester_type') ?: NULL,
                 'units'           => $this->input->post('units') ?: NULL,
                 'lec_hours'       => $this->input->post('lec_hours') ?: NULL,
                 'lab_hours'       => $this->input->post('lab_hours') ?: NULL,
@@ -546,7 +608,6 @@ class Academic extends MY_Controller {
                 'strand_id'       => $this->input->post('strand_id') ?: NULL,
                 'program_id'      => $this->input->post('program_id') ?: NULL,
                 'year_level'      => $this->input->post('year_level') ?: NULL,
-                'semester_type'   => $this->input->post('semester_type') ?: NULL,
                 'units'           => $this->input->post('units') ?: NULL,
                 'lec_hours'       => $this->input->post('lec_hours') ?: NULL,
                 'lab_hours'       => $this->input->post('lab_hours') ?: NULL,

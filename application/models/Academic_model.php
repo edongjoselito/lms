@@ -124,9 +124,9 @@ class Academic_model extends CI_Model
     {
         $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
         if ($checkTable > 0) {
-            return $this->db->where('id', $id)->get('academic_programs')->row();
+            return $this->db->select('*')->where('id', $id)->get('academic_programs')->row();
         }
-        return $this->db->where('id', $id)->get('programs')->row();
+        return $this->db->select('*')->where('id', $id)->get('programs')->row();
     }
 
     public function get_academic_program($id)
@@ -224,7 +224,7 @@ class Academic_model extends CI_Model
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
 
-        $select_fields = 'subjects.*, grade_levels.name as grade_level_name, learning_areas.name as learning_area_name';
+        $select_fields = 'subjects.*';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
@@ -234,9 +234,7 @@ class Academic_model extends CI_Model
 
         $this->db->select($select_fields);
         $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
-        $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
-        $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
 
         if (!empty($filters['school_id'])) {
             $this->db->where('subjects.school_id', $filters['school_id']);
@@ -253,7 +251,7 @@ class Academic_model extends CI_Model
         if (!empty($filters['semester_type'])) {
             $this->db->where('subjects.semester_type', $filters['semester_type']);
         }
-        return $this->db->where('subjects.status', 1)->order_by('semester_type, code')->get('subjects')->result();
+        return $this->db->where('subjects.status', 1)->order_by('code')->get('subjects')->result();
     }
 
     public function get_subjects_by_program($program_id)
@@ -261,7 +259,7 @@ class Academic_model extends CI_Model
         $this->db->select('subjects.*');
         $this->db->where('subjects.program_id', $program_id);
         $this->db->where('subjects.status', 1);
-        return $this->db->order_by('semester_type, code')->get('subjects')->result();
+        return $this->db->order_by('code')->get('subjects')->result();
     }
 
     public function get_subjects_by_grade_level($grade_level_id)
@@ -279,7 +277,7 @@ class Academic_model extends CI_Model
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
 
-        $select_fields = 'subjects.*, grade_levels.name as grade_level_name, learning_areas.name as learning_area_name';
+        $select_fields = 'subjects.*';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
@@ -289,9 +287,7 @@ class Academic_model extends CI_Model
 
         $this->db->select($select_fields);
         $this->db->select('(SELECT COUNT(lessons.id) FROM modules JOIN lessons ON lessons.module_id = modules.id WHERE modules.subject_id = subjects.id) as lesson_count', FALSE);
-        $this->db->join('grade_levels', 'grade_levels.id = subjects.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
-        $this->db->join('learning_areas', 'learning_areas.id = subjects.learning_area_id', 'left');
         return $this->db->where('subjects.id', $id)->get('subjects')->row();
     }
 

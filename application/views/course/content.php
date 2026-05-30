@@ -44,7 +44,7 @@ if (!function_exists('course_lesson_notes_content')) {
 }
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
-$subject_system_type = strtolower($subject->system_type ?: 'general');
+$subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
 $course_modules = isset($modules) && is_array($modules) ? $modules : array();
 $course_module_count = count($course_modules);
 $course_lesson_count = 0;

@@ -87,10 +87,9 @@ $available_count = max(0, $total_subjects - $enrolled_count);
                             </div>
                             <div class="subject-card-body">
                                 <div class="subject-code-row">
-                                    <span class="subject-code"><?= htmlspecialchars($s->code) ?></span>
                                     <span class="subject-units"><?= htmlspecialchars($s->units ?: '-') ?> Units</span>
                                 </div>
-                                <h3 class="subject-name"><?= htmlspecialchars($s->name) ?></h3>
+                                <h3 class="subject-name"><?= htmlspecialchars($s->code . ' - ' . $s->name) ?></h3>
                                 <p class="subject-description"><?= htmlspecialchars(($s->description ?? '') ?: 'Course materials and activities are available for this subject.') ?></p>
                                 <?php if ($is_enrolled): ?>
                                     <a href="<?= site_url('student/content/' . $s->id) ?>" class="subject-action primary">

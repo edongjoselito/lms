@@ -149,12 +149,47 @@ class Enrollment_model extends CI_Model {
     // Methods for studentprofile-based enrollment system
     public function get_all($school_id = null)
     {
-        $this->db->select('enrollments.*, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, sp.email as profile_email, u.email as user_email, u.status as user_status, sections.name as section_name, enrollments.grade_level_id, CONCAT(school_years.year_start, "-", school_years.year_end) as school_year_name');
-        $this->db->from('enrollments');
-        $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
-        $this->db->join('users u', 'u.id = enrollments.student_id', 'left');
-        $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
-        $this->db->join('school_years', 'school_years.id = enrollments.school_year_id', 'left');
+        // Check if academic_programs table exists
+        $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        
+        if ($check_academic > 0) {
+            $this->db->select('enrollments.*, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, sp.email as profile_email, u.email as user_email, u.status as user_status, sections.name as section_name, enrollments.grade_level_id, ap.year_level, ap.name as grade_level_name, CONCAT(school_years.year_start, "-", school_years.year_end) as school_year_name');
+            $this->db->from('enrollments');
+            $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
+            $this->db->join('users u', 'u.id = enrollments.student_id', 'left');
+            $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
+            $this->db->join('school_years', 'school_years.id = enrollments.school_year_id', 'left');
+            $this->db->join('academic_programs ap', 'ap.id = enrollments.grade_level_id', 'left');
+        } else {
+            // Check if programs table exists
+            $check_programs = $this->db->query("SHOW TABLES LIKE 'programs'")->num_rows();
+            if ($check_programs > 0) {
+                // Check if name column exists in programs table
+                $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+                $select_fields = 'enrollments.*, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, sp.email as profile_email, u.email as user_email, u.status as user_status, sections.name as section_name, enrollments.grade_level_id, p.year_level';
+                if ($checkName > 0) {
+                    $select_fields .= ', p.name as grade_level_name';
+                }
+                $select_fields .= ', CONCAT(school_years.year_start, "-", school_years.year_end) as school_year_name';
+                
+                $this->db->select($select_fields);
+                $this->db->from('enrollments');
+                $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
+                $this->db->join('users u', 'u.id = enrollments.student_id', 'left');
+                $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
+                $this->db->join('school_years', 'school_years.id = enrollments.school_year_id', 'left');
+                $this->db->join('programs p', 'p.id = enrollments.grade_level_id', 'left');
+            } else {
+                // Fallback without year_level
+                $this->db->select('enrollments.*, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, sp.email as profile_email, u.email as user_email, u.status as user_status, sections.name as section_name, enrollments.grade_level_id, CONCAT(school_years.year_start, "-", school_years.year_end) as school_year_name');
+                $this->db->from('enrollments');
+                $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
+                $this->db->join('users u', 'u.id = enrollments.student_id', 'left');
+                $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
+                $this->db->join('school_years', 'school_years.id = enrollments.school_year_id', 'left');
+            }
+        }
+        
         if ($school_id) {
             $this->db->where('enrollments.school_id', $school_id);
         }

@@ -82,7 +82,9 @@
                                     </td>
                                     <td style="padding:0.75rem 1rem;"><?= htmlspecialchars($e->birth_date) ?></td>
                                     <td style="padding:0.75rem 1rem;">
-                                        <?php if ($e->grade_level_id): ?>
+                                        <?php if (isset($e->year_level) && $e->year_level): ?>
+                                            <?= 'Grade ' . str_pad($e->year_level, 2, '0', STR_PAD_LEFT) ?>
+                                        <?php elseif ($e->grade_level_id): ?>
                                             <?= 'Grade ' . str_pad($e->grade_level_id, 2, '0', STR_PAD_LEFT) ?>
                                         <?php else: ?>
                                             -
