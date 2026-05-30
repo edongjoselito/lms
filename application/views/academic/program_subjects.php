@@ -87,8 +87,8 @@
                                         <?php foreach ($teachers as $t): ?>
                                             <?php if (in_array((int)$t->id, $assigned_ids)): ?>
                                                 <span class="ps-teacher-badge">
-                                                    <span class="ps-teacher-avatar"><?= strtoupper(substr($t->first_name, 0, 1)) ?></span>
-                                                    <?= htmlspecialchars(trim($t->first_name . ' ' . $t->last_name)) ?>
+                                                    <span class="ps-teacher-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
+                                                    <?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?>
                                                 </span>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
@@ -122,12 +122,12 @@
                                             <li class="ps-teacher-list" style="max-height:200px;overflow-y:auto;">
                                                 <?php foreach ($teachers as $t): ?>
                                                     <?php $is_assigned = in_array((int)$t->id, $assigned_ids); ?>
-                                                    <div class="ps-teacher-opt" data-name="<?= strtolower(htmlspecialchars(trim($t->first_name . ' ' . $t->last_name))) ?>">
+                                                    <div class="ps-teacher-opt" data-name="<?= strtolower(htmlspecialchars(trim($t->last_name . ' ' . $t->first_name))) ?>">
                                                         <form action="<?= site_url('academic/assign_subject_teacher/' . $program->id . '/' . $s->id) ?>" method="post">
                                                             <input type="hidden" name="user_id" value="<?= $t->id ?>">
                                                             <button type="submit" class="dropdown-item <?= $is_assigned ? 'ps-teacher-assigned' : '' ?>">
-                                                                <span class="ps-opt-avatar"><?= strtoupper(substr($t->first_name, 0, 1)) ?></span>
-                                                                <span class="ps-opt-name"><?= htmlspecialchars(trim($t->first_name . ' ' . $t->last_name)) ?></span>
+                                                                <span class="ps-opt-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
+                                                                <span class="ps-opt-name"><?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?></span>
                                                                 <?php if ($is_assigned): ?>
                                                                     <i class="bi bi-check2 ps-opt-check"></i>
                                                                 <?php endif; ?>
