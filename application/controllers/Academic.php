@@ -6,9 +6,54 @@ class Academic extends MY_Controller {
     public function __construct()
     {
         parent::__construct();
-        $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
+        if ($this->router->fetch_method() === 'section_students') {
+            $this->require_login();
+        } else {
+            $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
+        }
         $this->require_school();
         $this->load->model(array('Academic_model', 'User_model'));
+    }
+
+    private function is_teacher_assigned_to_subject($subject_id)
+    {
+        $subject_id = (int) $subject_id;
+        if ($this->role_slug !== 'teacher' || !$this->current_user || $subject_id <= 0) {
+            return false;
+        }
+
+        $this->Academic_model->ensure_subject_teachers_table();
+        $assigned = $this->db->where('subject_id', $subject_id)
+            ->where('user_id', (int) $this->current_user->id)
+            ->get('subject_teachers')
+            ->row();
+
+        return (bool) $assigned;
+    }
+
+    private function can_access_section_students($section, $subject_id = null)
+    {
+        if (!$section) {
+            return false;
+        }
+
+        if (in_array($this->role_slug, array('super_admin', 'school_admin', 'course_creator'))) {
+            return true;
+        }
+
+        if ($this->role_slug !== 'teacher' || !$this->current_user) {
+            return false;
+        }
+
+        if (!empty($this->school_id) && !empty($section->school_id) && (int) $section->school_id !== (int) $this->school_id) {
+            return false;
+        }
+
+        if (!empty($section->adviser_id) && (int) $section->adviser_id === (int) $this->current_user->id) {
+            return true;
+        }
+
+        return $this->is_teacher_assigned_to_subject($subject_id);
     }
 
     // ---- School Years ----
@@ -760,7 +805,11 @@ class Academic extends MY_Controller {
         $section = $this->Academic_model->get_section($section_id);
         if (!$section) show_404();
 
-        $subject_id = $this->input->get('subject_id', TRUE);
+        $subject_id = (int) $this->input->get('subject_id', TRUE);
+        if (!$this->can_access_section_students($section, $subject_id)) {
+            show_error('You do not have permission to access this page.', 403);
+        }
+
         $students = $this->Academic_model->get_section_students($section_id, $subject_id);
         
         $data['title'] = 'Section Students - ' . htmlspecialchars($section->name);
