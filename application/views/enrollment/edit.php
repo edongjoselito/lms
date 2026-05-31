@@ -56,7 +56,7 @@
                         <select class="form-select" name="section_id" required>
                             <option value="">Select Section</option>
                             <?php foreach ($sections as $s): ?>
-                                <option value="<?= $s->id ?>" data-grade-level="<?= $s->grade_level_id ?>" <?= $enrollment->section_id == $s->id ? 'selected' : '' ?>>
+                                <option value="<?= $s->id ?>" data-grade-level="<?= isset($s->grade_level_id) ? $s->grade_level_id : (isset($s->year_level) ? $s->year_level : '') ?>" <?= $enrollment->section_id == $s->id ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($s->name) ?>
                                     <?php if (isset($s->grade_level_name) && !empty($s->grade_level_name)): ?>
                                         (<?= htmlspecialchars($s->grade_level_name) ?>)
@@ -73,9 +73,11 @@
                                 <?php 
                                 $is_selected = false;
                                 // Match by staff_id if available (when using staff table), otherwise by user_id
-                                if (isset($current_section->adviser_staff_id) && isset($a->staff_id) && $current_section->adviser_staff_id == $a->staff_id) {
+                                if (!empty($current_section) && isset($current_section->adviser_staff_id) && isset($a->staff_id) && $current_section->adviser_staff_id == $a->staff_id) {
                                     $is_selected = true;
-                                } elseif (isset($current_section->adviser_user_id) && $current_section->adviser_user_id == $a->id) {
+                                } elseif (!empty($current_section) && isset($current_section->adviser_user_id) && $current_section->adviser_user_id == $a->id) {
+                                    $is_selected = true;
+                                } elseif (!empty($current_section) && isset($current_section->adviser_id) && $current_section->adviser_id == $a->id) {
                                     $is_selected = true;
                                 }
                                 ?>

@@ -21,6 +21,11 @@ class Enrollment extends Admin_Controller
 
     public function edit($id)
     {
+        $data['current_section'] = null;
+        $has_staff_table = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows() > 0;
+        $adviser_column = $this->db->query("SHOW COLUMNS FROM sections LIKE 'adviser_id'")->row();
+        $sections_adviser_is_user_id = $adviser_column && stripos($adviser_column->Type, 'int') !== false;
+
         // Check if year_level column exists in enrollments table
         $checkYearLevel = $this->db->query("SHOW COLUMNS FROM enrollments LIKE 'year_level'")->num_rows();
         if ($checkYearLevel > 0) {
@@ -67,40 +72,43 @@ class Enrollment extends Admin_Controller
         }
 
         // Get sections for current school with adviser info
-        $check_staff = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows();
-        if ($check_staff > 0) {
-            $data['sections'] = $this->db->select('sections.*, CONCAT(u.last_name, ", ", u.first_name) as adviser_name, u.id as adviser_user_id', FALSE)
-                ->from('sections')
-                ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
-                ->join('users u', 'u.id = t.user_id', 'left')
-                ->where('sections.school_id', $this->school_id)
-                ->get()
-                ->result();
+        $this->db->select('sections.*, CONCAT(u.last_name, ", ", u.first_name) as adviser_name, u.id as adviser_user_id', FALSE)
+            ->from('sections');
+        if ($sections_adviser_is_user_id || !$has_staff_table) {
+            $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
         } else {
-            $data['sections'] = $this->db->where('school_id', $this->school_id)
-                ->get('sections')
-                ->result();
+            $this->db->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
+                ->join('users u', 'u.id = t.user_id', 'left');
         }
+        $data['sections'] = $this->db->where('sections.school_id', $this->school_id)
+            ->get()
+            ->result();
 
         // Get current section's adviser if enrollment has a section
         if ($data['enrollment']->section_id) {
-            $check_staff = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows();
-            if ($check_staff > 0) {
-                $data['current_section'] = $this->db->select('sections.*, t.IDNumber as adviser_staff_id, u.id as adviser_user_id', FALSE)
-                    ->from('sections')
-                    ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
-                    ->join('users u', 'u.id = t.user_id', 'left')
-                    ->where('sections.id', $data['enrollment']->section_id)
-                    ->get()
-                    ->row();
-            } else {
-                $data['current_section'] = $this->db->where('id', $data['enrollment']->section_id)->get('sections')->row();
+            $select_fields = 'sections.*, u.id as adviser_user_id';
+            if ($has_staff_table) {
+                $select_fields .= $sections_adviser_is_user_id ? ', st.IDNumber as adviser_staff_id' : ', t.IDNumber as adviser_staff_id';
             }
+
+            $this->db->select($select_fields, FALSE)
+                ->from('sections');
+            if ($sections_adviser_is_user_id || !$has_staff_table) {
+                $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
+                if ($has_staff_table) {
+                    $this->db->join('staff st', 'st.user_id = u.id', 'left');
+                }
+            } else {
+                $this->db->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
+                    ->join('users u', 'u.id = t.user_id', 'left');
+            }
+            $data['current_section'] = $this->db->where('sections.id', $data['enrollment']->section_id)
+                ->get()
+                ->row();
         }
 
         // Get teachers (advisers) for current school
-        $check_staff = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows();
-        if ($check_staff > 0) {
+        if ($has_staff_table) {
             // Get advisers from staff table joined with users
             $teacher_role_id = $this->User_model->get_role_id_by_slug('teacher');
             $data['advisers'] = $this->db->select('u.*, t.IDNumber as staff_id', FALSE)
@@ -134,16 +142,13 @@ class Enrollment extends Admin_Controller
 
             // Update section adviser if provided
             if ($adviser_user_id) {
-                $check_staff = $this->db->query("SHOW TABLES LIKE 'staff'")->num_rows();
-                if ($check_staff > 0) {
-                    // Convert user_id to staff IDNumber
+                if ($sections_adviser_is_user_id || !$has_staff_table) {
+                    $this->db->where('id', $section_id)->update('sections', array('adviser_id' => (int) $adviser_user_id));
+                } else {
                     $staff = $this->db->select('IDNumber')->where('user_id', $adviser_user_id)->get('staff')->row();
                     if ($staff) {
                         $this->db->where('id', $section_id)->update('sections', array('adviser_id' => $staff->IDNumber));
                     }
-                } else {
-                    // Fallback: use user_id directly if no staff table
-                    $this->db->where('id', $section_id)->update('sections', array('adviser_id' => $adviser_user_id));
                 }
             }
 
