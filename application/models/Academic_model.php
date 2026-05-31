@@ -450,6 +450,14 @@ class Academic_model extends CI_Model
         return $this->db->where('id', $id)->delete('sections');
     }
 
+    public function get_section_dependency_counts($section_id)
+    {
+        return (object) array(
+            'class_program_count' => (int) $this->db->where('section_id', $section_id)->count_all_results('class_programs'),
+            'enrollment_count'    => (int) $this->db->where('section_id', $section_id)->count_all_results('enrollments'),
+        );
+    }
+
     // ---- Class Programs (Section-Subject-Teacher mapping) ----
     public function ensure_class_program_enrollment_key_column()
     {

@@ -1,341 +1,580 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <?php
 $subject_count = count($subjects);
-$program_set = array();
-foreach ($subjects as $s) {
-    if (!empty($s->program_code)) $program_set[$s->program_code] = true;
-}
-$program_count = count($program_set);
+$grade_level_set = array();
 
-$palette = array('#696cff','#03c3ec','#71dd37','#ffab00','#ff3e1d','#8592a3');
-function ts_color($str, $palette) {
-    return $palette[abs(crc32($str)) % count($palette)];
+if (!function_exists('teacher_grade_level_label')) {
+    function teacher_grade_level_label($subject)
+    {
+        $value = '';
+        if (isset($subject->program_year_level) && trim((string) $subject->program_year_level) !== '') {
+            $value = trim((string) $subject->program_year_level);
+        } elseif (isset($subject->year_level) && trim((string) $subject->year_level) !== '') {
+            $value = trim((string) $subject->year_level);
+        }
+
+        if ($value === '') {
+            return 'General';
+        }
+
+        return is_numeric($value) ? 'Grade ' . str_pad((int) $value, 2, '0', STR_PAD_LEFT) : $value;
+    }
 }
+
+foreach ($subjects as $subject_item) {
+    $grade_level_set[teacher_grade_level_label($subject_item)] = true;
+}
+$grade_level_count = count($grade_level_set);
 ?>
 
-<div class="ts-wrap">
+<div class="ps-page">
 
-    <!-- Hero -->
-    <div class="ts-hero">
-        <div class="ts-hero-inner">
-            <div class="ts-hero-left">
-                <div class="ts-hero-icon">
-                    <span class="material-symbols-outlined">menu_book</span>
-                </div>
-                <div>
-                    <h1 class="ts-hero-title">My Subjects</h1>
-                    <p class="ts-hero-sub">Subjects assigned to you for section management</p>
+    <a href="<?= site_url('dashboard') ?>" class="ps-back">
+        <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> Back to Dashboard
+    </a>
+
+    <div class="ps-hero">
+        <div class="ps-hero-bg"></div>
+        <div class="ps-hero-content">
+            <div class="ps-hero-left">
+                <div class="ps-hero-avatar">TS</div>
+                <div class="ps-hero-info">
+                    <div class="ps-hero-meta">
+                        <span class="ps-tag ps-tag-degree">Teacher</span>
+                        <span class="ps-tag ps-tag-code">Assigned Subjects</span>
+                    </div>
+                    <h1 class="ps-hero-title">My Subjects</h1>
+                    <p class="ps-hero-desc">Subjects assigned to you for content and section management.</p>
                 </div>
             </div>
-            <div class="ts-hero-stats">
-                <div class="ts-stat">
-                    <div class="ts-stat-num"><?= $subject_count ?></div>
-                    <div class="ts-stat-lbl">Subject<?= $subject_count !== 1 ? 's' : '' ?></div>
+            <div class="ps-hero-stats">
+                <div class="ps-hero-stat">
+                    <div class="ps-hero-stat-num"><?= $subject_count ?></div>
+                    <div class="ps-hero-stat-lbl">Total Subjects</div>
                 </div>
-                <?php if ($program_count > 0): ?>
-                <div class="ts-stat-div"></div>
-                <div class="ts-stat">
-                    <div class="ts-stat-num"><?= $program_count ?></div>
-                    <div class="ts-stat-lbl">Program<?= $program_count !== 1 ? 's' : '' ?></div>
+                <div class="ps-hero-stat">
+                    <div class="ps-hero-stat-num"><?= $grade_level_count ?></div>
+                    <div class="ps-hero-stat-lbl">Grade Levels</div>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- Body -->
-    <div class="ts-body">
-
-        <?php if (empty($subjects)): ?>
-            <div class="ts-empty">
-                <div class="ts-empty-icon">
-                    <span class="material-symbols-outlined">auto_stories</span>
+    <div class="ps-layout ps-layout-full">
+        <div class="ps-card ps-subject-card">
+            <div class="ps-card-head">
+                <div class="ps-card-title">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                    <span>Subjects</span>
+                    <span class="ps-count-pill"><?= $subject_count ?></span>
                 </div>
-                <h5 class="ts-empty-title">No subjects assigned yet</h5>
-                <p class="ts-empty-desc">Your Course Creator will assign subjects to you. Check back later or contact your administrator.</p>
+                <?php if (!empty($subjects)): ?>
+                <div class="ps-search-wrap">
+                    <i class="bi bi-search ps-search-icon"></i>
+                    <input type="text" class="ps-search" id="subjectSearch" placeholder="Search subjects...">
+                </div>
+                <?php endif; ?>
             </div>
-        <?php else: ?>
-            <div class="ts-grid">
-                <?php foreach ($subjects as $s):
-                    $color = ts_color($s->code, $palette);
-                    $initials = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $s->code), 0, 2) ?: substr($s->code, 0, 2));
-                    $type = strtolower(isset($s->system_type) ? $s->system_type : 'general');
-                ?>
-                <div class="ts-card">
-                    <div class="ts-card-top" style="background:<?= $color ?>18;border-bottom:2px solid <?= $color ?>30;">
-                        <div class="ts-card-avatar" style="background:<?= $color ?>22;color:<?= $color ?>;"><?= htmlspecialchars($initials) ?></div>
-                        <div class="ts-card-meta">
-                            <?php if (!empty($s->program_code)): ?>
-                                <span class="ts-badge ts-badge-program"><?= htmlspecialchars($s->program_code) ?></span>
-                            <?php endif; ?>
-                            <span class="ts-badge ts-badge-type ts-badge-<?= $type ?>"><?= strtoupper($type) ?></span>
+
+            <?php if (!empty($subjects)): ?>
+                <div class="ps-table-head ps-table-head-teacher">
+                    <div class="ps-th ps-th-num">#</div>
+                    <div class="ps-th ps-th-subject">Subject</div>
+                    <div class="ps-th ps-th-level">Grade Level</div>
+                    <div class="ps-th ps-th-actions">Actions</div>
+                </div>
+                <div class="ps-subject-list" id="subjectList">
+                    <?php foreach ($subjects as $i => $s): ?>
+                        <?php
+                        $grade_level_label = teacher_grade_level_label($s);
+                        $search_text = strtolower(trim($s->code . ' ' . $s->description . ' ' . $grade_level_label));
+                        ?>
+                        <div class="ps-subject-item ps-subject-item-teacher" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES, 'UTF-8') ?>">
+                            <div class="ps-col-num">
+                                <span class="ps-subject-index"><?= $i + 1 ?></span>
+                            </div>
+
+                            <div class="ps-col-subject">
+                                <div class="ps-subject-top">
+                                    <span class="ps-subject-code"><?= htmlspecialchars($s->code) ?></span>
+                                    <span class="ps-subject-name"><?= htmlspecialchars($s->description) ?></span>
+                                </div>
+                            </div>
+
+                            <div class="ps-col-level">
+                                <span class="ps-level-badge"><?= htmlspecialchars($grade_level_label) ?></span>
+                            </div>
+
+                            <?php $back_param = urlencode('course/teacher_subjects'); ?>
+                            <div class="ps-col-actions">
+                                <a href="<?= site_url('course/content/' . $s->id . '?back=' . $back_param) ?>" class="ps-action-btn ps-action-view">
+                                    <i class="bi bi-eye-fill"></i> Open
+                                </a>
+                                <a href="<?= site_url('course/content/' . $s->id . '?edit=1&back=' . $back_param) ?>" class="ps-action-btn ps-action-edit">
+                                    <i class="bi bi-pencil-fill"></i> Edit
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                    <div class="ts-card-body">
-                        <div class="ts-card-code"><?= htmlspecialchars($s->code) ?></div>
-                        <?php if (!empty($s->description)): ?>
-                            <div class="ts-card-desc"><?= htmlspecialchars($s->description) ?></div>
-                        <?php endif; ?>
-                        <?php if (!empty($s->program_name)): ?>
-                            <div class="ts-card-program"><?= htmlspecialchars($s->program_name) ?></div>
-                        <?php endif; ?>
-                    </div>
-                    <div class="ts-card-foot">
-                        <a href="<?= site_url('course/content/' . $s->id) ?>" class="ts-open-btn" style="--btn-color:<?= $color ?>;">
-                            <span class="material-symbols-outlined" style="font-size:1rem;">open_in_new</span>
-                            Open Subject
-                        </a>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
+                <div class="ps-no-results" id="noResults" style="display:none;">
+                    <i class="bi bi-search" style="font-size:1.8rem;opacity:0.3;"></i>
+                    <p>No subjects match your search.</p>
+                </div>
+            <?php else: ?>
+                <div class="ps-empty">
+                    <div class="ps-empty-icon">
+                        <i class="bi bi-journal-x"></i>
+                    </div>
+                    <div class="ps-empty-title">No subjects assigned yet</div>
+                    <div class="ps-empty-sub">Your Course Creator will assign subjects to you. Check back later or contact your administrator.</div>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
+<script>
+document.getElementById('subjectSearch') && document.getElementById('subjectSearch').addEventListener('input', function () {
+    var q = this.value.toLowerCase().trim();
+    var items = document.querySelectorAll('.ps-subject-item');
+    var visible = 0;
+    items.forEach(function (item) {
+        var match = !q || item.dataset.search.includes(q);
+        item.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    document.getElementById('noResults').style.display = visible === 0 ? 'flex' : 'none';
+});
+</script>
+
 <style>
-.ts-wrap {
-    font-family: -apple-system, BlinkMacSystemFont, 'Public Sans', 'Segoe UI', sans-serif;
-    color: #566a7f;
+.ps-page {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 1.25rem 0;
+    max-width: 100%;
 }
 
-/* Hero */
-.ts-hero {
-    background: linear-gradient(135deg, #696cff 0%, #5a5de8 60%, #4a4dd4 100%);
-    padding: 2.25rem 2.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    color: #fff;
+.ps-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: #2563eb;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
 }
-.ts-hero-inner {
+.ps-back:hover { background: #dbeafe; color: #1d4ed8; text-decoration: none; }
+
+.ps-hero {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 4px 24px rgba(37,99,235,0.16);
+}
+.ps-hero-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
+}
+.ps-hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.ps-hero-content {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
+    padding: 2rem 2.25rem;
     flex-wrap: wrap;
 }
-.ts-hero-left {
+.ps-hero-left {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    flex: 1;
+    min-width: 0;
 }
-.ts-hero-icon {
-    width: 56px;
-    height: 56px;
+.ps-hero-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
     background: rgba(255,255,255,0.18);
-    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    letter-spacing: 1px;
 }
-.ts-hero-icon .material-symbols-outlined {
-    font-size: 1.75rem;
-    color: #fff;
-}
-.ts-hero-title {
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin: 0 0 0.2rem;
-    color: #fff;
-    line-height: 1.2;
-}
-.ts-hero-sub {
-    margin: 0;
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.78);
-}
-.ts-hero-stats {
+.ps-hero-info { min-width: 0; }
+.ps-hero-meta {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    background: rgba(255,255,255,0.12);
-    border-radius: 12px;
-    padding: 1rem 1.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
 }
-.ts-stat {
-    text-align: center;
-}
-.ts-stat-num {
-    font-size: 1.75rem;
+.ps-tag {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
     font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+.ps-tag-degree { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+.ps-tag-code { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.25); }
+.ps-hero-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.ps-hero-desc {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.72);
+    margin: 0;
+    line-height: 1.5;
+}
+.ps-hero-stats {
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+.ps-hero-stat {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    min-width: 100px;
+}
+.ps-hero-stat-num {
+    font-size: 2.2rem;
+    font-weight: 800;
     color: #fff;
     line-height: 1;
 }
-.ts-stat-lbl {
-    font-size: 0.75rem;
+.ps-hero-stat-lbl {
+    font-size: 0.72rem;
+    font-weight: 600;
     color: rgba(255,255,255,0.75);
-    margin-top: 3px;
-    white-space: nowrap;
-}
-.ts-stat-div {
-    width: 1px;
-    height: 36px;
-    background: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-top: 0.3rem;
 }
 
-/* Body */
-.ts-body {
-    padding: 0;
-}
+.ps-layout { display: grid; gap: 1.5rem; align-items: start; }
+.ps-layout-full { grid-template-columns: 1fr; }
 
-/* Grid */
-.ts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
-}
-
-/* Card */
-.ts-card {
+.ps-card {
     background: #fff;
-    border-radius: 12px;
-    border: 1px solid #e7e7ff;
+    border: 1px solid #eaecf0;
+    border-radius: 20px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: box-shadow 0.18s, transform 0.18s;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
 }
-.ts-card:hover {
-    box-shadow: 0 8px 24px rgba(105,108,255,0.12);
-    transform: translateY(-2px);
+.ps-subject-card {
+    overflow: visible;
 }
-.ts-card-top {
-    padding: 1.25rem 1.25rem 1rem;
+.ps-subject-card > .ps-card-head {
+    border-radius: 20px 20px 0 0;
+}
+.ps-card-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 1rem;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafbff;
+    flex-wrap: wrap;
 }
-.ts-card-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+.ps-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.ps-card-title i { color: #2563eb; font-size: 1rem; }
+.ps-count-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.6rem;
+    letter-spacing: 0.02em;
+}
+
+.ps-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.ps-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+.ps-search {
+    padding: 0.45rem 0.75rem 0.45rem 2rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.83rem;
+    color: #334155;
+    background: #fff;
+    outline: none;
+    width: 220px;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ps-search:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+.ps-table-head {
+    display: grid;
+    padding: 0.55rem 1.5rem;
+    background: #f8faff;
+    border-bottom: 1px solid #eaecf0;
+}
+.ps-table-head-teacher {
+    grid-template-columns: 44px minmax(0, 1fr) 180px auto;
+}
+.ps-th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+.ps-th-actions { text-align: right; min-width: 170px; }
+
+.ps-subject-list { position: relative; overflow: visible; padding: 0; }
+.ps-subject-item {
+    position: relative;
+    display: grid;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.14s;
+    animation: ps-fadein 0.22s ease forwards;
+}
+.ps-subject-item-teacher {
+    grid-template-columns: 44px minmax(0, 1fr) 180px auto;
+}
+@keyframes ps-fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+.ps-subject-item:last-child { border-bottom: none; }
+.ps-subject-item:hover { background: #f8f9ff; }
+
+.ps-col-num { display: flex; align-items: center; }
+.ps-subject-index {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: #f1f5f9;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    font-weight: 700;
     flex-shrink: 0;
+}
+.ps-col-subject { min-width: 0; padding-right: 1.5rem; }
+.ps-subject-top {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.ps-subject-code {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1d4ed8;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.ps-subject-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ps-col-level {
+    min-width: 0;
+    padding-right: 1rem;
+}
+.ps-level-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 0.32rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
-.ts-card-meta {
+.ps-col-actions {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 0.35rem;
     justify-content: flex-end;
-    padding-top: 2px;
+    min-width: 170px;
 }
-.ts-badge {
-    font-size: 0.7rem;
+.ps-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.38rem 0.7rem;
+    border-radius: 9px;
+    font-size: 0.78rem;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.14s ease;
     white-space: nowrap;
-    letter-spacing: 0.02em;
+    cursor: pointer;
 }
-.ts-badge-program {
-    background: #ede9fe;
-    color: #5b21b6;
-}
-.ts-badge-type {
-    background: #e7e7ff;
-    color: #696cff;
-}
-.ts-badge-general  { background: #e7e7ff; color: #696cff; }
-.ts-badge-k12      { background: #e0f2fe; color: #0369a1; }
-.ts-badge-college  { background: #dcfce7; color: #166534; }
-.ts-badge-tesda    { background: #fef9c3; color: #854d0e; }
+.ps-action-view { background: #dbeafe; color: #1d4ed8; }
+.ps-action-view:hover { background: #bfdbfe; color: #1e40af; text-decoration: none; transform: translateY(-1px); }
+.ps-action-edit { background: #fef9c3; color: #a16207; }
+.ps-action-edit:hover { background: #fef08a; color: #854d0e; text-decoration: none; transform: translateY(-1px); }
 
-.ts-card-body {
-    padding: 0.9rem 1.25rem 0.75rem;
-    flex: 1;
-}
-.ts-card-code {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 0.3rem;
-}
-.ts-card-desc {
-    font-size: 0.825rem;
-    color: #697a8d;
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-.ts-card-program {
-    font-size: 0.775rem;
-    color: #a1acb8;
-    margin-top: 0.4rem;
-}
-
-.ts-card-foot {
-    padding: 0.85rem 1.25rem;
-    border-top: 1px solid #f1f1f4;
-}
-.ts-open-btn {
-    display: flex;
+.ps-no-results {
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    width: 100%;
-    padding: 0.5rem 1rem;
-    background: var(--btn-color, #696cff);
-    color: #fff;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    transition: opacity 0.15s, transform 0.15s;
-}
-.ts-open-btn:hover {
-    color: #fff;
-    opacity: 0.88;
-    transform: translateY(-1px);
-}
-
-/* Empty state */
-.ts-empty {
+    gap: 0.5rem;
+    padding: 3rem 2rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
     text-align: center;
-    padding: 5rem 2rem;
-    background: #fff;
-    border-radius: 12px;
-    border: 1px dashed #d0d5dd;
 }
-.ts-empty-icon {
+.ps-no-results p { margin: 0; }
+
+.ps-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+.ps-empty-icon {
     width: 72px;
     height: 72px;
-    background: #f5f5f9;
-    border-radius: 50%;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #2563eb;
+    font-size: 1.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1.25rem;
+    margin-bottom: 1.25rem;
 }
-.ts-empty-icon .material-symbols-outlined {
-    font-size: 2rem;
-    color: #a1acb8;
+.ps-empty-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0.4rem;
 }
-.ts-empty-title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.5rem;
-}
-.ts-empty-desc {
-    font-size: 0.875rem;
-    color: #697a8d;
-    max-width: 380px;
-    margin: 0 auto;
-    line-height: 1.6;
+.ps-empty-sub {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    max-width: 280px;
+    line-height: 1.5;
 }
 
-@media (max-width: 600px) {
-    .ts-hero { padding: 1.5rem 1.25rem; }
-    .ts-hero-stats { display: none; }
-    .ts-grid { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+    .ps-table-head-teacher { display: none; }
+    .ps-subject-item-teacher {
+        grid-template-columns: 36px minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        row-gap: 0.55rem;
+    }
+    .ps-col-subject {
+        padding-right: 0;
+    }
+    .ps-col-level {
+        grid-column: 2;
+        padding-right: 0;
+    }
+    .ps-col-actions {
+        grid-column: 2;
+        justify-content: flex-start;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .ps-page {
+        padding: 0.75rem 0;
+    }
+    .ps-hero-content {
+        padding: 1.5rem 1.2rem;
+    }
+    .ps-hero-left {
+        align-items: flex-start;
+    }
+    .ps-hero-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 16px;
+        font-size: 1.2rem;
+    }
+    .ps-hero-title {
+        font-size: 1.25rem;
+    }
+    .ps-hero-stats {
+        width: 100%;
+    }
+    .ps-hero-stat {
+        flex: 1;
+        min-width: 0;
+        padding: 0.9rem 1rem;
+    }
+    .ps-card-head,
+    .ps-subject-item {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .ps-search {
+        width: 100%;
+    }
 }
 </style>

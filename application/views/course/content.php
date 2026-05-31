@@ -1,3 +1,5 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <?php
 if (!function_exists('course_lesson_video_url')) {
     function course_lesson_video_url($content)
@@ -56,69 +58,99 @@ foreach ($course_modules as $course_module) {
 }
 
 $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
+$course_grade_label = '';
+
+if (isset($subject->year_level) && trim((string) $subject->year_level) !== '') {
+    $course_grade_value = trim((string) $subject->year_level);
+    $course_grade_label = is_numeric($course_grade_value)
+        ? 'Grade ' . str_pad((int) $course_grade_value, 2, '0', STR_PAD_LEFT)
+        : $course_grade_value;
+}
+
+$course_avatar_source = isset($subject->code) ? preg_replace('/[^A-Za-z0-9]/', '', (string) $subject->code) : '';
+$course_avatar_label = strtoupper(substr($course_avatar_source !== '' ? $course_avatar_source : 'SB', 0, 2));
+$course_back_param = (string) $this->input->get('back', TRUE);
+$course_original_role_slug = isset($original_role_slug) ? (string) $original_role_slug : '';
+$course_back_label = 'Back to Subjects';
+
+if ($course_back_param === 'course/teacher_subjects') {
+    $course_back_label = 'Back to My Subjects';
+} elseif (strpos($course_back_param, 'academic/program_subjects/') === 0) {
+    $course_back_label = 'Back to Program Subjects';
+} elseif ($course_back_param === 'student') {
+    $course_back_label = 'Back to Student';
+} elseif ($course_back_param === 'dashboard') {
+    $course_back_label = 'Back to Dashboard';
+} elseif ($course_original_role_slug === 'teacher') {
+    $course_back_label = 'Back to My Subjects';
+}
 ?>
 
 <div class="cc-wrap">
-    <!-- Breadcrumb -->
-    <div class="cc-breadcrumb">
-        <a href="<?= $back_url ?>" class="cc-back-link">
-            <span class="cc-back-icon">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-            </span>
-            Back to Subjects
-        </a>
-    </div>
+    <a href="<?= $back_url ?>" class="cc-back-link">
+        <span class="cc-back-icon">
+            <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i>
+        </span>
+        <?= htmlspecialchars($course_back_label) ?>
+    </a>
 
     <!-- Hero Card -->
     <div class="cc-hero-card">
+        <div class="cc-hero-bg"></div>
         <div class="cc-hero-main">
+            <div class="cc-hero-content">
+                <div class="cc-hero-head">
+                    <div class="cc-hero-avatar"><?= htmlspecialchars($course_avatar_label) ?></div>
+                    <div class="cc-hero-copy">
+                        <div class="cc-hero-meta">
+                            <span class="cc-badge cc-badge--<?= htmlspecialchars($subject_system_type) ?>">
+                                <?= htmlspecialchars(strtoupper($subject_system_type)) ?>
+                            </span>
+                            <?php if ($course_grade_label !== ''): ?>
+                                <span class="cc-badge cc-badge--grade"><?= htmlspecialchars($course_grade_label) ?></span>
+                            <?php endif; ?>
+                            <?php if ($edit_mode): ?>
+                                <span class="cc-edit-indicator">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                        <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" stroke="currentColor" stroke-width="2" />
+                                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                    </svg>
+                                    Edit Mode
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <h1 class="cc-hero-title"><?= htmlspecialchars($subject->code) ?> - <?= htmlspecialchars($subject->description) ?></h1>
+                        <?php if (!empty($subject->name)): ?>
+                            <p class="cc-hero-subtitle"><?= htmlspecialchars($subject->name) ?></p>
+                        <?php endif; ?>
+                        <?php if ($course_grade_label !== ''): ?>
+                            <p class="cc-hero-subtitle cc-hero-subtitle--grade">
+                                <i class="bi bi-mortarboard"></i> <?= htmlspecialchars($course_grade_label) ?>
+                            </p>
+                        <?php endif; ?>
+                        <div class="cc-hero-stats" aria-label="Course summary">
+                            <span class="cc-stat-pill">
+                                <strong><?= (int) $course_module_count ?></strong>
+                                <span>Modules</span>
+                            </span>
+                            <span class="cc-stat-pill">
+                                <strong><?= (int) $course_lesson_count ?></strong>
+                                <span>Lessons</span>
+                            </span>
+                            <span class="cc-stat-pill">
+                                <strong><?= (int) $course_activity_count ?></strong>
+                                <span>Activities</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="cc-cover-wrap <?= empty($subject->cover_photo) ? 'cc-cover-wrap--empty' : '' ?>">
                 <?php if (!empty($subject->cover_photo)): ?>
                     <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Course Cover" class="cc-cover-img">
                 <?php else: ?>
                     <img src="<?= base_url('assets/images/default.jpg') ?>" alt="Default Course Cover" class="cc-cover-img">
                 <?php endif; ?>
-            </div>
-            <div class="cc-hero-content">
-                <div class="cc-hero-meta">
-                    <span class="cc-badge cc-badge--<?= htmlspecialchars($subject_system_type) ?>">
-                        <?= htmlspecialchars(strtoupper($subject_system_type)) ?>
-                    </span>
-                    <?php if ($edit_mode): ?>
-                        <span class="cc-edit-indicator">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" stroke="currentColor" stroke-width="2" />
-                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                            </svg>
-                            Edit Mode
-                        </span>
-                    <?php endif; ?>
-                </div>
-                <h1 class="cc-hero-title"><?= htmlspecialchars($subject->code) ?> - <?= htmlspecialchars($subject->description) ?></h1>
-                <?php if (!empty($subject->name)): ?>
-                    <p class="cc-hero-subtitle"><?= htmlspecialchars($subject->name) ?></p>
-                <?php endif; ?>
-                <?php if (!empty($subject->year_level)): ?>
-                    <p class="cc-hero-subtitle text-muted small">
-                        <i class="bi bi-mortarboard"></i> Grade <?= str_pad((int) $subject->year_level, 2, '0', STR_PAD_LEFT) ?>
-                    </p>
-                <?php endif; ?>
-                <div class="cc-hero-stats" aria-label="Course summary">
-                    <span class="cc-stat-pill">
-                        <strong><?= (int) $course_module_count ?></strong>
-                        <span>Modules</span>
-                    </span>
-                    <span class="cc-stat-pill">
-                        <strong><?= (int) $course_lesson_count ?></strong>
-                        <span>Lessons</span>
-                    </span>
-                    <span class="cc-stat-pill">
-                        <strong><?= (int) $course_activity_count ?></strong>
-                        <span>Activities</span>
-                    </span>
-                </div>
             </div>
         </div>
 
@@ -166,7 +198,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                         </svg>
                         Cover
                     </button>
-                    <?php $back_param = $this->input->get('back', TRUE) ?: ''; ?>
+                    <?php $back_param = $course_back_param; ?>
                     <a href="<?= site_url('course/content/' . $subject->id . ($back_param ? '?back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--ghost">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" stroke-width="2" />
@@ -181,7 +213,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                         Add Module
                     </button>
                 <?php elseif (empty($is_student_mode) && !empty($can_edit)): ?>
-                    <?php $back_param = $this->input->get('back', TRUE) ?: ''; ?>
+                    <?php $back_param = $course_back_param; ?>
                     <a href="<?= site_url('course/content/' . $subject->id . '?edit=1' . ($back_param ? '&back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--primary">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="2" />
@@ -960,7 +992,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
         max-width: 1400px;
         margin: 0 auto;
         padding: 1.5rem 2rem 4rem;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         color: #1e293b;
     }
 
@@ -972,31 +1004,28 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
     .cc-back-link {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #3b82f6;
+        gap: 0.2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #2563eb;
         text-decoration: none;
-        padding: 8px 14px 8px 10px;
-        border-radius: 10px;
-        background: rgba(59, 130, 246, 0.08);
-        transition: all 0.2s ease;
+        margin-bottom: 1.5rem;
+        padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+        border-radius: 8px;
+        transition: background 0.15s, color 0.15s;
     }
 
     .cc-back-link:hover {
-        background: rgba(59, 130, 246, 0.15);
-        color: #2563eb;
+        background: #dbeafe;
+        color: #1d4ed8;
+        text-decoration: none;
     }
 
     .cc-back-icon {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        background: rgba(59, 130, 246, 0.12);
-        color: #3b82f6;
+        color: inherit;
         flex-shrink: 0;
     }
 
@@ -2319,43 +2348,66 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
     }
 
     .cc-hero-card {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+        position: relative;
         overflow: hidden;
-        background: #ffffff;
+        border: 0;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
+        box-shadow: 0 4px 24px rgba(37, 99, 235, 0.16);
+    }
+
+    .cc-hero-bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
+    }
+
+    .cc-hero-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
 
     .cc-hero-main {
-        display: grid;
-        grid-template-columns: minmax(220px, 28%) 1fr;
-        min-height: 210px;
-        padding: 0;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        min-height: 0;
+        padding: 2rem 2.25rem 1.5rem;
     }
 
     .cc-cover-wrap {
         position: relative;
-        height: auto;
-        min-height: 210px;
+        z-index: 1;
+        flex: 0 0 220px;
+        width: 220px;
+        height: 152px;
+        min-height: 152px;
         margin: 0;
-        border-right: 1px solid #e7edf5;
-        background: #eef4f7;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 18px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 20px 40px rgba(8, 26, 61, 0.22);
+        backdrop-filter: blur(10px);
     }
 
     .cc-cover-img {
         width: 100%;
         height: 100%;
-        min-height: 210px;
-        object-fit: cover;
+        min-height: 152px;
+        object-fit: contain;
+        object-position: center;
+        background: rgba(255, 255, 255, 0.08);
         display: block;
     }
 
     .cc-cover-wrap--empty {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background:
-            linear-gradient(135deg, rgba(105, 108, 255, 0.08), rgba(16, 185, 129, 0.08)),
-            #f3f7fb;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
     }
 
     .cc-cover-fallback {
@@ -2382,56 +2434,127 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
     }
 
     .cc-hero-content {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        min-width: 0;
         justify-content: center;
-        padding: 1.5rem 1.75rem;
+        padding: 0;
+    }
+
+    .cc-hero-head {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        min-width: 0;
+    }
+
+    .cc-hero-avatar {
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+        font-size: 1.4rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        letter-spacing: 1px;
+    }
+
+    .cc-hero-copy {
+        min-width: 0;
+    }
+
+    .cc-hero-meta {
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .cc-badge {
+        padding: 0.2rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+    }
+
+    .cc-badge--deped,
+    .cc-badge--ched,
+    .cc-badge--tesda,
+    .cc-badge--general,
+    .cc-badge--grade {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .cc-edit-indicator {
+        background: rgba(251, 191, 36, 0.14);
+        color: #fde68a;
+        border: 1px solid rgba(253, 224, 71, 0.18);
     }
 
     .cc-hero-title {
         max-width: 920px;
-        color: #253446;
-        font-size: clamp(1.35rem, 2vw, 1.8rem);
-        line-height: 1.25;
+        color: #ffffff;
+        font-size: clamp(1.45rem, 2vw, 1.95rem);
+        line-height: 1.2;
     }
 
     .cc-hero-subtitle {
-        color: #697a8d;
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    .cc-hero-subtitle--grade {
+        color: rgba(255, 255, 255, 0.74);
     }
 
     .cc-hero-stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.65rem;
-        margin-top: 0.35rem;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
     }
 
     .cc-stat-pill {
         display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        min-height: 36px;
-        padding: 0.45rem 0.75rem;
-        border: 1px solid #e7edf5;
-        border-radius: 10px;
-        background: #f8fafc;
-        color: #697a8d;
-        font-size: 0.78rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+        min-width: 110px;
+        min-height: 0;
+        padding: 0.75rem 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.76rem;
         font-weight: 600;
     }
 
     .cc-stat-pill strong {
-        color: #253446;
-        font-size: 0.95rem;
+        color: #ffffff;
+        font-size: 1.2rem;
         font-variant-numeric: tabular-nums;
     }
 
     .cc-hero-actions {
+        position: relative;
+        z-index: 1;
         flex-direction: column;
         align-items: stretch;
         justify-content: center;
-        background: #ffffff;
-        border-top: 0;
-        border-left: 1px solid #eef2f7;
-        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid rgba(226, 232, 240, 0.6);
+        border-left: 0;
+        padding: 1.2rem 2.25rem 1.5rem;
     }
 
     .cc-hero-actions .cc-progress-wrap {
@@ -2464,12 +2587,12 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
     }
 
     .cc-btn--primary {
-        background: #696cff;
-        box-shadow: 0 8px 18px rgba(105, 108, 255, 0.22);
+        background: #2563eb;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
     }
 
     .cc-btn--primary:hover {
-        background: #5f61f4;
+        background: #1d4ed8;
         color: #ffffff;
     }
 
@@ -2507,8 +2630,8 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
         width: 34px;
         height: 34px;
         border-radius: 10px;
-        background: #696cff;
-        box-shadow: 0 8px 18px rgba(105, 108, 255, 0.2);
+        background: #2563eb;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
     }
 
     .cc-module-title {
@@ -2703,18 +2826,16 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
             padding-right: 0;
         }
 
-        .cc-hero-card {
-            grid-template-columns: 1fr;
-        }
-
         .cc-hero-main {
-            grid-template-columns: 1fr;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 1.5rem;
         }
 
         .cc-cover-wrap {
+            width: 100%;
             min-height: 180px;
-            border-right: 0;
-            border-bottom: 1px solid #e7edf5;
+            height: 180px;
         }
 
         .cc-cover-img {
@@ -2727,8 +2848,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
         }
 
         .cc-hero-actions {
-            border-left: 0;
-            border-top: 1px solid #eef2f7;
+            padding: 1rem 1.5rem 1.5rem;
         }
 
         .cc-action-btns {
@@ -2745,10 +2865,12 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
             padding: 0.75rem 0 2rem;
         }
 
-        .cc-hero-content,
-        .cc-hero-actions {
-            padding-left: 1rem;
-            padding-right: 1rem;
+        .cc-hero-main {
+            padding: 1.25rem;
+        }
+
+        .cc-hero-head {
+            align-items: flex-start;
         }
 
         .cc-hero-stats,
@@ -2757,12 +2879,15 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
         }
 
         .cc-stat-pill {
-            flex: 1 1 30%;
-            justify-content: center;
+            flex: 1 1 calc(50% - 0.5rem);
         }
 
         .cc-content-item {
             align-items: flex-start !important;
+        }
+
+        .cc-hero-actions {
+            padding: 1rem 1.25rem 1.25rem;
         }
 
         .cc-item-menu-btn {
@@ -2771,6 +2896,17 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
     }
 
     @media (max-width: 480px) {
+        .cc-hero-head {
+            flex-direction: column;
+        }
+
+        .cc-hero-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+        }
+
         .cc-stat-pill {
             flex-basis: 100%;
         }

@@ -800,6 +800,45 @@ class Academic extends MY_Controller {
         $this->render('academic/section_simple_edit_form', $data);
     }
 
+    public function delete_section($id)
+    {
+        $section = $this->Academic_model->get_section($id);
+        if (!$section) {
+            show_404();
+        }
+
+        if ($this->school_id && (int) $section->school_id !== (int) $this->school_id) {
+            show_error('You do not have permission to delete this section.', 403);
+        }
+
+        $dependency_counts = $this->Academic_model->get_section_dependency_counts($id);
+        if ($dependency_counts->enrollment_count > 0 || $dependency_counts->class_program_count > 0) {
+            $messages = array();
+
+            if ($dependency_counts->enrollment_count > 0) {
+                $messages[] = $dependency_counts->enrollment_count . ' enrollment' . ($dependency_counts->enrollment_count === 1 ? '' : 's');
+            }
+
+            if ($dependency_counts->class_program_count > 0) {
+                $messages[] = $dependency_counts->class_program_count . ' subject assignment' . ($dependency_counts->class_program_count === 1 ? '' : 's');
+            }
+
+            $this->session->set_flashdata(
+                'error',
+                'Section cannot be deleted because it still has ' . implode(' and ', $messages) . '.'
+            );
+            redirect('academic/sections');
+        }
+
+        if ($this->Academic_model->delete_section($id)) {
+            $this->session->set_flashdata('success', 'Section deleted.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to delete section.');
+        }
+
+        redirect('academic/sections');
+    }
+
     public function section_students($section_id)
     {
         $section = $this->Academic_model->get_section($section_id);
