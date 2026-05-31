@@ -84,8 +84,12 @@
                                     <td style="padding:0.75rem 1rem;">
                                         <?php if (isset($e->year_level) && $e->year_level): ?>
                                             <?= 'Grade ' . str_pad($e->year_level, 2, '0', STR_PAD_LEFT) ?>
-                                        <?php elseif ($e->grade_level_id): ?>
+                                        <?php elseif (isset($e->grade_level_name) && $e->grade_level_name): ?>
+                                            <?= htmlspecialchars($e->grade_level_name) ?>
+                                        <?php elseif ($e->grade_level_id && (int) $e->grade_level_id <= 12): ?>
                                             <?= 'Grade ' . str_pad($e->grade_level_id, 2, '0', STR_PAD_LEFT) ?>
+                                        <?php elseif ($e->grade_level_id): ?>
+                                            -
                                         <?php else: ?>
                                             -
                                         <?php endif; ?>
@@ -131,7 +135,9 @@
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1.25rem;text-align:center;">
                             <div style="font-size:2rem;font-weight:700;color:#6366f1;margin-bottom:0.5rem;"><?= $glc->count ?></div>
                             <div style="font-size:0.85rem;color:#64748b;font-weight:500;">
-                                <?php if ($glc->grade_level_id): ?>
+                                <?php if (isset($glc->year_level) && $glc->year_level): ?>
+                                    Grade <?= str_pad($glc->year_level, 2, '0', STR_PAD_LEFT) ?>
+                                <?php elseif (isset($glc->grade_level_id) && $glc->grade_level_id && (int) $glc->grade_level_id <= 12): ?>
                                     Grade <?= str_pad($glc->grade_level_id, 2, '0', STR_PAD_LEFT) ?>
                                 <?php else: ?>
                                     Unassigned

@@ -215,7 +215,12 @@ class Enrollment_model extends CI_Model {
         $stats['total_sections'] = $this->db->count_all_results('sections');
 
         // Count distinct grade levels from enrollments
-        $this->db->select('COUNT(DISTINCT grade_level_id) as count');
+        if ($this->db->field_exists('year_level', 'enrollments')) {
+            $this->db->select('COUNT(DISTINCT year_level) as count', FALSE);
+            $this->db->where('year_level IS NOT NULL', null, false);
+        } else {
+            $this->db->select('COUNT(DISTINCT grade_level_id) as count', FALSE);
+        }
         if ($school_id) {
             $this->db->where('school_id', $school_id);
         }
@@ -227,13 +232,20 @@ class Enrollment_model extends CI_Model {
 
     public function get_grade_level_counts($school_id = null)
     {
-        $this->db->select('grade_level_id, COUNT(*) as count');
+        if ($this->db->field_exists('year_level', 'enrollments')) {
+            $this->db->select('year_level, COUNT(*) as count', FALSE);
+            $this->db->where('year_level IS NOT NULL', null, false);
+            $group_field = 'year_level';
+        } else {
+            $this->db->select('grade_level_id, COUNT(*) as count', FALSE);
+            $group_field = 'grade_level_id';
+        }
         $this->db->where('status', 'enrolled');
         if ($school_id) {
             $this->db->where('school_id', $school_id);
         }
-        $this->db->group_by('grade_level_id');
-        $this->db->order_by('grade_level_id', 'ASC');
+        $this->db->group_by($group_field);
+        $this->db->order_by($group_field, 'ASC');
         return $this->db->get('enrollments')->result();
     }
 }

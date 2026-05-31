@@ -67,7 +67,8 @@ class Enrollment extends Admin_Controller
                 ->result();
         } else {
             $data['grade_levels'] = $this->db->where('school_id', $this->school_id)
-                ->get('grade_levels')
+                ->order_by('year_level', 'ASC')
+                ->get('programs')
                 ->result();
         }
 
@@ -132,9 +133,39 @@ class Enrollment extends Admin_Controller
             $section_id = $this->input->post('section_id', TRUE);
             $adviser_user_id = $this->input->post('adviser_id', TRUE);
 
+            $program_id = null;
+            $year_level = null;
+
+            if ($grade_level_id) {
+                $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+                if ($check_academic > 0) {
+                    $program = $this->db->select('id, year_level')
+                        ->where('id', $grade_level_id)
+                        ->get('academic_programs')
+                        ->row();
+                    if ($program) {
+                        $program_id = (int) $program->id;
+                        $year_level = isset($program->year_level) ? $program->year_level : null;
+                    }
+                } else {
+                    $program = $this->db->select('id, year_level')
+                        ->where('id', $grade_level_id)
+                        ->get('programs')
+                        ->row();
+                    if ($program) {
+                        $program_id = (int) $program->id;
+                        $year_level = isset($program->year_level) ? $program->year_level : null;
+                    } elseif (is_numeric($grade_level_id)) {
+                        $year_level = (int) $grade_level_id;
+                    }
+                }
+            }
+
             // Update enrollment record
             $enrollment_data = array(
                 'grade_level_id' => $grade_level_id,
+                'program_id' => $program_id,
+                'year_level' => $year_level,
                 'section_id' => $section_id
             );
 

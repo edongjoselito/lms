@@ -36,7 +36,7 @@
                                     // Use year_level if available, otherwise use name
                                     if (isset($gl->year_level) && $gl->year_level) {
                                         $name = 'Grade ' . str_pad($gl->year_level, 2, '0', STR_PAD_LEFT);
-                                        $value = $gl->year_level;
+                                        $value = $gl->id;
                                     } else {
                                         $name = htmlspecialchars($gl->name);
                                         $value = $gl->id;
@@ -46,7 +46,7 @@
                                         }
                                     }
                                     ?>
-                                    <option value="<?= $value ?>" <?= (isset($enrollment->year_level) && $enrollment->year_level == $value) ? 'selected' : '' ?>><?= $name ?></option>
+                                    <option value="<?= $value ?>" <?= ((int) $enrollment->grade_level_id === (int) $value) ? 'selected' : '' ?>><?= $name ?></option>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
