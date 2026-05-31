@@ -1,3 +1,5 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <!-- Profile Page -->
 <div class="pf-wrap">
 
@@ -206,49 +208,73 @@
 <style>
     /* ── Wrap ──────────────────────────────────────── */
     .pf-wrap {
-        max-width: 860px;
+        max-width: 960px;
         margin: 0 auto;
-        padding: 1rem 0 4rem;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-        color: #1d1d1f;
+        padding: 1.25rem 0 4rem;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #1e293b;
     }
 
     /* ── Hero ──────────────────────────────────────── */
     .pf-hero {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 1rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
+        padding: 2rem 2.1rem;
+        border-radius: 22px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #0d2453 0%, #13367a 52%, #2563eb 100%);
+        box-shadow: 0 4px 24px rgba(37, 99, 235, 0.16);
         flex-shrink: 0;
+    }
+
+    .pf-hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        pointer-events: none;
     }
 
     .pf-hero-icon {
+        position: relative;
+        z-index: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: #dbeafe;
-        color: #3b82f6;
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
         flex-shrink: 0;
     }
 
+    .pf-hero > div:last-child {
+        position: relative;
+        z-index: 1;
+        min-width: 0;
+    }
+
     .pf-hero-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 2px;
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 0 0.3rem;
         letter-spacing: -0.02em;
         line-height: 1.2;
     }
 
     .pf-hero-sub {
         font-size: 0.875rem;
-        color: #86868b;
+        color: rgba(255, 255, 255, 0.74);
         margin: 0;
-        line-height: 1.4;
-        white-space: nowrap;
+        line-height: 1.5;
+        max-width: 520px;
     }
 
     /* ── Identity Strip ────────────────────────────── */
@@ -257,11 +283,11 @@
         align-items: center;
         gap: 1rem;
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 16px;
-        padding: 1rem 1.25rem;
+        border: 1px solid #eaecf0;
+        border-radius: 20px;
+        padding: 1.15rem 1.3rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
         flex-wrap: nowrap;
     }
 
@@ -271,27 +297,28 @@
     }
 
     .pf-avatar {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
         background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
         color: #fff;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 800;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
         letter-spacing: .02em;
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
     }
 
     .pf-avatar-img {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
         object-fit: cover;
         display: block;
-        border: 2px solid rgba(0, 0, 0, 0.08);
+        border: 2px solid #dbeafe;
     }
 
     .pf-avatar-form {
@@ -305,7 +332,7 @@
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        background: #3b82f6;
+        background: #2563eb;
         color: #fff;
         display: flex;
         align-items: center;
@@ -317,7 +344,7 @@
     }
 
     .pf-avatar-upload:hover {
-        background: #2563eb;
+        background: #1d4ed8;
         transform: scale(1.05);
     }
 
@@ -352,8 +379,8 @@
 
     .pf-identity-name {
         font-size: 1rem;
-        font-weight: 600;
-        color: #1d1d1f;
+        font-weight: 700;
+        color: #1e293b;
         margin-bottom: 4px;
         letter-spacing: -0.01em;
         white-space: nowrap;
@@ -367,7 +394,7 @@
         flex-wrap: nowrap;
         gap: 0.5rem;
         font-size: 0.8125rem;
-        color: #86868b;
+        color: #64748b;
         white-space: nowrap;
         overflow: hidden;
     }
@@ -378,9 +405,9 @@
         gap: 4px;
         padding: 4px 10px;
         background: #dbeafe;
-        color: #3b82f6;
+        color: #1d4ed8;
         border-radius: 100px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.75rem;
     }
 
@@ -392,7 +419,7 @@
     }
 
     .pf-dot {
-        color: #d2d2d7;
+        color: #cbd5e1;
     }
 
     .pf-passwd-btn {
@@ -400,12 +427,12 @@
         align-items: center;
         gap: 6px;
         padding: 0.5rem 0.875rem;
-        background: #f5f5f7;
-        border: 1px solid #d2d2d7;
-        border-radius: 8px;
-        color: #1d1d1f;
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        color: #475569;
         font-size: 0.8125rem;
-        font-weight: 500;
+        font-weight: 600;
         text-decoration: none;
         transition: all 0.2s ease;
         margin-left: auto;
@@ -414,28 +441,28 @@
     }
 
     .pf-passwd-btn:hover {
-        background: #fff;
-        border-color: #3b82f6;
-        color: #3b82f6;
+        background: #f8fafc;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
     }
 
     /* ── Form Card ─────────────────────────────────── */
     .pf-card {
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 16px;
+        border: 1px solid #eaecf0;
+        border-radius: 20px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
     }
 
     /* ── Section ───────────────────────────────────── */
     .pf-section {
         padding: 1.75rem 2rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        border-bottom: 1px solid #f1f5f9;
     }
 
     .pf-section--readonly {
-        background: #fafafa;
+        background: #fafbff;
     }
 
     .pf-section-header {
@@ -453,8 +480,8 @@
         width: 36px;
         height: 36px;
         border-radius: 10px;
-        background: #f5f5f7;
-        color: #86868b;
+        background: #f8fafc;
+        color: #64748b;
         font-size: 1rem;
         flex-shrink: 0;
         margin-top: 1px;
@@ -472,14 +499,14 @@
 
     .pf-section-title {
         font-size: 0.9375rem;
-        font-weight: 600;
-        color: #1d1d1f;
+        font-weight: 700;
+        color: #1e293b;
         margin-bottom: 2px;
     }
 
     .pf-section-desc {
         font-size: 0.8125rem;
-        color: #86868b;
+        color: #64748b;
     }
 
     .pf-readonly-badge {
@@ -488,11 +515,11 @@
         align-items: center;
         gap: 4px;
         padding: 4px 10px;
-        background: #f5f5f7;
-        color: #86868b;
+        background: #eff6ff;
+        color: #1d4ed8;
         border-radius: 100px;
         font-size: 0.75rem;
-        font-weight: 500;
+        font-weight: 700;
     }
 
     /* ── Fields ────────────────────────────────────── */
@@ -519,8 +546,8 @@
 
     .pf-label {
         font-size: 0.8125rem;
-        font-weight: 600;
-        color: #1d1d1f;
+        font-weight: 700;
+        color: #1e293b;
         line-height: 1.3;
     }
 
@@ -531,10 +558,10 @@
     .pf-input {
         height: 44px;
         padding: 0 14px;
-        border: 1px solid rgba(0, 0, 0, 0.12);
+        border: 1.5px solid #e2e8f0;
         border-radius: 10px;
         font-size: 0.9375rem;
-        color: #1d1d1f;
+        color: #1e293b;
         background: #fff;
         transition: all 0.2s ease;
         outline: none;
@@ -543,7 +570,7 @@
     }
 
     .pf-input:hover {
-        border-color: rgba(0, 0, 0, 0.2);
+        border-color: #cbd5e1;
     }
 
     .pf-input:focus {
@@ -578,7 +605,7 @@
     .pf-readonly-item {
         grid-column: span 4;
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 1rem 1.15rem;
     }
@@ -588,8 +615,8 @@
         align-items: center;
         gap: 5px;
         font-size: 0.75rem;
-        font-weight: 600;
-        color: #86868b;
+        font-weight: 700;
+        color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.03em;
         margin-bottom: 6px;
@@ -597,14 +624,14 @@
 
     .pf-readonly-value {
         font-size: 0.9375rem;
-        font-weight: 600;
-        color: #1d1d1f;
+        font-weight: 700;
+        color: #1e293b;
         margin-bottom: 3px;
     }
 
     .pf-readonly-hint {
         font-size: 0.75rem;
-        color: #c4c4c4;
+        color: #94a3b8;
     }
 
     /* ── Actions ───────────────────────────────────── */
@@ -613,8 +640,8 @@
         align-items: center;
         gap: 0.75rem;
         padding: 1.25rem 2rem;
-        background: #fafafa;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        background: #fafbff;
+        border-top: 1px solid #f1f5f9;
     }
 
     .pf-save-btn {
@@ -627,9 +654,10 @@
         border: none;
         border-radius: 10px;
         font-size: 0.875rem;
-        font-weight: 500;
+        font-weight: 700;
         cursor: pointer;
         transition: all 0.2s ease;
+        box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
     }
 
     .pf-save-btn:hover {
@@ -644,29 +672,30 @@
 
     .pf-cancel-btn {
         padding: 9px 18px;
-        background: transparent;
-        border: 1px solid #e2e8f0;
+        background: #fff;
+        border: 1px solid #dbe3ef;
         border-radius: 10px;
         font-size: 0.875rem;
-        font-weight: 500;
-        color: #64748b;
+        font-weight: 600;
+        color: #475569;
         cursor: pointer;
         transition: background 0.15s, color 0.15s;
     }
 
     .pf-cancel-btn:hover {
-        background: #fff;
-        color: #374151;
+        background: #f8fafc;
+        color: #1e293b;
     }
 
     /* ── Responsive ────────────────────────────────── */
     @media (max-width: 768px) {
         .pf-wrap {
-            padding: 1rem;
+            padding: 1rem 0 2rem;
         }
 
         .pf-hero {
             margin-bottom: 1rem;
+            padding: 1.5rem;
         }
 
         .pf-hero-sub {

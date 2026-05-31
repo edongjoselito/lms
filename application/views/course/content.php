@@ -396,6 +396,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                         $is_lesson_item = $item->item_type === 'lesson';
                                         $is_quiz_item = !$is_lesson_item && $item->type === 'quiz';
                                         $is_completed_lesson = $is_lesson_item && in_array((int) $item->id, $completed_lesson_ids ?? array());
+                                        $is_completed_activity = !$is_lesson_item && in_array((int) $item->id, $completed_activity_ids ?? array());
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
                                         $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
                                         ?>
@@ -456,6 +457,9 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                             <h6 class="cc-item-title mb-1"><?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?></h6>
                                                             <small class="cc-item-meta text-muted">
                                                                 <span class="badge bg-light text-dark border"><?= $icon_info['label'] ?></span>
+                                                                <?php if ($is_completed_activity): ?>
+                                                                    <span class="ms-1 badge bg-success"><i class="bi bi-check2 me-1"></i>Completed</span>
+                                                                <?php endif; ?>
                                                                 <?php if ($is_quiz_item): ?>
                                                                     <span class="ms-1"><i class="bi bi-list-check"></i> <?= (int) ($item->question_count ?? 0) ?> Questions</span>
                                                                 <?php endif; ?>

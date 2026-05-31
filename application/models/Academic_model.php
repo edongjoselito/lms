@@ -593,76 +593,111 @@ class Academic_model extends CI_Model
             return array();
         }
 
-        $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, enrollments.created_at as enrolled_date, enrollments.student_id as user_id', FALSE)
+        $students = $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, sp.student_number, enrollments.created_at as enrolled_date, enrollments.student_id as user_id', FALSE)
             ->from('enrollments')
             ->join('users', 'users.id = enrollments.student_id')
+            ->join('studentprofile sp', 'sp.user_id = users.id', 'left')
             ->where('enrollments.section_id', $section_id)
             ->get()
             ->result();
 
         // Calculate progress for each student if subject_id is provided
         if ($subject_id) {
+            $total_lesson_count = (int) $this->db->select('COUNT(l.id) as count', FALSE)
+                ->from('lessons l')
+                ->join('modules m', 'm.id = l.module_id')
+                ->where('m.subject_id', $subject_id)
+                ->where('m.is_published', 1)
+                ->where('l.is_published', 1)
+                ->get()
+                ->row()->count;
+
+            $assessment_rows = $this->db->select('DISTINCT(a.id) as activity_id', FALSE)
+                ->from('activities a')
+                ->join('modules m', 'm.id = a.module_id')
+                ->join('quizzes q', 'q.component_id = a.id')
+                ->where('m.subject_id', $subject_id)
+                ->where('m.is_published', 1)
+                ->where('a.is_published', 1)
+                ->where('a.type', 'quiz')
+                ->where('q.is_published', 1)
+                ->get()
+                ->result();
+
+            $assessment_activity_ids = array_map(function($row) {
+                return (int) $row->activity_id;
+            }, $assessment_rows);
+
+            $total_items = $total_lesson_count + count($assessment_activity_ids);
+            $has_activity_progress_table = $this->db->query("SHOW TABLES LIKE 'activity_progress'")->num_rows() > 0;
+
             foreach ($students as $student) {
                 // Get the student record to get the proper student_id for lesson_completions
                 $student_record = $this->db->where('user_id', $student->user_id)->get('students')->row();
                 $student_db_id = $student_record ? $student_record->id : null;
-                
-                // Get all items (lessons, activities, assessments) for the subject
-                $modules = $this->db->select('id')
-                    ->where('subject_id', $subject_id)
-                    ->where('is_published', 1)
-                    ->get('modules')
-                    ->result();
-                
-                $total_items = 0;
-                $completed_items = 0;
-                
-                foreach ($modules as $module) {
-                    // Count lessons
-                    $lesson_count = $this->db->select('COUNT(id) as count')
-                        ->where('module_id', $module->id)
-                        ->where('is_published', 1)
-                        ->get('lessons')
+
+                $completed_lesson_count = 0;
+                if ($student_db_id) {
+                    $completed_lesson_count = (int) $this->db->select('COUNT(lc.lesson_id) as count', FALSE)
+                        ->from('lesson_completions lc')
+                        ->join('lessons l', 'l.id = lc.lesson_id')
+                        ->join('modules m', 'm.id = l.module_id')
+                        ->where('lc.student_id', $student_db_id)
+                        ->where('m.subject_id', $subject_id)
+                        ->where('m.is_published', 1)
+                        ->where('l.is_published', 1)
+                        ->get()
                         ->row()->count;
-                    $total_items += $lesson_count;
-                    
-                    // Count activities (including assessments)
-                    $activity_count = $this->db->select('COUNT(id) as count')
-                        ->where('module_id', $module->id)
-                        ->where('is_published', 1)
-                        ->get('activities')
-                        ->row()->count;
-                    $total_items += $activity_count;
-                    
-                    // Count completed lessons
-                    if ($student_db_id) {
-                        $completed_lesson_count = $this->db->select('COUNT(lc.lesson_id) as count')
-                            ->from('lesson_completions lc')
-                            ->join('lessons l', 'l.id = lc.lesson_id')
-                            ->where('lc.student_id', $student_db_id)
-                            ->where('l.module_id', $module->id)
-                            ->where('l.is_published', 1)
-                            ->get()
-                            ->row()->count;
-                        $completed_items += $completed_lesson_count;
-                    }
-                    
-                    // Count completed activities
-                    $checkActivityProgress = $this->db->query("SHOW TABLES LIKE 'activity_progress'")->num_rows();
-                    if ($checkActivityProgress > 0) {
-                        $completed_activity_count = $this->db->select('COUNT(id) as count')
-                            ->where('student_id', $student->user_id)
-                            ->where('status', 'completed')
-                            ->from('activity_progress ap')
-                            ->join('activities a', 'a.id = ap.activity_id')
-                            ->where('a.module_id', $module->id)
-                            ->where('a.is_published', 1)
-                            ->get()
-                            ->row()->count;
-                        $completed_items += $completed_activity_count;
-                    }
                 }
-                
+
+                $completed_assessment_ids = array();
+
+                if ($has_activity_progress_table) {
+                    $activity_progress_rows = $this->db->select('DISTINCT(a.id) as activity_id', FALSE)
+                        ->from('activity_progress ap')
+                        ->join('activities a', 'a.id = ap.activity_id')
+                        ->join('modules m', 'm.id = a.module_id')
+                        ->join('quizzes q', 'q.component_id = a.id')
+                        ->where('ap.student_id', $student->user_id)
+                        ->where('ap.status', 'completed')
+                        ->where('m.subject_id', $subject_id)
+                        ->where('m.is_published', 1)
+                        ->where('a.is_published', 1)
+                        ->where('a.type', 'quiz')
+                        ->where('q.is_published', 1)
+                        ->get()
+                        ->result();
+
+                    $completed_assessment_ids = array_map(function($row) {
+                        return (int) $row->activity_id;
+                    }, $activity_progress_rows);
+                }
+
+                $quiz_attempt_rows = $this->db->select('DISTINCT(a.id) as activity_id', FALSE)
+                    ->from('quiz_attempts qa')
+                    ->join('quizzes q', 'q.id = qa.quiz_id')
+                    ->join('activities a', 'a.id = q.component_id')
+                    ->join('modules m', 'm.id = a.module_id')
+                    ->where('qa.student_id', $student->user_id)
+                    ->where_in('qa.status', array('submitted', 'graded'))
+                    ->where('m.subject_id', $subject_id)
+                    ->where('m.is_published', 1)
+                    ->where('a.is_published', 1)
+                    ->where('a.type', 'quiz')
+                    ->where('q.is_published', 1)
+                    ->get()
+                    ->result();
+
+                $quiz_attempt_activity_ids = array_map(function($row) {
+                    return (int) $row->activity_id;
+                }, $quiz_attempt_rows);
+
+                $completed_assessment_ids = array_values(array_intersect(
+                    $assessment_activity_ids,
+                    array_unique(array_merge($completed_assessment_ids, $quiz_attempt_activity_ids))
+                ));
+
+                $completed_items = $completed_lesson_count + count($completed_assessment_ids);
                 $student->progress_percent = $total_items > 0 ? round(($completed_items / $total_items) * 100) : 0;
                 $student->completed_items = $completed_items;
                 $student->total_items = $total_items;
@@ -670,6 +705,95 @@ class Academic_model extends CI_Model
         }
 
         return $students;
+    }
+
+    public function get_section_student($section_id, $student_user_id)
+    {
+        return $this->db->select('CONCAT(users.first_name, " ", users.last_name) as name, users.email, enrollments.created_at as enrolled_date, enrollments.student_id as user_id, students.id as student_db_id', FALSE)
+            ->from('enrollments')
+            ->join('users', 'users.id = enrollments.student_id')
+            ->join('students', 'students.user_id = users.id', 'left')
+            ->where('enrollments.section_id', $section_id)
+            ->where('enrollments.student_id', $student_user_id)
+            ->get()
+            ->row();
+    }
+
+    public function get_student_subject_lesson_records($student_db_id, $subject_id)
+    {
+        $this->db->select('l.id, l.title, l.content_type, l.duration_minutes, m.title as module_title, lc.completed_at');
+        $this->db->from('lessons l');
+        $this->db->join('modules m', 'm.id = l.module_id');
+
+        if ($student_db_id) {
+            $this->db->join(
+                'lesson_completions lc',
+                'lc.lesson_id = l.id AND lc.student_id = ' . (int) $student_db_id,
+                'left'
+            );
+        } else {
+            $this->db->join('lesson_completions lc', 'lc.lesson_id = l.id AND 1 = 0', 'left');
+        }
+
+        $this->db->where('m.subject_id', $subject_id);
+        $this->db->where('m.is_published', 1);
+        $this->db->where('l.is_published', 1);
+        $this->db->order_by('m.order_num', 'ASC');
+        $this->db->order_by('l.order_num', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_student_subject_assessment_records($student_user_id, $subject_id)
+    {
+        $rows = $this->db->select('a.id as activity_id, a.title as activity_title, a.order_num as activity_order_num, m.title as module_title, m.order_num as module_order_num, q.id as quiz_id, q.title as quiz_title, q.quiz_type, q.total_points as quiz_total_points, qa.id as attempt_id, qa.attempt_number, qa.status as attempt_status, qa.score, qa.total_points as attempt_total_points, qa.percentage, qa.started_at, qa.submitted_at, qa.graded_at', FALSE)
+            ->from('activities a')
+            ->join('modules m', 'm.id = a.module_id')
+            ->join('quizzes q', 'q.component_id = a.id')
+            ->join('quiz_attempts qa', 'qa.quiz_id = q.id AND qa.student_id = ' . (int) $student_user_id, 'left')
+            ->where('m.subject_id', $subject_id)
+            ->where('m.is_published', 1)
+            ->where('a.is_published', 1)
+            ->where('a.type', 'quiz')
+            ->where('q.is_published', 1)
+            ->order_by('m.order_num', 'ASC')
+            ->order_by('a.order_num', 'ASC')
+            ->order_by('qa.attempt_number', 'ASC')
+            ->get()
+            ->result();
+
+        $records = array();
+        foreach ($rows as $row) {
+            $activity_id = (int) $row->activity_id;
+
+            if (!isset($records[$activity_id])) {
+                $record = new stdClass();
+                $record->activity_id = $activity_id;
+                $record->activity_title = $row->activity_title;
+                $record->module_title = $row->module_title;
+                $record->quiz_id = (int) $row->quiz_id;
+                $record->quiz_title = $row->quiz_title;
+                $record->quiz_type = $row->quiz_type;
+                $record->quiz_total_points = $row->quiz_total_points;
+                $record->attempts = array();
+                $records[$activity_id] = $record;
+            }
+
+            if (!empty($row->attempt_id)) {
+                $attempt = new stdClass();
+                $attempt->id = (int) $row->attempt_id;
+                $attempt->attempt_number = (int) $row->attempt_number;
+                $attempt->status = $row->attempt_status;
+                $attempt->score = $row->score;
+                $attempt->total_points = $row->attempt_total_points;
+                $attempt->percentage = $row->percentage;
+                $attempt->started_at = $row->started_at;
+                $attempt->submitted_at = $row->submitted_at;
+                $attempt->graded_at = $row->graded_at;
+                $records[$activity_id]->attempts[] = $attempt;
+            }
+        }
+
+        return array_values($records);
     }
 
     public function can_delete_section($section_id)

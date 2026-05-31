@@ -30,10 +30,11 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Email</th>
+                        <th>Student No.</th>
                         <th>Enrolled Date</th>
                         <?php if (isset($subject_id) && $subject_id): ?>
                             <th>Progress</th>
+                            <th>Actions</th>
                         <?php endif; ?>
                     </tr>
                 </thead>
@@ -41,7 +42,7 @@
                     <?php foreach ($students as $student): ?>
                         <tr>
                             <td><?= htmlspecialchars($student->name) ?></td>
-                            <td><?= htmlspecialchars($student->email) ?></td>
+                            <td><?= isset($student->student_number) ? htmlspecialchars($student->student_number) : '-' ?></td>
                             <td><?= htmlspecialchars($student->enrolled_date) ?></td>
                             <?php if (isset($subject_id) && $subject_id): ?>
                                 <td>
@@ -51,6 +52,11 @@
                                         </div>
                                     </div>
                                     <small class="text-muted"><?= $student->completed_items ?> / <?= $student->total_items ?> items</small>
+                                </td>
+                                <td>
+                                    <a href="<?= site_url('academic/student_subject_records/' . $section->id . '/' . $student->user_id . '?subject_id=' . $subject_id) ?>" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-folder2-open me-1"></i> View Records
+                                    </a>
                                 </td>
                             <?php endif; ?>
                         </tr>

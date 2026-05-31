@@ -6,7 +6,7 @@ class Academic extends MY_Controller {
     public function __construct()
     {
         parent::__construct();
-        if ($this->router->fetch_method() === 'section_students') {
+        if (in_array($this->router->fetch_method(), array('section_students', 'student_subject_records'))) {
             $this->require_login();
         } else {
             $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
@@ -856,6 +856,68 @@ class Academic extends MY_Controller {
         $data['students'] = $students;
         $data['subject_id'] = $subject_id;
         $this->render('academic/section_students', $data);
+    }
+
+    public function student_subject_records($section_id, $student_user_id)
+    {
+        $section = $this->Academic_model->get_section($section_id);
+        if (!$section) show_404();
+
+        $subject_id = (int) $this->input->get('subject_id', TRUE);
+        if ($subject_id <= 0) show_404();
+
+        if (!$this->can_access_section_students($section, $subject_id)) {
+            show_error('You do not have permission to access this page.', 403);
+        }
+
+        $student = $this->Academic_model->get_section_student($section_id, (int) $student_user_id);
+        if (!$student) show_404();
+
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject) show_404();
+
+        $lesson_records = $this->Academic_model->get_student_subject_lesson_records($student->student_db_id, $subject_id);
+        $assessment_records = $this->Academic_model->get_student_subject_assessment_records((int) $student_user_id, $subject_id);
+
+        $completed_lesson_count = 0;
+        foreach ($lesson_records as $record) {
+            if (!empty($record->completed_at)) {
+                $completed_lesson_count++;
+            }
+        }
+
+        $completed_assessment_count = 0;
+        $attempt_count = 0;
+        foreach ($assessment_records as $assessment) {
+            if (!empty($assessment->attempts)) {
+                $attempt_count += count($assessment->attempts);
+                foreach ($assessment->attempts as $attempt) {
+                    if (in_array($attempt->status, array('submitted', 'graded'), true)) {
+                        $completed_assessment_count++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        $total_items = count($lesson_records) + count($assessment_records);
+        $completed_items = $completed_lesson_count + $completed_assessment_count;
+        $progress_percent = $total_items > 0 ? round(($completed_items / $total_items) * 100) : 0;
+
+        $data['title'] = 'Student Records - ' . htmlspecialchars($student->name);
+        $data['section'] = $section;
+        $data['subject'] = $subject;
+        $data['student'] = $student;
+        $data['subject_id'] = $subject_id;
+        $data['lesson_records'] = $lesson_records;
+        $data['assessment_records'] = $assessment_records;
+        $data['completed_lesson_count'] = $completed_lesson_count;
+        $data['completed_assessment_count'] = $completed_assessment_count;
+        $data['attempt_count'] = $attempt_count;
+        $data['completed_items'] = $completed_items;
+        $data['total_items'] = $total_items;
+        $data['progress_percent'] = $progress_percent;
+        $this->render('academic/student_subject_records', $data);
     }
 
     public function migrate_adviser_to_user()

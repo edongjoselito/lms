@@ -33,6 +33,47 @@ class Quiz_model extends CI_Model {
         return $this->db->where('id', $id)->get('quizzes')->row();
     }
 
+    public function get_subject_quiz_activity_ids($subject_id, $published_only = true)
+    {
+        $this->db->select('DISTINCT(a.id) as activity_id', FALSE)
+                 ->from('activities a')
+                 ->join('modules m', 'm.id = a.module_id')
+                 ->join('quizzes q', 'q.component_id = a.id')
+                 ->where('m.subject_id', $subject_id)
+                 ->where('a.type', 'quiz');
+
+        if ($published_only) {
+            $this->db->where('m.is_published', 1)
+                     ->where('a.is_published', 1)
+                     ->where('q.is_published', 1);
+        }
+
+        $rows = $this->db->get()->result();
+        return array_map(function($row) { return (int) $row->activity_id; }, $rows);
+    }
+
+    public function get_completed_quiz_activity_ids_by_subject($subject_id, $student_id, $published_only = true)
+    {
+        $this->db->select('DISTINCT(a.id) as activity_id', FALSE)
+                 ->from('quiz_attempts qa')
+                 ->join('quizzes q', 'q.id = qa.quiz_id')
+                 ->join('activities a', 'a.id = q.component_id')
+                 ->join('modules m', 'm.id = a.module_id')
+                 ->where('qa.student_id', $student_id)
+                 ->where_in('qa.status', array('submitted', 'graded'))
+                 ->where('m.subject_id', $subject_id)
+                 ->where('a.type', 'quiz');
+
+        if ($published_only) {
+            $this->db->where('m.is_published', 1)
+                     ->where('a.is_published', 1)
+                     ->where('q.is_published', 1);
+        }
+
+        $rows = $this->db->get()->result();
+        return array_map(function($row) { return (int) $row->activity_id; }, $rows);
+    }
+
     public function create_quiz($data)
     {
         $this->db->insert('quizzes', $data);

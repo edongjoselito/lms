@@ -3,6 +3,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Course extends MY_Controller {
 
+    private $activity_progress_table_exists = null;
+    private $current_student_record_loaded = false;
+    private $current_student_record = null;
+
     public function __construct()
     {
         parent::__construct();
@@ -215,11 +219,13 @@ class Course extends MY_Controller {
         unset($module);
         $modules = array_values($modules);
         $completed_lesson_ids = array();
+        $completed_activity_ids = array();
         $accessible_lesson_ids = array();
         $progress_percent = 0;
 
         if ($student_content_view && $this->current_user && $has_subject_access) {
             $completed_lesson_ids = $this->get_current_completed_lesson_ids($subject_id);
+            $completed_activity_ids = $this->get_current_completed_activity_ids($subject_id);
             $progress_percent = $this->get_current_subject_progress_percent($subject_id);
 
             foreach ($this->Lesson_model->get_subject_lesson_ids($subject_id, $filter_unpublished) as $lesson_id) {
@@ -238,6 +244,7 @@ class Course extends MY_Controller {
         $data['can_edit']           = $can_edit;
         $data['can_manage_sections'] = !$student_content_view && $can_manage_sections;
         $data['completed_lesson_ids'] = $completed_lesson_ids;
+        $data['completed_activity_ids'] = $completed_activity_ids;
         $data['accessible_lesson_ids'] = $accessible_lesson_ids;
         $data['progress_percent'] = $progress_percent;
         $data['student_content_view'] = $student_content_view;
@@ -265,6 +272,7 @@ class Course extends MY_Controller {
         $items = array();
         $modules = $this->Lesson_model->get_modules_by_subject($subject_id);
         $completed_lesson_ids = $this->get_current_completed_lesson_ids($subject_id);
+        $completed_activity_ids = $this->get_current_completed_activity_ids($subject_id);
         $filter_unpublished = $this->should_filter_unpublished_content();
 
         foreach ($modules as $module) {
@@ -303,7 +311,7 @@ class Course extends MY_Controller {
                     'module_title' => $module->title,
                     'order_num' => $activity->order_num,
                     'url' => site_url('course/' . ($activity->type === 'quiz' ? 'assessment' : 'activity') . '/' . $activity->id),
-                    'is_completed' => false,
+                    'is_completed' => in_array((int) $activity->id, $completed_activity_ids),
                     'is_accessible' => $this->is_item_accessible($activity->id, $activity->type, $subject_id),
                 );
             }
@@ -357,6 +365,32 @@ class Course extends MY_Controller {
         $this->session->set_userdata('preview_completed_activities', array_values(array_unique(array_map('intval', $activity_ids))));
     }
 
+    private function get_current_student_record()
+    {
+        if ($this->current_student_record_loaded) {
+            return $this->current_student_record;
+        }
+
+        $this->current_student_record_loaded = true;
+        if (!$this->current_user) {
+            $this->current_student_record = null;
+            return null;
+        }
+
+        $this->current_student_record = $this->Student_model->get_student_by_user_id($this->current_user->id);
+        return $this->current_student_record;
+    }
+
+    private function has_activity_progress_table()
+    {
+        if ($this->activity_progress_table_exists !== null) {
+            return $this->activity_progress_table_exists;
+        }
+
+        $this->activity_progress_table_exists = $this->db->query("SHOW TABLES LIKE 'activity_progress'")->num_rows() > 0;
+        return $this->activity_progress_table_exists;
+    }
+
     private function get_current_completed_lesson_ids($subject_id)
     {
         if (!$this->is_student_content_view() || !$this->current_user) {
@@ -368,16 +402,27 @@ class Course extends MY_Controller {
             return array_values(array_intersect($subject_lesson_ids, $this->get_preview_completed_lesson_ids()));
         }
 
-        return $this->Lesson_model->get_completed_lesson_ids_by_subject($subject_id, $this->current_user->id);
+        $student = $this->get_current_student_record();
+        if (!$student) {
+            $subject_lesson_ids = $this->Lesson_model->get_subject_lesson_ids($subject_id, $this->should_filter_unpublished_content());
+            return array_values(array_intersect($subject_lesson_ids, $this->get_preview_completed_lesson_ids()));
+        }
+
+        return $this->Lesson_model->get_completed_lesson_ids_by_subject($subject_id, $student->id);
     }
 
     private function get_current_subject_progress_percent($subject_id)
     {
-        $total = $this->Lesson_model->get_subject_lesson_ids($subject_id, $this->should_filter_unpublished_content());
-        if (empty($total)) return 0;
+        $published_only = $this->should_filter_unpublished_content();
+        $lesson_ids = $this->Lesson_model->get_subject_lesson_ids($subject_id, $published_only);
+        $assessment_activity_ids = $this->Quiz_model->get_subject_quiz_activity_ids($subject_id, $published_only);
+        $total_items = count($lesson_ids) + count($assessment_activity_ids);
+        if ($total_items < 1) return 0;
 
-        $completed = $this->get_current_completed_lesson_ids($subject_id);
-        return round((count($completed) / count($total)) * 100);
+        $completed_lesson_ids = array_values(array_intersect($lesson_ids, $this->get_current_completed_lesson_ids($subject_id)));
+        $completed_activity_ids = array_values(array_intersect($assessment_activity_ids, $this->get_current_completed_activity_ids($subject_id)));
+
+        return round(((count($completed_lesson_ids) + count($completed_activity_ids)) / $total_items) * 100);
     }
 
     private function is_current_lesson_accessible($lesson_id, $subject_id)
@@ -464,12 +509,25 @@ class Course extends MY_Controller {
             return $this->get_preview_completed_activity_ids();
         }
 
-        $this->db->select('activity_id');
-        $this->db->where('student_id', $this->current_user->id);
-        $this->db->where('status', 'completed');
-        $this->db->from('activity_progress');
-        $result = $this->db->get()->result();
-        return array_map(function($r) { return (int) $r->activity_id; }, $result);
+        $completed_activity_ids = array();
+        if (!$this->has_activity_progress_table()) {
+            $completed_activity_ids = $this->get_preview_completed_activity_ids();
+        } else {
+            $this->db->select('activity_id');
+            $this->db->where('student_id', $this->current_user->id);
+            $this->db->where('status', 'completed');
+            $this->db->from('activity_progress');
+            $result = $this->db->get()->result();
+            $completed_activity_ids = array_map(function($row) { return (int) $row->activity_id; }, $result);
+        }
+
+        $completed_quiz_activity_ids = $this->Quiz_model->get_completed_quiz_activity_ids_by_subject(
+            $subject_id,
+            $this->current_user->id,
+            $this->should_filter_unpublished_content()
+        );
+
+        return array_values(array_unique(array_merge($completed_activity_ids, $completed_quiz_activity_ids)));
     }
 
     private function get_current_lesson_progress($lesson_id)
@@ -519,13 +577,24 @@ class Course extends MY_Controller {
             return;
         }
 
-        $student_id = $this->current_user->id;
-        $this->Lesson_model->mark_lesson_completed($student_id, $lesson_id);
+        $student = $this->get_current_student_record();
+        if ($student) {
+            $this->Lesson_model->mark_lesson_completed($student->id, $lesson_id);
+        } else {
+            $completed = $this->get_preview_completed_lesson_ids();
+            $completed[] = (int) $lesson_id;
+            $this->set_preview_completed_lesson_ids($completed);
+        }
+
+        $this->Lesson_model->update_progress($this->current_user->id, $lesson_id, array(
+            'status' => 'completed',
+            'progress_percent' => 100,
+        ));
     }
 
     private function mark_current_activity_completed($activity_id)
     {
-        if ($this->use_preview_progress()) {
+        if ($this->use_preview_progress() || !$this->has_activity_progress_table()) {
             $completed = $this->get_preview_completed_activity_ids();
             $completed[] = (int) $activity_id;
             $this->set_preview_completed_activity_ids($completed);
@@ -1963,6 +2032,13 @@ class Course extends MY_Controller {
             $availability_error = $this->assessment_availability_error($quiz);
             $max_attempts = max(1, (int) $quiz->max_attempts);
             $can_start = $questions_count > 0 && !$availability_error && (!$in_progress_attempt && count($attempts) < $max_attempts);
+            $latest_result_attempt = null;
+
+            foreach ($attempts as $attempt) {
+                if ($attempt->status !== 'in_progress') {
+                    $latest_result_attempt = $attempt;
+                }
+            }
 
             $data['title'] = 'Assessment: ' . $quiz->title;
             $data['subject'] = $subject;
@@ -1974,6 +2050,7 @@ class Course extends MY_Controller {
             $data['in_progress_attempt'] = $in_progress_attempt;
             $data['availability_error'] = $availability_error;
             $data['can_start'] = $can_start;
+            $data['latest_result_attempt'] = $latest_result_attempt;
             $data['student_content_view'] = true;
             $this->render('course/assessment_intro', $data);
             return;
