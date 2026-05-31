@@ -24,6 +24,7 @@ class Schools extends MY_Controller
         $total_schools = count($schools);
         $active_schools = 0;
         $inactive_schools = 0;
+        $pending_schools = 0;
         $school_types = array('deped' => 0, 'ched' => 0, 'tesda' => 0, 'both' => 0, 'basic' => 0, 'college' => 0, 'tech_voc' => 0);
 
         foreach ($schools as $s) {
@@ -31,6 +32,9 @@ class Schools extends MY_Controller
                 $active_schools++;
             } else {
                 $inactive_schools++;
+                if (!empty($s->confirmation_token)) {
+                    $pending_schools++;
+                }
             }
 
             $type = isset($s->type) ? $s->type : 'deped';
@@ -50,6 +54,7 @@ class Schools extends MY_Controller
         $data['total_schools'] = $total_schools;
         $data['active_schools'] = $active_schools;
         $data['inactive_schools'] = $inactive_schools;
+        $data['pending_schools'] = $pending_schools;
         $data['school_types'] = $school_types;
         $data['total_students'] = $total_students;
         $data['recent_schools'] = array_slice($schools, 0, 5);
@@ -249,11 +254,21 @@ class Schools extends MY_Controller
                     $config['max_size'] = 2048; // 2MB
                     $config['file_name'] = 'school_' . $id . '_' . time();
                     $config['overwrite'] = true;
+                    $config['file_ext_tolower'] = true;
 
                     $this->load->library('upload', $config);
 
                     if ($this->upload->do_upload('logo')) {
                         $upload_data = $this->upload->data();
+
+                        // Additional security: verify the uploaded file is actually an image
+                        $allowed_mime = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp');
+                        if (!in_array($upload_data['file_type'], $allowed_mime)) {
+                            @unlink($upload_path . $upload_data['file_name']);
+                            $this->session->set_flashdata('error', 'Invalid file type detected.');
+                            redirect('schools/edit/' . $id);
+                        }
+
                         $d['logo'] = 'uploads/school_logos/' . $upload_data['file_name'];
                     } else {
                         $this->session->set_flashdata('error', 'Logo upload failed: ' . $this->upload->display_errors('', ''));
@@ -296,11 +311,21 @@ class Schools extends MY_Controller
                     $config['max_size'] = 2048; // 2MB
                     $config['file_name'] = 'school_' . $id . '_' . time();
                     $config['overwrite'] = true;
+                    $config['file_ext_tolower'] = true;
 
                     $this->load->library('upload', $config);
 
                     if ($this->upload->do_upload('logo')) {
                         $upload_data = $this->upload->data();
+
+                        // Additional security: verify the uploaded file is actually an image
+                        $allowed_mime = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp');
+                        if (!in_array($upload_data['file_type'], $allowed_mime)) {
+                            @unlink($upload_path . $upload_data['file_name']);
+                            $this->session->set_flashdata('error', 'Invalid file type detected.');
+                            redirect('schools/edit/' . $id);
+                        }
+
                         $d['logo'] = 'uploads/school_logos/' . $upload_data['file_name'];
                     } else {
                         $this->session->set_flashdata('error', 'Logo upload failed: ' . $this->upload->display_errors('', ''));
@@ -427,7 +452,7 @@ class Schools extends MY_Controller
 
     public function migrate_grade_levels()
     {
-        $this->require_login();
+        $this->require_role(array('super_admin'));
 
         try {
             // Check if school_id column exists
@@ -457,7 +482,7 @@ class Schools extends MY_Controller
 
     public function migrate_unified_academic_programs()
     {
-        $this->require_login();
+        $this->require_role(array('super_admin'));
 
         try {
             // Step 1: Create the unified academic_programs table
@@ -551,6 +576,8 @@ class Schools extends MY_Controller
 
     public function migrate_subjects_school_id()
     {
+        $this->require_role(array('super_admin'));
+
         try {
             // Update subjects with NULL school_id to use school_id from their program or grade level
             $this->db->query("
@@ -706,5 +733,135 @@ class Schools extends MY_Controller
         }
 
         redirect('schools');
+    }
+
+    public function pending()
+    {
+        $this->require_role(array('super_admin'));
+
+        $pending_schools = $this->db->where('status', 0)
+            ->where('confirmation_token IS NOT NULL')
+            ->order_by('created_at', 'DESC')
+            ->get('schools')
+            ->result();
+
+        $data['title'] = 'Pending School Approvals';
+        $data['pending_schools'] = $pending_schools;
+        $this->render('schools/pending', $data);
+    }
+
+    public function approve_school($id)
+    {
+        $this->require_role(array('super_admin'));
+
+        $school = $this->db->where('id', $id)->get('schools')->row();
+        if (!$school) {
+            $this->session->set_flashdata('error', 'School not found.');
+            redirect('schools/pending');
+        }
+
+        if ($school->status == 1) {
+            $this->session->set_flashdata('info', 'School is already approved.');
+            redirect('schools/pending');
+        }
+
+        // Approve the school
+        $this->db->where('id', $id)->update('schools', array(
+            'status' => 1,
+            'confirmation_token' => null,
+            'confirmed_at' => date('Y-m-d H:i:s')
+        ));
+
+        // Create school admin account
+        $this->_create_school_admin_for_signup($id, $school->email, $school->name);
+
+        // Create default school year
+        $this->db->insert('school_years', array(
+            'school_id'  => $id,
+            'year_start' => date('Y'),
+            'year_end'   => date('Y') + 1,
+            'is_active'  => 1,
+        ));
+
+        // Audit log
+        $this->Audit_model->log('update', 'school', $id, $school->name, 'Manually approved school: ' . $school->name);
+
+        $this->session->set_flashdata('success', 'School approved successfully. School admin account has been created.');
+        redirect('schools/pending');
+    }
+
+    public function reject_school($id)
+    {
+        $this->require_role(array('super_admin'));
+
+        $school = $this->db->where('id', $id)->get('schools')->row();
+        if (!$school) {
+            $this->session->set_flashdata('error', 'School not found.');
+            redirect('schools/pending');
+        }
+
+        $school_name = $school->name;
+
+        // Delete school (cascade will handle related records)
+        $this->School_model->delete($id);
+
+        // Audit log
+        $this->Audit_model->log('delete', 'school', $id, $school_name, 'Rejected and deleted school: ' . $school_name);
+
+        $this->session->set_flashdata('success', 'School rejected and deleted.');
+        redirect('schools/pending');
+    }
+
+    private function _create_school_admin_for_signup($school_id, $email, $school_name)
+    {
+        $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
+        if (!$school_admin_role) {
+            return false;
+        }
+
+        // Get the school to check if admin_password was set during signup
+        $school = $this->db->where('id', $school_id)->get('schools')->row();
+
+        // Use stored password if available, otherwise generate random password
+        if ($school && !empty($school->admin_password)) {
+            $password_hash = $school->admin_password;
+            $random_password = '(user-provided)';
+        } else {
+            // Generate random password
+            $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            $random_password = '';
+            for ($i = 0; $i < 12; $i++) {
+                $random_password .= $characters[rand(0, strlen($characters) - 1)];
+            }
+            $password_hash = password_hash($random_password, PASSWORD_DEFAULT);
+        }
+
+        $this->db->insert('users', array(
+            'first_name' => 'School',
+            'last_name'  => 'Admin',
+            'email'      => $email,
+            'password'   => $password_hash,
+            'role_id'    => $school_admin_role->id,
+            'school_id'  => $school_id,
+            'status'     => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+        ));
+
+        // Clear the admin_password from schools table after use
+        if ($school && !empty($school->admin_password)) {
+            $this->db->where('id', $school_id)->update('schools', array('admin_password' => null));
+        }
+
+        // Store credentials for display (only if random password was generated)
+        if ($random_password !== '(user-provided)') {
+            $admin_credentials = array(
+                'school_name' => $school_name,
+                'email' => $email,
+                'password' => $random_password
+            );
+            $this->session->set_flashdata('admin_credentials', $admin_credentials);
+        }
+
+        return true;
     }
 }

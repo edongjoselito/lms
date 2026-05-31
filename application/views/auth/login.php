@@ -1027,7 +1027,7 @@
                     <h1>Welcome Back</h1>
                     <p class="login-subtitle">Sign in to continue in BlueCampus.</p>
 
-                    <form action="<?= site_url('auth/login') ?>" method="post" autocomplete="off">
+                    <?= form_open('auth/login', array('autocomplete' => 'off')) ?>
                         <div class="field-group">
                             <label class="field-label" for="email">Username</label>
                             <div class="input-wrap">
@@ -1051,10 +1051,11 @@
                             <i class="bi bi-box-arrow-in-right"></i>
                             Login to My Account
                         </button>
-                    </form>
+                    <?= form_close() ?>
 
                     <div class="login-footer">
                         <a href="<?= site_url('auth/forgot_password') ?>">Forgot password?</a>
+                        <a href="<?= site_url('auth/signup') ?>">Sign up for a school account</a>
                         <span>Need help? Contact your school administrator.</span>
                     </div>
                 </div>

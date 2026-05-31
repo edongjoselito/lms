@@ -136,6 +136,11 @@
             <div class="table-header">
                 <h5><i class="bi bi-building me-2"></i>All Schools</h5>
                 <div class="d-flex gap-2">
+                    <?php if ($pending_schools > 0): ?>
+                        <a href="<?= site_url('schools/pending') ?>" class="btn btn-warning" style="border-radius:8px;font-size:0.85rem;">
+                            <i class="bi bi-clock me-1"></i> Pending (<?= $pending_schools ?>)
+                        </a>
+                    <?php endif; ?>
                     <a href="<?= site_url('schools/download_template') ?>" class="btn btn-outline-secondary" style="border-radius:8px;font-size:0.85rem;">
                         <i class="bi bi-download me-1"></i> Template
                     </a>

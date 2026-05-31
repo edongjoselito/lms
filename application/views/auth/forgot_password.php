@@ -209,7 +209,7 @@
                 <p class="subtitle">Enter your email address and we'll send you instructions to reset your password.</p>
             </div>
 
-            <form action="<?= site_url('auth/forgot_password') ?>" method="post" autocomplete="off">
+            <?= form_open('auth/forgot_password', array('autocomplete' => 'off')) ?>
                 <div class="form-floating position-relative">
                     <i class="bi bi-envelope input-icon"></i>
                     <input type="email" class="form-control" id="email" name="email" placeholder="Email address" required autofocus>
@@ -219,7 +219,7 @@
                 <button type="submit" class="btn-submit">
                     Send Reset Instructions
                 </button>
-            </form>
+            <?= form_close() ?>
 
             <div class="back-link">
                 <a href="<?= site_url('auth') ?>">

@@ -18,7 +18,7 @@
                 <i class="bi bi-building me-2"></i>
                 <?= ($school) ? 'Edit School' : 'School Information' ?>
             </h5>
-            <form action="<?= ($school) ? site_url('schools/edit/' . $school->id) : site_url('schools/create') ?>" method="post" enctype="multipart/form-data">
+            <?= form_open(($school) ? 'schools/edit/' . $school->id : 'schools/create', array('enctype' => 'multipart/form-data')) ?>
                 <?php if (isset($is_school_admin) && $is_school_admin): ?>
                     <!-- School Admin View - Editable Fields -->
                     <div class="form-section">
@@ -244,7 +244,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Save School</button>
                     <a href="<?= site_url('schools') ?>" class="btn btn-light">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>
