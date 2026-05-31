@@ -3,6 +3,19 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Dashboard extends MY_Controller
 {
+    private function format_grade_level_label($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '—';
+        }
+
+        if (is_numeric($value)) {
+            return 'Grade ' . str_pad((int) $value, 2, '0', STR_PAD_LEFT);
+        }
+
+        return $value;
+    }
 
     public function __construct()
     {
@@ -61,19 +74,62 @@ class Dashboard extends MY_Controller
         if ($this->role_slug === 'teacher') {
             $this->Academic_model->ensure_subject_teachers_table();
             $subjects = $this->Academic_model->get_subjects_by_teacher_user($this->current_user->id);
+            $school_year = $this->Academic_model->get_active_school_year($this->school_id);
+
+            $section_counts = array();
+            $student_counts = array();
+
+            $this->db->select('year_level, COUNT(*) AS total_sections', FALSE)
+                ->from('sections')
+                ->where('school_id', $this->school_id);
+            if ($school_year && $this->db->field_exists('school_year_id', 'sections')) {
+                $this->db->where('school_year_id', $school_year->id);
+            }
+            $section_rows = $this->db->group_by('year_level')
+                ->get()
+                ->result();
+            foreach ($section_rows as $row) {
+                $section_counts[(string) $row->year_level] = (int) $row->total_sections;
+            }
+
+            $enrollment_join = 'enrollments.section_id = sections.id AND enrollments.status = "enrolled"';
+            if ($school_year && $this->db->field_exists('school_year_id', 'enrollments')) {
+                $enrollment_join .= ' AND enrollments.school_year_id = ' . (int) $school_year->id;
+            }
+
+            $student_rows = $this->db->select('sections.year_level, COUNT(enrollments.id) AS total_students', FALSE)
+                ->from('sections')
+                ->join('enrollments', $enrollment_join, 'left')
+                ->where('sections.school_id', $this->school_id);
+            if ($school_year && $this->db->field_exists('school_year_id', 'sections')) {
+                $this->db->where('sections.school_year_id', $school_year->id);
+            }
+            $student_rows = $this->db->group_by('sections.year_level')
+                ->get()
+                ->result();
+            foreach ($student_rows as $row) {
+                $student_counts[(string) $row->year_level] = (int) $row->total_students;
+            }
 
             $total_sections = 0;
             $total_students = 0;
+            $counted_grade_levels = array();
             foreach ($subjects as &$s) {
-                $sections          = $this->Academic_model->get_subject_sections($s->id);
-                $s->section_list   = $sections;
-                $s->section_count  = count($sections);
-                $total_sections   += $s->section_count;
-                $s->student_count  = 0;
-                foreach ($sections as $sec) {
-                    $cnt = count($this->Academic_model->get_section_students($sec->id));
-                    $s->student_count += $cnt;
-                    $total_students   += $cnt;
+                $grade_level_value = '';
+                if (isset($s->program_year_level) && trim((string) $s->program_year_level) !== '') {
+                    $grade_level_value = trim((string) $s->program_year_level);
+                } elseif (isset($s->year_level) && trim((string) $s->year_level) !== '') {
+                    $grade_level_value = trim((string) $s->year_level);
+                }
+
+                $s->grade_level_label = $this->format_grade_level_label($grade_level_value);
+                $s->section_count = isset($section_counts[$grade_level_value]) ? $section_counts[$grade_level_value] : 0;
+                $s->student_count = isset($student_counts[$grade_level_value]) ? $student_counts[$grade_level_value] : 0;
+
+                if ($grade_level_value !== '' && !isset($counted_grade_levels[$grade_level_value])) {
+                    $total_sections += $s->section_count;
+                    $total_students += $s->student_count;
+                    $counted_grade_levels[$grade_level_value] = true;
                 }
             }
             unset($s);
@@ -88,7 +144,7 @@ class Dashboard extends MY_Controller
             $data['subjects']        = $subjects;
             $data['total_sections']  = $total_sections;
             $data['total_students']  = $total_students;
-            $data['school_year']     = $this->Academic_model->get_active_school_year($this->school_id);
+            $data['school_year']     = $school_year;
             $data['is_teacher_view'] = true;
             $data['is_platform_view'] = false;
             $this->render('dashboard/index', $data);

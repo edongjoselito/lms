@@ -1051,6 +1051,7 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+        $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
 
         $select_fields = 'subjects.*';
         if ($checkCode > 0) {
@@ -1058,6 +1059,9 @@ class Academic_model extends CI_Model
         }
         if ($checkName > 0) {
             $select_fields .= ', programs.name as program_name';
+        }
+        if ($checkYearLevel > 0) {
+            $select_fields .= ', programs.year_level as program_year_level';
         }
 
         return $this->db->select($select_fields)

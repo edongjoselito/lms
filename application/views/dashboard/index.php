@@ -785,7 +785,7 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
             <thead>
                 <tr>
                     <th>Subject</th>
-                    <th>Program</th>
+                    <th>Grade Level</th>
                     <th>Sections</th>
                     <th>Students</th>
                     <th></th>
@@ -813,9 +813,9 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
                         </div>
                     </td>
                     <td>
-                        <?php if (!empty($s->program_code)): ?>
+                        <?php if (!empty($s->grade_level_label) && $s->grade_level_label !== '—'): ?>
                             <span style="background:#dbeafe;color:#1d4ed8;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:20px;">
-                                <?= htmlspecialchars($s->program_code) ?>
+                                <?= htmlspecialchars($s->grade_level_label) ?>
                             </span>
                         <?php else: ?>
                             <span style="color:#a1acb8;font-size:.8rem;">—</span>
