@@ -57,7 +57,7 @@
                                 <option value="">No sections available</option>
                             <?php else: ?>
                                 <?php foreach ($sections as $s): ?>
-                                    <option value="<?= $s->id ?>" data-grade-level="<?= $s->grade_level_id ?>" data-adviser="<?= isset($s->adviser_id) ? $s->adviser_id : '' ?>" data-adviser-name="<?= isset($s->adviser_name) ? htmlspecialchars($s->adviser_name) : '' ?>">
+                                    <option value="<?= $s->id ?>" data-program="<?= isset($s->program_id) ? $s->program_id : '' ?>" data-adviser="<?= isset($s->adviser_id) ? $s->adviser_id : '' ?>" data-adviser-name="<?= isset($s->adviser_name) ? htmlspecialchars($s->adviser_name) : '' ?>">
                                         <?= htmlspecialchars($s->name) ?>
                                         <?php if (isset($s->grade_level_name) && !empty($s->grade_level_name)): ?>
                                             (<?= htmlspecialchars($s->grade_level_name) ?>)
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         allSectionOptions.push({
             value: option.value,
             text: option.text,
-            gradeLevel: option.getAttribute('data-grade-level'),
+            program: option.getAttribute('data-program'),
             adviserId: option.getAttribute('data-adviser'),
             adviserName: option.getAttribute('data-adviser-name')
         });
@@ -111,13 +111,13 @@ document.addEventListener('DOMContentLoaded', function() {
         sectionSelect.value = '';
         sectionSelect.innerHTML = '<option value="">Select Section</option>';
 
-        // Filter sections by selected grade level
+        // Filter sections by selected grade level (program_id)
         allSectionOptions.forEach(function(option) {
             if (option.value === '') return; // Skip the default option
 
             // Show section if no grade level selected or if it matches
-            if (!selectedGradeLevel || option.gradeLevel == selectedGradeLevel) {
-                sectionSelect.innerHTML += '<option value="' + option.value + '" data-grade-level="' + option.gradeLevel + '" data-adviser="' + option.adviserId + '" data-adviser-name="' + option.adviserName + '">' + option.text + '</option>';
+            if (!selectedGradeLevel || option.program == selectedGradeLevel) {
+                sectionSelect.innerHTML += '<option value="' + option.value + '" data-program="' + option.program + '" data-adviser="' + option.adviserId + '" data-adviser-name="' + option.adviserName + '">' + option.text + '</option>';
             }
         });
 

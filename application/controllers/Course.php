@@ -155,10 +155,12 @@ class Course extends MY_Controller {
         if ($this->original_role_slug === 'teacher' && $this->current_user) {
             $teacher_section_filter = (int) $this->current_user->id;
         }
-        // Get sections based on program_id of the subject
+        // Get sections based on program_id or year_level of the subject
         $subject_sections = array();
         if (!empty($subject->program_id)) {
-            $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id);
+            $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
+        } elseif (!empty($subject->year_level)) {
+            $subject_sections = $this->Academic_model->get_sections_by_year_level($subject->year_level, $this->school_id);
         }
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
         $has_subject_access = $this->has_subject_access($subject_id);

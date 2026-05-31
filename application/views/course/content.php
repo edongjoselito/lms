@@ -859,7 +859,7 @@ $course_completion_percent = max(0, min(100, (int) ($progress_percent ?? 0)));
                     <?php endif; ?>
                 </div>
 
-                <?php if ($edit_mode && !empty($subject_sections)): ?>
+                <?php if (empty($student_content_view) && !empty($subject_sections)): ?>
                     <div class="cc-panel-header mt-4">
                         <h5 class="cc-panel-title">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

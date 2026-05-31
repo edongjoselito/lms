@@ -224,45 +224,18 @@ class Studentprofile extends Admin_Controller
             $data['grade_levels'] = $query->get('programs')->result();
         }
 
-        // Get sections for current school with grade level/program info and adviser
-        $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'");
-        if ($check_academic->num_rows() > 0) {
-            // Check if grade_levels table exists (for backward compatibility)
-            $check_grade_levels = $this->db->query("SHOW TABLES LIKE 'grade_levels'");
-
-            if ($check_grade_levels->num_rows() > 0) {
-                // Try to get grade level name from academic_programs first, then grade_levels as fallback
-                $data['sections'] = $this->db->query("
-                    SELECT s.*,
-                           COALESCE(ap.name, gl.name) as grade_level_name,
-                           CONCAT(u.last_name, ', ', u.first_name) as adviser_name
-                    FROM sections s
-                    LEFT JOIN academic_programs ap ON ap.id = s.grade_level_id
-                    LEFT JOIN grade_levels gl ON gl.id = s.grade_level_id
-                    LEFT JOIN staff t ON t.IDNumber = s.adviser_id
-                    LEFT JOIN users u ON u.id = t.user_id
-                    WHERE s.school_id = ?
-                ", array($this->school_id))->result();
-            } else {
-                // Only academic_programs exists
-                $data['sections'] = $this->db->select('sections.*, academic_programs.name as grade_level_name, CONCAT(u.last_name, ", ", u.first_name) as adviser_name', FALSE)
-                    ->from('sections')
-                    ->join('academic_programs', 'academic_programs.id = sections.grade_level_id', 'left')
-                    ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
-                    ->join('users u', 'u.id = t.user_id', 'left')
-                    ->where('sections.school_id', $this->school_id)
-                    ->get()
-                    ->result();
-            }
-        } else {
-            $data['sections'] = $this->db->select('sections.*, CONCAT(u.last_name, ", ", u.first_name) as adviser_name', FALSE)
-                ->from('sections')
-                ->join('staff t', 't.IDNumber = sections.adviser_id', 'left')
-                ->join('users u', 'u.id = t.user_id', 'left')
-                ->where('sections.school_id', $this->school_id)
-                ->get()
-                ->result();
+        // Get sections for current school with program info and adviser
+        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
+        
+        $this->db->select('sections.*, CONCAT(u.last_name, ", ", u.first_name) as adviser_name', FALSE);
+        if ($checkGradeLevel > 0) {
+            $this->db->select('grade_levels.name as grade_level_name');
+            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
         }
+        $this->db->join('programs', 'programs.id = sections.program_id', 'left');
+        $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
+        $this->db->where('sections.school_id', $this->school_id);
+        $data['sections'] = $this->db->get('sections')->result();
 
         // Get teachers (advisers) for current school
         $teacher_role_id = $this->User_model->get_role_id_by_slug('teacher');

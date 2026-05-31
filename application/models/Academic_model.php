@@ -528,24 +528,30 @@ class Academic_model extends CI_Model
             ->result();
     }
 
-    public function get_sections_by_program($program_id)
+    public function get_sections_by_program($program_id, $school_id = null)
     {
         $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
         
         $this->db->select($select_fields, FALSE)
             ->join('programs', 'programs.id = sections.program_id', 'left')
             ->where('sections.program_id', $program_id);
+        if ($school_id) {
+            $this->db->where('sections.school_id', $school_id);
+        }
         return $this->db->order_by('sections.name', 'ASC')
             ->get('sections')
             ->result();
     }
 
-    public function get_sections_by_year_level($year_level)
+    public function get_sections_by_year_level($year_level, $school_id = null)
     {
-        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
+        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
         
         $this->db->select($select_fields, FALSE)
             ->where('sections.year_level', $year_level);
+        if ($school_id) {
+            $this->db->where('sections.school_id', $school_id);
+        }
         return $this->db->order_by('sections.name', 'ASC')
             ->get('sections')
             ->result();
