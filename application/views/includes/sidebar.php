@@ -203,10 +203,6 @@ if ($rs === 'student') {
                 </a>
             <?php endif; ?>
         <?php endif; ?>
-        <a href="<?= site_url('auth/logout') ?>" class="sidebar-link">
-            <span class="material-symbols-outlined">logout</span>
-            <span>Logout</span>
-        </a>
     </nav>
 
     <div class="sidebar-footer">

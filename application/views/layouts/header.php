@@ -1101,6 +1101,11 @@
                         <span class="material-symbols-outlined">help_outline</span>
                     </button>
 
+                    <!-- Logout Button -->
+                    <a href="<?= site_url('auth/logout') ?>" class="topbar-icon-btn" title="Logout" style="text-decoration:none;">
+                        <span class="material-symbols-outlined">logout</span>
+                    </a>
+
                     <div class="topbar-divider"></div>
 
                     <!-- User Profile -->
