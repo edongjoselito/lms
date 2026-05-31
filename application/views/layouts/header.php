@@ -127,6 +127,22 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
+        .sidebar-brand .brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+
+        .sidebar-brand .school-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
         .sidebar-brand .brand-text {
             color: var(--text-primary);
             font-weight: 600;

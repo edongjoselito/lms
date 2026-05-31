@@ -679,8 +679,8 @@ class Academic extends MY_Controller {
         $data['title'] = 'Sections';
         $data['school_year'] = $sy;
         $data['sections'] = $this->Academic_model->get_sections($filters);
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels();
-        $data['programs'] = $this->Academic_model->get_programs();
+        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
+        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $this->render('academic/sections', $data);
     }

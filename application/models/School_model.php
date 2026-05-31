@@ -48,7 +48,11 @@ class School_model extends CI_Model {
     {
         $stats = new stdClass();
         $stats->students = $this->db->where('school_id', $school_id)->where('status', 'active')->count_all_results('students');
-        $stats->teachers = $this->db->where('school_id', $school_id)->count_all_results('teachers');
+        
+        // Check if teachers table exists before querying
+        $teachers_exists = $this->db->query("SHOW TABLES LIKE 'teachers'")->num_rows() > 0;
+        $stats->teachers = $teachers_exists ? $this->db->where('school_id', $school_id)->count_all_results('teachers') : 0;
+        
         $stats->sections = $this->db->where('school_id', $school_id)->where('status', 1)->count_all_results('sections');
         $stats->users = $this->db->where('school_id', $school_id)->where('status', 1)->count_all_results('users');
         return $stats;

@@ -18,35 +18,133 @@
                 <i class="bi bi-building me-2"></i>
                 <?= ($school) ? 'Edit School' : 'School Information' ?>
             </h5>
-            <form action="<?= ($school) ? site_url('schools/edit/' . $school->id) : site_url('schools/create') ?>" method="post">
-                <!-- Basic Information -->
-                <div class="form-section">
-                    <h6 class="section-title"><i class="bi bi-info-circle me-2"></i>Basic Information</h6>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">School Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" name="name" id="school_name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required oninput="this.value = this.value.toUpperCase()">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">School ID Number <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="school_id_number" id="school_id_number" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>" required>
-                                <button type="button" class="btn btn-outline-secondary" onclick="generateSchoolId()">
-                                    <i class="bi bi-shuffle"></i> Generate
-                                </button>
+            <form action="<?= ($school) ? site_url('schools/edit/' . $school->id) : site_url('schools/create') ?>" method="post" enctype="multipart/form-data">
+                <?php if (isset($is_school_admin) && $is_school_admin): ?>
+                    <!-- School Admin View - Editable Fields -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-info-circle me-2"></i>School Information</h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">School Name</label>
+                                <input type="text" class="form-control form-control-lg" value="<?= htmlspecialchars($school->name) ?>" disabled>
+                                <small class="text-muted">Contact Super Admin to change school name</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">School ID Number</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars($school->school_id_number) ?>" disabled>
+                                <small class="text-muted">Contact Super Admin to change school ID</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">School Type</label>
+                                <input type="text" class="form-control" value="<?= ucfirst($school->type) ?>" disabled>
+                                <small class="text-muted">Contact Super Admin to change school type</small>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">School Type <span class="text-danger">*</span></label>
-                            <select class="form-select" name="type" required>
-                                <option value="deped" <?= ($school && $school->type == 'deped') ? 'selected' : '' ?>>DepEd (K-12)</option>
-                                <option value="ched" <?= ($school && $school->type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
-                                <option value="tesda" <?= ($school && $school->type == 'tesda') ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
-                                <option value="both" <?= ($school && $school->type == 'both') ? 'selected' : '' ?>>All (K-12, CHED, TESDA)</option>
-                            </select>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-telephone me-2"></i>Contact Information</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="email" value="<?= htmlspecialchars($school->email ?? '') ?>" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Number</label>
+                                <input type="text" class="form-control" name="contact_number" value="<?= htmlspecialchars($school->contact_number ?? '') ?>">
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Location -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-geo-alt me-2"></i>Location</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Division</label>
+                                <input type="text" class="form-control" name="division" value="<?= htmlspecialchars($school->division ?? '') ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Region</label>
+                                <input type="text" class="form-control" name="region" value="<?= htmlspecialchars($school->region ?? '') ?>">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Complete Address</label>
+                                <textarea class="form-control" name="address" rows="3"><?= htmlspecialchars($school->address ?? '') ?></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- School Logo -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-image me-2"></i>School Logo</h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="logo-upload-section">
+                                    <?php if ($school->logo): ?>
+                                        <div class="current-logo">
+                                            <img src="<?= base_url($school->logo) ?>" alt="School Logo" class="logo-preview">
+                                            <button type="button" class="btn-remove-logo" onclick="confirmRemoveLogo()">
+                                                <i class="bi bi-trash"></i> Remove
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
+                                    <input type="file" class="form-control" name="logo" id="logoInput" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                                    <input type="hidden" name="remove_logo" id="removeLogoInput" value="0">
+                                    <small class="text-muted">Accepted formats: JPG, PNG, GIF, WebP. Maximum size: 2MB. Recommended size: 200x200px.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- Super Admin View - All Fields -->
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h6 class="section-title"><i class="bi bi-info-circle me-2"></i>Basic Information</h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">School Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" name="name" id="school_name" value="<?= ($school) ? htmlspecialchars($school->name) : '' ?>" required oninput="this.value = this.value.toUpperCase()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">School ID Number <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="school_id_number" id="school_id_number" value="<?= ($school) ? htmlspecialchars($school->school_id_number) : '' ?>" required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="generateSchoolId()">
+                                        <i class="bi bi-shuffle"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">School Type <span class="text-danger">*</span></label>
+                                <select class="form-select" name="type" required>
+                                    <option value="deped" <?= ($school && $school->type == 'deped') ? 'selected' : '' ?>>DepEd (K-12)</option>
+                                    <option value="ched" <?= ($school && $school->type == 'ched') ? 'selected' : '' ?>>CHED (Higher Ed)</option>
+                                    <option value="tesda" <?= ($school && $school->type == 'tesda') ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
+                                    <option value="both" <?= ($school && $school->type == 'both') ? 'selected' : '' ?>>All (K-12, CHED, TESDA)</option>
+                                </select>
+                            </div>
+                            <?php if ($school): ?>
+                            <div class="col-12">
+                                <label class="form-label">School Logo</label>
+                                <div class="logo-upload-section">
+                                    <?php if ($school->logo): ?>
+                                        <div class="current-logo">
+                                            <img src="<?= base_url($school->logo) ?>" alt="School Logo" class="logo-preview">
+                                            <button type="button" class="btn-remove-logo" onclick="confirmRemoveLogo()">
+                                                <i class="bi bi-trash"></i> Remove
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
+                                    <input type="file" class="form-control" name="logo" id="logoInput" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                                    <input type="hidden" name="remove_logo" id="removeLogoInput" value="0">
+                                    <small class="text-muted">Accepted formats: JPG, PNG, GIF, WebP. Maximum size: 2MB. Recommended size: 200x200px.</small>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
                 <!-- Contact Information -->
                 <div class="form-section">
@@ -140,6 +238,7 @@
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
+                <?php endif; ?>
 
                 <div class="form-actions">
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Save School</button>
@@ -210,6 +309,45 @@
         border-bottom: none;
         margin-bottom: 0;
         padding-bottom: 0;
+    }
+
+    .logo-upload-section {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 1.25rem;
+    }
+
+    .current-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .logo-preview {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: white;
+    }
+
+    .btn-remove-logo {
+        padding: 0.4rem 0.8rem;
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-remove-logo:hover {
+        background: #fecaca;
     }
 
     .section-title {
@@ -427,6 +565,13 @@ function togglePasswordVisibility() {
         passwordText.textContent = '••••••••••••';
         toggleIcon.classList.remove('bi-eye-slash');
         toggleIcon.classList.add('bi-eye');
+    }
+}
+
+function confirmRemoveLogo() {
+    if (confirm('Are you sure you want to remove the school logo?')) {
+        document.getElementById('removeLogoInput').value = '1';
+        document.querySelector('.current-logo').style.display = 'none';
     }
 }
 

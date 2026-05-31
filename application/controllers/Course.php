@@ -1867,6 +1867,10 @@ class Course extends MY_Controller {
             $max_attempts = max(1, (int) $this->input->post('max_attempts', TRUE));
             $time_limit = (int) $this->input->post('time_limit_minutes', TRUE);
             $time_limit = $time_limit > 0 ? $time_limit : null;
+            $passing_score = (float) $this->input->post('passing_score', TRUE);
+            $passing_score = $passing_score > 0 ? $passing_score : null;
+            $quiz_password = $this->input->post('quiz_password', TRUE);
+            $quiz_password = !empty($quiz_password) ? $quiz_password : null;
 
             $this->db->trans_start();
             $activity_id = $this->Lesson_model->create_activity(array(
@@ -1895,6 +1899,8 @@ class Course extends MY_Controller {
                 'available_from'     => $this->normalize_assessment_datetime($this->input->post('available_from', TRUE)),
                 'available_until'    => $this->normalize_assessment_datetime($this->input->post('available_until', TRUE)),
                 'is_published'       => $is_published,
+                'passing_score'      => $passing_score,
+                'quiz_password'      => $quiz_password,
                 'created_by'         => $this->current_user ? $this->current_user->id : null,
             ));
 
@@ -1942,6 +1948,10 @@ class Course extends MY_Controller {
             $max_attempts = max(1, (int) $this->input->post('max_attempts', TRUE));
             $time_limit = (int) $this->input->post('time_limit_minutes', TRUE);
             $time_limit = $time_limit > 0 ? $time_limit : null;
+            $passing_score = (float) $this->input->post('passing_score', TRUE);
+            $passing_score = $passing_score > 0 ? $passing_score : null;
+            $quiz_password = $this->input->post('quiz_password', TRUE);
+            $quiz_password = !empty($quiz_password) ? $quiz_password : null;
 
             $this->Lesson_model->update_activity($context['activity']->id, array(
                 'title'        => $title,
@@ -1960,6 +1970,8 @@ class Course extends MY_Controller {
                 'available_from'     => $this->normalize_assessment_datetime($this->input->post('available_from', TRUE)),
                 'available_until'    => $this->normalize_assessment_datetime($this->input->post('available_until', TRUE)),
                 'is_published'       => $is_published,
+                'passing_score'      => $passing_score,
+                'quiz_password'      => $quiz_password,
             ));
 
             $this->session->set_flashdata('success', 'Assessment updated successfully.');
@@ -2067,8 +2079,17 @@ class Course extends MY_Controller {
         $data['quiz'] = $quiz;
         $data['questions'] = $questions;
         $data['attempts'] = $this->Quiz_model->get_all_attempts($quiz->id);
+        $data['analysis'] = $this->Quiz_model->get_quiz_analysis($quiz->id);
+        $lang = $this->input->get('lang', TRUE) ? $this->input->get('lang', TRUE) : 'en';
+        $data['analysis_description'] = $this->Quiz_model->generate_analysis_description($data['analysis'], $lang);
+        $data['current_lang'] = $lang;
         $data['student_content_view'] = false;
         $data['can_edit_assessment'] = $this->can_manage_course_content($subject->id);
+        
+        // Check if new columns exist
+        $data['has_passing_score'] = $this->db->query("SHOW COLUMNS FROM quizzes LIKE 'passing_score'")->num_rows() > 0;
+        $data['has_quiz_password'] = $this->db->query("SHOW COLUMNS FROM quizzes LIKE 'quiz_password'")->num_rows() > 0;
+        
         $this->render('course/assessment_manage', $data);
     }
 
@@ -2101,6 +2122,25 @@ class Course extends MY_Controller {
         if ($this->Quiz_model->count_questions($quiz->id) < 1) {
             $this->session->set_flashdata('error', 'This assessment has no questions yet.');
             redirect('course/assessment/' . $context['activity']->id);
+        }
+
+        // Check quiz password if set
+        if (!empty($quiz->quiz_password)) {
+            if ($this->input->method() === 'post') {
+                $entered_password = $this->input->post('quiz_password', TRUE);
+                if ($entered_password !== $quiz->quiz_password) {
+                    $this->session->set_flashdata('error', 'Incorrect quiz password.');
+                    redirect('course/assessment/' . $context['activity']->id);
+                }
+            } else {
+                // Show password input form
+                $data['title'] = 'Enter Quiz Password';
+                $data['quiz'] = $quiz;
+                $data['activity'] = $context['activity'];
+                $data['subject'] = $subject;
+                $this->render('course/assessment_password', $data);
+                return;
+            }
         }
 
         $in_progress = $this->Quiz_model->get_in_progress_attempt($quiz->id, $this->current_user->id);

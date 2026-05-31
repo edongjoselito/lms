@@ -113,6 +113,20 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                         <label class="form-label am-label">Description / Instructions</label>
                         <textarea class="form-control am-input am-textarea" name="description" rows="3"><?= htmlspecialchars($quiz->description ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                     </div>
+                    <?php if (isset($has_passing_score) && $has_passing_score): ?>
+                    <div class="col-md-6">
+                        <label class="form-label am-label">Passing Score (Optional)</label>
+                        <input type="number" class="form-control am-input" name="passing_score" min="0" step="0.01" value="<?= isset($quiz->passing_score) && $quiz->passing_score ? number_format((float) $quiz->passing_score, 2) : '' ?>" placeholder="Points">
+                        <small class="text-muted">Minimum score required to pass</small>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (isset($has_quiz_password) && $has_quiz_password): ?>
+                    <div class="col-md-6">
+                        <label class="form-label am-label">Quiz Password (Optional)</label>
+                        <input type="password" class="form-control am-input" name="quiz_password" value="<?= isset($quiz->quiz_password) ? htmlspecialchars($quiz->quiz_password, ENT_QUOTES, 'UTF-8') : '' ?>" placeholder="Leave empty for no password">
+                        <small class="text-muted">Students must enter this password to start the quiz</small>
+                    </div>
+                    <?php endif; ?>
                     <div class="col-12 am-form-footer">
                         <div class="am-checks">
                             <div class="form-check">
@@ -202,6 +216,156 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                             </div>
                         <?php endforeach; ?>
                     </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="am-panel">
+            <div class="am-panel-head">
+                <div class="am-panel-title"><i class="bi bi-bar-chart"></i> Quiz Analysis</div>
+                <div class="am-lang-switch">
+                    <a href="<?= site_url('course/assessment/' . $activity->id . '?lang=en') ?>" class="am-lang-btn <?= $current_lang === 'en' ? 'active' : '' ?>" onclick="switchLanguage(event, 'en')">EN</a>
+                    <a href="<?= site_url('course/assessment/' . $activity->id . '?lang=tl') ?>" class="am-lang-btn <?= $current_lang === 'tl' ? 'active' : '' ?>" onclick="switchLanguage(event, 'tl')">TL</a>
+                </div>
+            </div>
+            <div class="am-panel-body">
+                <?php if ($analysis->total_attempts === 0): ?>
+                    <p class="am-muted mb-0">No attempts to analyze yet.</p>
+                <?php else: ?>
+                    <div class="am-analysis-desc">
+                        <div class="am-analysis-desc-icon">
+                            <i class="bi bi-lightbulb"></i>
+                        </div>
+                        <div class="am-analysis-desc-content">
+                            <h6 class="am-analysis-desc-title">Analysis Summary</h6>
+                            <p class="am-analysis-desc-text"><?= htmlspecialchars($analysis_description) ?></p>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="am-stat-card">
+                                <div class="am-stat-val"><?= (int) $analysis->total_attempts ?></div>
+                                <div class="am-stat-lbl">Total Attempts</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="am-stat-card">
+                                <div class="am-stat-val"><?= (int) $analysis->unique_students ?></div>
+                                <div class="am-stat-lbl">Unique Students</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="am-stat-card">
+                                <div class="am-stat-val"><?= number_format((float) $analysis->average_score, 2) ?></div>
+                                <div class="am-stat-lbl">Average Score</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="am-stat-card">
+                                <div class="am-stat-val"><?= number_format((float) $analysis->pass_rate, 1) ?>%</div>
+                                <div class="am-stat-lbl">Pass Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="am-stat-card am-stat-card-secondary">
+                                <div class="am-stat-val"><?= number_format((float) $analysis->highest_score, 2) ?></div>
+                                <div class="am-stat-lbl">Highest Score</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="am-stat-card am-stat-card-secondary">
+                                <div class="am-stat-val"><?= number_format((float) $analysis->lowest_score, 2) ?></div>
+                                <div class="am-stat-lbl">Lowest Score</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="am-stat-card am-stat-card-secondary">
+                                <div class="am-stat-val"><?= (int) $analysis->pass_count ?> / <?= (int) $analysis->fail_count ?></div>
+                                <div class="am-stat-lbl">Pass / Fail</div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if (!empty($analysis->thematic_analysis)): ?>
+                        <h6 class="am-subtitle">Thematic Analysis (by Question Type)</h6>
+                        <div class="row g-3">
+                            <?php foreach ($analysis->thematic_analysis as $theme): ?>
+                                <div class="col-md-6 col-lg-3">
+                                    <div class="am-theme-card">
+                                        <div class="am-theme-icon">
+                                            <?php if ($theme->theme === 'multiple_choice'): ?>
+                                                <i class="bi bi-list-check"></i>
+                                            <?php elseif ($theme->theme === 'true_false'): ?>
+                                                <i class="bi bi-question-lg"></i>
+                                            <?php elseif ($theme->theme === 'identification'): ?>
+                                                <i class="bi bi-pencil"></i>
+                                            <?php else: ?>
+                                                <i class="bi bi-file-text"></i>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="am-theme-label"><?= htmlspecialchars($theme->theme_label) ?></div>
+                                        <div class="am-theme-stats">
+                                            <div class="am-theme-stat">
+                                                <span class="am-theme-stat-val"><?= (int) $theme->total_questions ?></span>
+                                                <span class="am-theme-stat-lbl">Questions</span>
+                                            </div>
+                                            <div class="am-theme-stat">
+                                                <span class="am-theme-stat-val"><?= number_format((float) $theme->total_points, 1) ?></span>
+                                                <span class="am-theme-stat-lbl">Points</span>
+                                            </div>
+                                        </div>
+                                        <div class="am-theme-progress">
+                                            <div class="am-theme-progress-bar" style="width: <?= $theme->correct_rate ?>%; background-color: <?= $theme->correct_rate >= 60 ? '#22c55e' : ($theme->correct_rate >= 40 ? '#f59e0b' : '#ef4444') ?>;"></div>
+                                        </div>
+                                        <div class="am-theme-rate">
+                                            <span class="am-theme-rate-val"><?= number_format((float) $theme->correct_rate, 1) ?>%</span>
+                                            <span class="am-theme-rate-lbl">Correct Rate</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($analysis->question_analysis)): ?>
+                        <h6 class="am-subtitle">Question Performance</h6>
+                        <div class="table-responsive">
+                            <table class="table am-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Question</th>
+                                        <th>Type</th>
+                                        <th>Points</th>
+                                        <th>Answers</th>
+                                        <th>Correct</th>
+                                        <th>Correct Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($analysis->question_analysis as $idx => $qa): ?>
+                                        <tr>
+                                            <td><?= $idx + 1 ?></td>
+                                            <td>
+                                                <div class="am-q-text"><?= htmlspecialchars(substr($qa->question_text, 0, 80)) ?><?= strlen($qa->question_text) > 80 ? '...' : '' ?></div>
+                                            </td>
+                                            <td><?= htmlspecialchars(str_replace('_', ' ', ucfirst($qa->question_type))) ?></td>
+                                            <td><?= number_format((float) $qa->points, 2) ?></td>
+                                            <td><?= (int) $qa->total_answers ?></td>
+                                            <td><?= (int) $qa->correct_answers ?></td>
+                                            <td>
+                                                <div class="am-progress">
+                                                    <div class="am-progress-bar" style="width: <?= $qa->correct_rate ?>%; background-color: <?= $qa->correct_rate >= 60 ? '#22c55e' : ($qa->correct_rate >= 40 ? '#f59e0b' : '#ef4444') ?>;"></div>
+                                                </div>
+                                                <small><?= number_format((float) $qa->correct_rate, 1) ?>%</small>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -689,6 +853,242 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
     font-weight: 700;
 }
 
+.am-stat-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 14px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.am-stat-card-secondary {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.am-stat-val {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.am-stat-lbl {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.35rem;
+}
+
+.am-subtitle {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.am-q-text {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.4;
+    max-width: 300px;
+}
+
+.am-progress {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+
+.am-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.am-theme-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.am-theme-card:hover {
+    border-color: #bae6fd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.am-theme-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    color: #0284c7;
+    font-size: 1.4rem;
+}
+
+.am-theme-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.75rem;
+    text-transform: capitalize;
+}
+
+.am-theme-stats {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.am-theme-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.am-theme-stat-val {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.am-theme-stat-lbl {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.am-theme-progress {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.am-theme-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.am-theme-rate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.am-theme-rate-val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.am-theme-rate-lbl {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.am-analysis-desc {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+    border: 1px solid #fde047;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.am-analysis-desc-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ca8a04;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.am-analysis-desc-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.am-analysis-desc-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #854d0e;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.am-analysis-desc-text {
+    font-size: 0.9rem;
+    color: #713f12;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.am-lang-switch {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.am-lang-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 32px;
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.am-lang-btn:hover {
+    background: #e2e8f0;
+    color: #334155;
+    text-decoration: none;
+}
+
+.am-lang-btn.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    color: #fff;
+    border-color: #3b82f6;
+}
+
 @media (max-width: 768px) {
     .am-page {
         padding: 1rem 0 2rem;
@@ -729,3 +1129,21 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
     }
 }
 </style>
+
+<script>
+function switchLanguage(event, lang) {
+    event.preventDefault();
+    sessionStorage.setItem('scrollPosition', window.scrollY);
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    window.location.href = url.toString();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const savedScroll = sessionStorage.getItem('scrollPosition');
+    if (savedScroll) {
+        window.scrollTo(0, parseInt(savedScroll));
+        sessionStorage.removeItem('scrollPosition');
+    }
+});
+</script>

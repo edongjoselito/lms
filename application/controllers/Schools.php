@@ -200,9 +200,17 @@ class Schools extends MY_Controller
 
     public function edit($id)
     {
-        $this->require_role(array('super_admin'));
+        $this->require_role(array('super_admin', 'school_admin'));
         $data['school'] = $this->School_model->get($id);
         if (!$data['school']) show_404();
+
+        // Check if school admin is trying to edit their own school
+        if ($this->role_slug === 'school_admin' && $id != $this->school_id) {
+            show_error('You can only edit your own school.', 403);
+        }
+
+        // School admin can only edit logo
+        $data['is_school_admin'] = ($this->role_slug === 'school_admin');
 
         // Get school admin user
         $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
@@ -219,24 +227,100 @@ class Schools extends MY_Controller
         $data['reset_password'] = $this->session->flashdata('reset_password_' . $id);
 
         if ($this->input->method() === 'post') {
-            $d = array(
-                'name'             => strtoupper($this->input->post('name', TRUE)),
-                'school_id_number' => $this->input->post('school_id_number', TRUE),
-                'type'             => $this->input->post('type', TRUE),
-                'address'          => $this->input->post('address', TRUE),
-                'contact_number'   => $this->input->post('contact_number', TRUE),
-                'email'            => $this->input->post('email', TRUE),
-                'division'         => $this->input->post('division', TRUE),
-                'region'           => $this->input->post('region', TRUE),
-                'status'           => $this->input->post('status') ? 1 : 0,
-            );
-            $this->School_model->update($id, $d);
+            // School admin can update all fields except status and school type
+            if ($this->role_slug === 'school_admin') {
+                $d = array(
+                    'address'          => $this->input->post('address', TRUE),
+                    'contact_number'   => $this->input->post('contact_number', TRUE),
+                    'email'            => $this->input->post('email', TRUE),
+                    'division'         => $this->input->post('division', TRUE),
+                    'region'           => $this->input->post('region', TRUE),
+                );
 
-            // Audit log
-            $this->Audit_model->log('update', 'school', $id, $d['name'], 'Updated school: ' . $d['name']);
+                // Handle logo upload
+                if (!empty($_FILES['logo']['name'])) {
+                    $upload_path = FCPATH . 'uploads/school_logos/';
+                    if (!is_dir($upload_path)) {
+                        mkdir($upload_path, 0755, true);
+                    }
 
-            $this->session->set_flashdata('success', 'School updated.');
-            redirect('schools');
+                    $config['upload_path'] = $upload_path;
+                    $config['allowed_types'] = 'jpg|jpeg|png|gif|webp';
+                    $config['max_size'] = 2048; // 2MB
+                    $config['file_name'] = 'school_' . $id . '_' . time();
+                    $config['overwrite'] = true;
+
+                    $this->load->library('upload', $config);
+
+                    if ($this->upload->do_upload('logo')) {
+                        $upload_data = $this->upload->data();
+                        $d['logo'] = 'uploads/school_logos/' . $upload_data['file_name'];
+                    } else {
+                        $this->session->set_flashdata('error', 'Logo upload failed: ' . $this->upload->display_errors('', ''));
+                        redirect('schools/edit/' . $id);
+                    }
+                }
+
+                // Handle logo removal
+                if ($this->input->post('remove_logo') === '1') {
+                    $d['logo'] = null;
+                }
+
+                $this->School_model->update($id, $d);
+                $this->Audit_model->log('update', 'school', $id, $data['school']->name, 'Updated school information');
+                $this->session->set_flashdata('success', 'School updated.');
+                redirect('schools/edit/' . $id);
+            } else {
+                // Super admin can update all fields
+                $d = array(
+                    'name'             => strtoupper($this->input->post('name', TRUE)),
+                    'school_id_number' => $this->input->post('school_id_number', TRUE),
+                    'type'             => $this->input->post('type', TRUE),
+                    'address'          => $this->input->post('address', TRUE),
+                    'contact_number'   => $this->input->post('contact_number', TRUE),
+                    'email'            => $this->input->post('email', TRUE),
+                    'division'         => $this->input->post('division', TRUE),
+                    'region'           => $this->input->post('region', TRUE),
+                    'status'           => $this->input->post('status') ? 1 : 0,
+                );
+
+                // Handle logo upload
+                if (!empty($_FILES['logo']['name'])) {
+                    $upload_path = FCPATH . 'uploads/school_logos/';
+                    if (!is_dir($upload_path)) {
+                        mkdir($upload_path, 0755, true);
+                    }
+
+                    $config['upload_path'] = $upload_path;
+                    $config['allowed_types'] = 'jpg|jpeg|png|gif|webp';
+                    $config['max_size'] = 2048; // 2MB
+                    $config['file_name'] = 'school_' . $id . '_' . time();
+                    $config['overwrite'] = true;
+
+                    $this->load->library('upload', $config);
+
+                    if ($this->upload->do_upload('logo')) {
+                        $upload_data = $this->upload->data();
+                        $d['logo'] = 'uploads/school_logos/' . $upload_data['file_name'];
+                    } else {
+                        $this->session->set_flashdata('error', 'Logo upload failed: ' . $this->upload->display_errors('', ''));
+                        redirect('schools/edit/' . $id);
+                    }
+                }
+
+                // Handle logo removal
+                if ($this->input->post('remove_logo') === '1') {
+                    $d['logo'] = null;
+                }
+
+                $this->School_model->update($id, $d);
+
+                // Audit log
+                $this->Audit_model->log('update', 'school', $id, $d['name'], 'Updated school: ' . $d['name']);
+
+                $this->session->set_flashdata('success', 'School updated.');
+                redirect('schools');
+            }
         }
 
         $data['title'] = 'Edit School';

@@ -11,6 +11,12 @@ $is_school_select_page = ($this->uri->segment(1) == 'schools' && $this->uri->seg
 $school_name = $selected_school_id ? $this->session->userdata('school_name') : '';
 $brand_text = $school_name ?: 'LMS Platform';
 
+// Get school logo if available
+$school_logo = null;
+if (isset($current_school) && $current_school && !empty($current_school->logo)) {
+    $school_logo = $current_school->logo;
+}
+
 if ($rs === 'student') {
     $brand_text = 'Student Portal';
     $panel_label = 'Student Panel';
@@ -26,9 +32,15 @@ if ($rs === 'student') {
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <div class="brand-icon">
-            <span class="material-symbols-outlined">school</span>
-        </div>
+        <?php if ($school_logo): ?>
+            <div class="brand-logo">
+                <img src="<?= base_url($school_logo) ?>" alt="<?= htmlspecialchars($brand_text) ?>" class="school-logo-img">
+            </div>
+        <?php else: ?>
+            <div class="brand-icon">
+                <span class="material-symbols-outlined">school</span>
+            </div>
+        <?php endif; ?>
         <div>
             <div class="brand-text"><?= htmlspecialchars($brand_text) ?></div>
             <div class="brand-sub"><?= $panel_label ?></div>
@@ -135,6 +147,11 @@ if ($rs === 'student') {
             <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">groups</span>
                 <span>Sections</span>
+            </a>
+            <div class="nav-section-title">School Settings</div>
+            <a href="<?= site_url('schools/edit/' . $selected_school_id) ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'edit') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">settings</span>
+                <span>School Profile</span>
             </a>
         <?php endif; ?>
 

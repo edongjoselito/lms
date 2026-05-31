@@ -246,6 +246,259 @@ class Quiz_model extends CI_Model {
                         ->result();
     }
 
+    public function get_quiz_analysis($quiz_id)
+    {
+        $attempts = $this->db->select('quiz_attempts.*')
+                        ->where('quiz_attempts.quiz_id', $quiz_id)
+                        ->where_in('quiz_attempts.status', array('submitted', 'graded'))
+                        ->get('quiz_attempts')
+                        ->result();
+
+        $analysis = array(
+            'total_attempts' => count($attempts),
+            'unique_students' => 0,
+            'average_score' => 0,
+            'highest_score' => 0,
+            'lowest_score' => 0,
+            'pass_count' => 0,
+            'fail_count' => 0,
+            'pass_rate' => 0,
+            'question_analysis' => array(),
+            'thematic_analysis' => array()
+        );
+
+        if (empty($attempts)) {
+            return (object) $analysis;
+        }
+
+        $student_ids = array();
+        $scores = array();
+        $total_points = 0;
+
+        foreach ($attempts as $attempt) {
+            if (!in_array($attempt->student_id, $student_ids)) {
+                $student_ids[] = $attempt->student_id;
+            }
+            if ($attempt->score !== null) {
+                $scores[] = (float) $attempt->score;
+                $total_points = (float) $attempt->total_points;
+                if ($attempt->score >= ($attempt->total_points * 0.6)) {
+                    $analysis['pass_count']++;
+                } else {
+                    $analysis['fail_count']++;
+                }
+            }
+        }
+
+        $analysis['unique_students'] = count($student_ids);
+
+        if (!empty($scores)) {
+            $analysis['average_score'] = array_sum($scores) / count($scores);
+            $analysis['highest_score'] = max($scores);
+            $analysis['lowest_score'] = min($scores);
+            $analysis['pass_rate'] = ($analysis['pass_count'] / count($scores)) * 100;
+        }
+
+        // Question analysis - get correct answer rates per question
+        $questions = $this->db->select('id, question_text, question_type, points')
+                             ->where('quiz_id', $quiz_id)
+                             ->get('quiz_questions')
+                             ->result();
+
+        $theme_data = array();
+
+        foreach ($questions as $question) {
+            $total_answers = $this->db->select('COUNT(*) as count')
+                                     ->from('quiz_attempt_answers qaa')
+                                     ->join('quiz_attempts qa', 'qa.id = qaa.attempt_id')
+                                     ->where('qaa.question_id', $question->id)
+                                     ->where_in('qa.status', array('submitted', 'graded'))
+                                     ->get()
+                                     ->row()->count;
+
+            $correct_answers = $this->db->select('COUNT(*) as count')
+                                       ->from('quiz_attempt_answers qaa')
+                                       ->join('quiz_attempts qa', 'qa.id = qaa.attempt_id')
+                                       ->where('qaa.question_id', $question->id)
+                                       ->where('qaa.is_correct', 1)
+                                       ->where_in('qa.status', array('submitted', 'graded'))
+                                       ->get()
+                                       ->row()->count;
+
+            $correct_rate = $total_answers > 0 ? ($correct_answers / $total_answers) * 100 : 0;
+
+            $analysis['question_analysis'][] = (object) array(
+                'question_id' => $question->id,
+                'question_text' => $question->question_text,
+                'question_type' => $question->question_type,
+                'points' => $question->points,
+                'total_answers' => $total_answers,
+                'correct_answers' => $correct_answers,
+                'correct_rate' => $correct_rate
+            );
+
+            // Thematic analysis by question type
+            $theme = $question->question_type;
+            if (!isset($theme_data[$theme])) {
+                $theme_data[$theme] = array(
+                    'theme' => $theme,
+                    'theme_label' => str_replace('_', ' ', ucfirst($theme)),
+                    'total_questions' => 0,
+                    'total_points' => 0,
+                    'total_answers' => 0,
+                    'correct_answers' => 0
+                );
+            }
+            $theme_data[$theme]['total_questions']++;
+            $theme_data[$theme]['total_points'] += (float) $question->points;
+            $theme_data[$theme]['total_answers'] += $total_answers;
+            $theme_data[$theme]['correct_answers'] += $correct_answers;
+        }
+
+        // Calculate theme statistics
+        foreach ($theme_data as $theme) {
+            $theme['correct_rate'] = $theme['total_answers'] > 0 ? ($theme['correct_answers'] / $theme['total_answers']) * 100 : 0;
+            $analysis['thematic_analysis'][] = (object) $theme;
+        }
+
+        return (object) $analysis;
+    }
+
+    public function generate_analysis_description($analysis, $lang = 'en')
+    {
+        if ($analysis->total_attempts === 0) {
+            if ($lang === 'tl') {
+                return "Wala pang naitatalang mga pagsubok ng mga mag-aaral. Magkakaroon ng analysis kapag nakapagtapos na ang mga mag-aaral sa pagsusulit.";
+            }
+            return "No student attempts have been recorded yet. Analysis will be available once students have completed the assessment.";
+        }
+
+        if ($lang === 'tl') {
+            return $this->generate_tagalog_description($analysis);
+        }
+
+        $description = "This assessment has been attempted " . $analysis->total_attempts . " time";
+        if ($analysis->total_attempts > 1) {
+            $description .= "s";
+        }
+        $description .= " by " . $analysis->unique_students . " unique student";
+        if ($analysis->unique_students > 1) {
+            $description .= "s";
+        }
+        $description .= ". ";
+
+        if ($analysis->average_score > 0) {
+            $description .= "The average score is " . number_format((float) $analysis->average_score, 2) . " points, with a highest score of " . number_format((float) $analysis->highest_score, 2) . " and a lowest score of " . number_format((float) $analysis->lowest_score, 2) . ". ";
+        }
+
+        $description .= "The pass rate is " . number_format((float) $analysis->pass_rate, 1) . "%";
+        if ($analysis->pass_rate >= 80) {
+            $description .= ", indicating strong overall performance across the class.";
+        } elseif ($analysis->pass_rate >= 60) {
+            $description .= ", showing satisfactory performance with room for improvement.";
+        } elseif ($analysis->pass_rate >= 40) {
+            $description .= ", suggesting that many students struggled with the assessment content.";
+        } else {
+            $description .= ", indicating significant difficulty with the assessment material.";
+        }
+        $description .= " ";
+
+        if (!empty($analysis->thematic_analysis)) {
+            $description .= "By question type, ";
+            $theme_descriptions = array();
+            foreach ($analysis->thematic_analysis as $theme) {
+                $theme_desc = $theme->theme_label . " questions had a " . number_format((float) $theme->correct_rate, 1) . "% correct rate";
+                if ($theme->correct_rate >= 70) {
+                    $theme_desc .= " (well-performed)";
+                } elseif ($theme->correct_rate >= 50) {
+                    $theme_desc .= " (moderate performance)";
+                } else {
+                    $theme_desc .= " (needs attention)";
+                }
+                $theme_descriptions[] = $theme_desc;
+            }
+            $description .= implode(", ", $theme_descriptions) . ". ";
+        }
+
+        if (!empty($analysis->question_analysis)) {
+            $difficult_questions = array_filter($analysis->question_analysis, function($qa) {
+                return $qa->correct_rate < 50 && $qa->total_answers > 0;
+            });
+            if (count($difficult_questions) > 0) {
+                $description .= "Several questions had correct rates below 50%, which may indicate areas where students need additional review or instructional support. ";
+            }
+
+            $easy_questions = array_filter($analysis->question_analysis, function($qa) {
+                return $qa->correct_rate >= 80 && $qa->total_answers > 0;
+            });
+            if (count($easy_questions) > 0) {
+                $description .= "Conversely, some questions were well-understood by students with correct rates above 80%. ";
+            }
+        }
+
+        return $description;
+    }
+
+    private function generate_tagalog_description($analysis)
+    {
+        $description = "Ang pagsusulit na ito ay sinubok " . $analysis->total_attempts . " na bes";
+        if ($analysis->total_attempts > 1) {
+            $description .= "es";
+        }
+        $description .= " ng " . $analysis->unique_students . " na mag-aaral. ";
+
+        if ($analysis->average_score > 0) {
+            $description .= "Ang average na score ay " . number_format((float) $analysis->average_score, 2) . " puntos, na may pinakamataas na score na " . number_format((float) $analysis->highest_score, 2) . " at pinakamababang score na " . number_format((float) $analysis->lowest_score, 2) . ". ";
+        }
+
+        $description .= "Ang pass rate ay " . number_format((float) $analysis->pass_rate, 1) . "%";
+        if ($analysis->pass_rate >= 80) {
+            $description .= ", na nagpapakita ng magandang pagganap ng buong klase.";
+        } elseif ($analysis->pass_rate >= 60) {
+            $description .= ", na nagpapakita ng katamtamang pagganap na may puwang sa pagpapabuti.";
+        } elseif ($analysis->pass_rate >= 40) {
+            $description .= ", na nagpapahiwatig na maraming mag-aaral ang nahirapan sa nilalaman ng pagsusulit.";
+        } else {
+            $description .= ", na nagpapakita ng malaking hirap sa materyal ng pagsusulit.";
+        }
+        $description .= " ";
+
+        if (!empty($analysis->thematic_analysis)) {
+            $description .= "Ayon sa uri ng tanong, ";
+            $theme_descriptions = array();
+            foreach ($analysis->thematic_analysis as $theme) {
+                $theme_desc = "ang mga tanong na " . $theme->theme_label . " ay may " . number_format((float) $theme->correct_rate, 1) . "% na tamang sagot";
+                if ($theme->correct_rate >= 70) {
+                    $theme_desc .= " (mabuting pagganap)";
+                } elseif ($theme->correct_rate >= 50) {
+                    $theme_desc .= " (katamtamang pagganap)";
+                } else {
+                    $theme_desc .= " (kailangan ng pansin)";
+                }
+                $theme_descriptions[] = $theme_desc;
+            }
+            $description .= implode(", ", $theme_descriptions) . ". ";
+        }
+
+        if (!empty($analysis->question_analysis)) {
+            $difficult_questions = array_filter($analysis->question_analysis, function($qa) {
+                return $qa->correct_rate < 50 && $qa->total_answers > 0;
+            });
+            if (count($difficult_questions) > 0) {
+                $description .= "Ilang mga tanong ang may tamang sagot na mas mababa sa 50%, na maaaring magpapakita ng mga lugar kung saan kailangan ng mga mag-aaral ng karagdagang pagsusuri o suportang pangturo. ";
+            }
+
+            $easy_questions = array_filter($analysis->question_analysis, function($qa) {
+                return $qa->correct_rate >= 80 && $qa->total_answers > 0;
+            });
+            if (count($easy_questions) > 0) {
+                $description .= "Sa kabilang banda, ilang mga tanong ang naintindihan nang mabuti ng mga mag-aaral na may tamang sagot na higit sa 80%. ";
+            }
+        }
+
+        return $description;
+    }
+
     public function get_in_progress_attempt($quiz_id, $student_id)
     {
         return $this->db->where('quiz_id', $quiz_id)
