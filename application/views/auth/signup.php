@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - BlueCampus</title>
+
     <link rel="icon" type="image/png" href="<?= base_url('uploads/icon/favicon.ico') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="<?= base_url('assets/js/notifications.js') ?>"></script>
+
     <style>
         :root {
             --blue-980: #081734;
@@ -37,8 +40,6 @@
         }
 
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
@@ -52,6 +53,7 @@
 
         body {
             min-height: 100vh;
+            margin: 0;
             font-family: var(--font-body);
             color: var(--ink-950);
             background:
@@ -62,22 +64,20 @@
         }
 
         .page-shell {
-            position: relative;
             min-height: 100vh;
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 18px;
-            z-index: 1;
+            padding: 24px 18px;
         }
 
         .signup-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1320px;
         }
 
         .form-card {
-            padding: 40px 36px;
+            padding: 38px 36px;
             border-radius: var(--card-radius);
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(219, 234, 254, 0.95);
@@ -97,7 +97,7 @@
             width: 54px;
             height: 54px;
             border-radius: 18px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, var(--blue-900), var(--blue-600));
@@ -125,11 +125,11 @@
             letter-spacing: -0.04em;
         }
 
-        .form-card h1 {
+        .form-title {
             margin-bottom: 8px;
             font-family: var(--font-heading);
-            font-size: 1.82rem;
-            line-height: 1;
+            font-size: clamp(1.55rem, 2.5vw, 2rem);
+            line-height: 1.1;
             letter-spacing: -0.05em;
             color: var(--blue-950);
         }
@@ -137,29 +137,37 @@
         .signup-subtitle {
             margin-bottom: 24px;
             color: var(--ink-500);
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             line-height: 1.6;
         }
 
         .form-section {
             margin-bottom: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--ink-200);
+            padding: 22px;
+            border: 1px solid var(--ink-200);
+            border-radius: 22px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         }
 
-        .form-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
+        .form-section:last-of-type {
+            margin-bottom: 16px;
         }
 
         .section-title {
-            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            font-size: 0.84rem;
             font-weight: 800;
             color: var(--blue-900);
-            margin-bottom: 16px;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
+        }
+
+        .section-title i {
+            font-size: 1rem;
+            color: var(--blue-700);
         }
 
         .field-group {
@@ -175,20 +183,17 @@
             letter-spacing: 0.02em;
         }
 
-        .field-label .required {
+        .required {
             color: #dc2626;
         }
 
-        .input-wrap {
-            position: relative;
-        }
-
-        .input-wrap .form-control {
-            height: 48px;
+        .input-wrap .form-control,
+        .input-wrap .form-select {
+            min-height: 48px;
             padding: 12px 16px;
             border-radius: 14px;
             border: 1px solid #d8e7ff;
-            background: #f8fbff;
+            background-color: #f8fbff;
             color: var(--ink-950);
             font-size: 0.9rem;
             font-weight: 600;
@@ -196,8 +201,14 @@
             transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
         }
 
-        .input-wrap .form-control:focus {
-            background: var(--white);
+        .input-wrap textarea.form-control {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .input-wrap .form-control:focus,
+        .input-wrap .form-select:focus {
+            background-color: var(--white);
             border-color: var(--blue-700);
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
         }
@@ -207,42 +218,52 @@
             font-weight: 500;
         }
 
-        .row {
-            display: flex;
-            gap: 16px;
+        .help-text,
+        .field-message {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.75rem;
         }
 
-        .col {
-            flex: 1;
-        }
-
-        .captcha-section {
+        .captcha-panel {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: 14px;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px dashed #b9d6ff;
+            background: #f8fbff;
         }
 
         .captcha-image {
+            max-width: 100%;
             border-radius: 12px;
             border: 2px solid #d8e7ff;
-            background: white;
+            background: #ffffff;
         }
 
         .captcha-refresh {
-            color: var(--blue-700);
-            cursor: pointer;
-            font-size: 1.5rem;
-            transition: color 0.18s ease;
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--blue-100);
+            color: var(--blue-850);
+            font-size: 1.25rem;
+            transition: transform 0.18s ease, background 0.18s ease;
         }
 
         .captcha-refresh:hover {
-            color: var(--blue-900);
+            transform: rotate(25deg);
+            background: #cfe4ff;
         }
 
         .btn-submit {
             width: 100%;
-            height: 54px;
+            min-height: 54px;
             border: 0;
             border-radius: 18px;
             background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 52%, var(--blue-600) 100%);
@@ -256,17 +277,12 @@
             gap: 10px;
             box-shadow: 0 18px 28px rgba(37, 99, 235, 0.24);
             transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
-            margin-top: 8px;
         }
 
         .btn-submit:hover {
             transform: translateY(-1px);
             box-shadow: 0 22px 34px rgba(37, 99, 235, 0.28);
             filter: saturate(1.04);
-        }
-
-        .btn-submit:active {
-            transform: translateY(0);
         }
 
         .signup-footer {
@@ -287,7 +303,7 @@
             text-decoration: underline;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 767.98px) {
             .page-shell {
                 padding: 0;
             }
@@ -297,14 +313,20 @@
             }
 
             .form-card {
+                min-height: 100vh;
                 border-radius: 0;
                 box-shadow: none;
                 padding: 24px 18px;
             }
 
-            .row {
+            .form-section {
+                padding: 18px 14px;
+                border-radius: 18px;
+            }
+
+            .captcha-panel {
+                align-items: flex-start;
                 flex-direction: column;
-                gap: 0;
             }
         }
     </style>
@@ -313,187 +335,262 @@
 <body>
     <?= render_notifications() ?>
 
-    <div class="page-shell">
+    <?php
+    if (!function_exists('h')) {
+        function h($value)
+        {
+            return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        }
+    }
+
+    $form_data = isset($form_data) && is_array($form_data) ? $form_data : [];
+
+    function old_value($field, $default = '')
+    {
+        global $form_data;
+        return isset($form_data[$field]) ? h($form_data[$field]) : h($default);
+    }
+
+    function old_selected($field, $value)
+    {
+        global $form_data;
+        return (isset($form_data[$field]) && (string) $form_data[$field] === (string) $value) ? 'selected' : '';
+    }
+
+    $school_types = [
+        'deped' => 'DepEd (K-12)',
+        'ched'  => 'CHED (Higher Ed)',
+        'tesda' => 'TESDA (Tech-Voc)',
+        'both'  => 'All (K-12, CHED, TESDA)',
+    ];
+
+    $districts = [
+        'Boston District',
+        'Cateel 1',
+        'Cateel 2',
+        'Baganga North',
+        'Baganga South',
+        'Caraga North',
+        'Caraga South',
+        'Manay North',
+        'Manay South',
+        'Tarragona',
+        'San Isidro North',
+        'San Isidro South',
+        'Gov. Gen North',
+        'Gov. Gen South',
+        'Lupon West',
+        'Lupon East',
+        'Banaybanay',
+    ];
+    ?>
+
+    <main class="page-shell">
         <div class="signup-container">
             <div class="form-card">
-                <div class="brand-row">
-                    <div class="brand-icon">
+                <header class="brand-row">
+                    <div class="brand-icon" aria-hidden="true">
                         <i class="bi bi-mortarboard-fill"></i>
                     </div>
                     <div class="brand-copy">
                         <small>BlueCampus</small>
                         <strong>LMS Portal</strong>
                     </div>
-                </div>
+                </header>
 
-                <h1>Sign Up for School Account</h1>
-                <p class="signup-subtitle">Register your school to get started with BlueCampus LMS.</p>
+                <h1 class="form-title">Sign Up for School Account</h1>
+                <p class="signup-subtitle">Register your school to get started with BlueCampus LMS. Fields marked with <span class="required">*</span> are required.</p>
 
-                <?= form_open('auth/create_school', array('autocomplete' => 'off')) ?>
-                    <!-- Row 1: Basic Information (3 elements) -->
-                    <div class="row form-section">
-                        <h6 class="section-title col-12">Basic Information</h6>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">School Name <span class="required">*</span></label>
+                <?= form_open('auth/create_school', ['autocomplete' => 'off', 'id' => 'schoolSignupForm']) ?>
+
+                <section class="form-section" aria-labelledby="schoolInfoTitle">
+                    <h2 class="section-title" id="schoolInfoTitle">
+                        <i class="bi bi-building"></i>
+                        School Information
+                    </h2>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6 field-group">
+                            <label class="field-label" for="schoolName">School Name <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <input type="text" class="form-control" name="name" required oninput="this.value = this.value.toUpperCase()" value="<?= isset($form_data['name']) ? htmlspecialchars($form_data['name']) : '' ?>">
+                                <input type="text" class="form-control" name="name" id="schoolName" required oninput="this.value = this.value.toUpperCase()" value="<?= old_value('name') ?>">
                             </div>
                         </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">School Type <span class="required">*</span></label>
+
+                        <div class="col-12 col-md-6 col-lg-3 field-group">
+                            <label class="field-label" for="schoolType">School Type <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <select class="form-control" name="type" required>
+                                <select class="form-select" name="type" id="schoolType" required>
                                     <option value="">Select type</option>
-                                    <option value="deped" <?= isset($form_data['type']) && $form_data['type'] == 'deped' ? 'selected' : '' ?>>DepEd (K-12)</option>
-                                    <option value="ched" <?= isset($form_data['type']) && $form_data['type'] == 'ched' ? 'selected' : '' ?>>CHED (Higher Ed)</option>
-                                    <option value="tesda" <?= isset($form_data['type']) && $form_data['type'] == 'tesda' ? 'selected' : '' ?>>TESDA (Tech-Voc)</option>
-                                    <option value="both" <?= isset($form_data['type']) && $form_data['type'] == 'both' ? 'selected' : '' ?>>All (K-12, CHED, TESDA)</option>
+                                    <?php foreach ($school_types as $value => $label): ?>
+                                        <option value="<?= h($value) ?>" <?= old_selected('type', $value) ?>><?= h($label) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">School ID Number <span class="required">*</span></label>
+
+                        <div class="col-12 col-md-6 col-lg-3 field-group">
+                            <label class="field-label" for="schoolIdNumber">School ID Number <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <input type="text" class="form-control" name="school_id_number" required value="<?= isset($form_data['school_id_number']) ? htmlspecialchars($form_data['school_id_number']) : '' ?>">
+                                <input type="text" class="form-control" name="school_id_number" id="schoolIdNumber" required value="<?= old_value('school_id_number') ?>">
                             </div>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Row 2: Contact & Location (3 elements) -->
-                    <div class="row form-section">
-                        <h6 class="section-title col-12">Contact & Location</h6>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Contact Number</label>
+                <section class="form-section" aria-labelledby="locationTitle">
+                    <h2 class="section-title" id="locationTitle">
+                        <i class="bi bi-geo-alt"></i>
+                        Location
+                    </h2>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4 field-group">
+                            <label class="field-label" for="district">District</label>
                             <div class="input-wrap">
-                                <input type="text" class="form-control" name="contact_number" value="<?= isset($form_data['contact_number']) ? htmlspecialchars($form_data['contact_number']) : '' ?>">
-                            </div>
-                        </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">District</label>
-                            <div class="input-wrap">
-                                <select class="form-control" name="district">
+                                <select class="form-select" name="district" id="district">
                                     <option value="">Select district</option>
-                                    <option value="Baganga District" <?= isset($form_data['district']) && $form_data['district'] == 'Baganga District' ? 'selected' : '' ?>>Baganga District</option>
-                                    <option value="Boston District" <?= isset($form_data['district']) && $form_data['district'] == 'Boston District' ? 'selected' : '' ?>>Boston District</option>
-                                    <option value="Cateel District" <?= isset($form_data['district']) && $form_data['district'] == 'Cateel District' ? 'selected' : '' ?>>Cateel District</option>
-                                    <option value="Caraga District" <?= isset($form_data['district']) && $form_data['district'] == 'Caraga District' ? 'selected' : '' ?>>Caraga District</option>
-                                    <option value="Manay District" <?= isset($form_data['district']) && $form_data['district'] == 'Manay District' ? 'selected' : '' ?>>Manay District</option>
-                                    <option value="Tarragona District" <?= isset($form_data['district']) && $form_data['district'] == 'Tarragona District' ? 'selected' : '' ?>>Tarragona District</option>
-                                    <option value="Lupon District" <?= isset($form_data['district']) && $form_data['district'] == 'Lupon District' ? 'selected' : '' ?>>Lupon District</option>
-                                    <option value="Banaybanay District" <?= isset($form_data['district']) && $form_data['district'] == 'Banaybanay District' ? 'selected' : '' ?>>Banaybanay District</option>
-                                    <option value="San Isidro District" <?= isset($form_data['district']) && $form_data['district'] == 'San Isidro District' ? 'selected' : '' ?>>San Isidro District</option>
-                                    <option value="Governor Generoso District" <?= isset($form_data['district']) && $form_data['district'] == 'Governor Generoso District' ? 'selected' : '' ?>>Governor Generoso District</option>
-                                    <option value="Mati City District" <?= isset($form_data['district']) && $form_data['district'] == 'Mati City District' ? 'selected' : '' ?>>Mati City District</option>
+                                    <?php foreach ($districts as $district): ?>
+                                        <option value="<?= h($district) ?>" <?= old_selected('district', $district) ?>><?= h($district) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Division</label>
+
+                        <div class="col-12 col-md-4 field-group">
+                            <label class="field-label" for="division">Division</label>
                             <div class="input-wrap">
-                                <input type="text" class="form-control" name="division" value="Davao Oriental" readonly>
+                                <input type="text" class="form-control" name="division" id="division" value="Davao Oriental" readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-4 field-group">
+                            <label class="field-label" for="region">Region</label>
+                            <div class="input-wrap">
+                                <input type="text" class="form-control" name="region" id="region" value="XI" readonly>
+                            </div>
+                        </div>
+
+                        <div class="col-12 field-group">
+                            <label class="field-label" for="address">Complete Address</label>
+                            <div class="input-wrap">
+                                <textarea class="form-control" name="address" id="address" rows="3" placeholder="Street, barangay, municipality/city, province"><?= old_value('address') ?></textarea>
                             </div>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Row 3: Location & Email (3 elements) -->
-                    <div class="row form-section">
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Region</label>
-                            <div class="input-wrap">
-                                <input type="text" class="form-control" name="region" value="XI" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Email Address <span class="required">*</span></label>
-                            <div class="input-wrap">
-                                <input type="email" class="form-control" name="email" id="emailInput" required value="<?= isset($form_data['email']) ? htmlspecialchars($form_data['email']) : '' ?>">
-                            </div>
-                            <small id="emailMessage" style="font-size: 0.75rem; margin-top: 4px; display: block;"></small>
-                            <small class="text-muted" style="font-size: 0.75rem; margin-top: 4px; display: block;">Confirmation link will be sent to this email</small>
-                        </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Complete Address</label>
-                            <div class="input-wrap">
-                                <textarea class="form-control" name="address" rows="3"><?= isset($form_data['address']) ? htmlspecialchars($form_data['address']) : '' ?></textarea>
-                            </div>
-                        </div>
-                    </div>
+                <section class="form-section" aria-labelledby="accountSetupTitle">
+                    <h2 class="section-title" id="accountSetupTitle">
+                        <i class="bi bi-person-lock"></i>
+                        Account Setup
+                    </h2>
 
-                    <!-- Row 4: Account Setup (3 elements) -->
-                    <div class="row form-section">
-                        <h6 class="section-title col-12">Account Setup</h6>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Password <span class="required">*</span></label>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6 field-group">
+                            <label class="field-label" for="emailInput">Email Address <span class="required">*</span></label>
+                            <div class="input-wrap">
+                                <input type="email" class="form-control" name="email" id="emailInput" required value="<?= old_value('email') ?>">
+                            </div>
+                            <small id="emailMessage" class="field-message"></small>
+                            <small class="help-text text-muted">A confirmation link will be sent to this email.</small>
+                        </div>
+
+                        <div class="col-12 col-lg-6 field-group">
+                            <label class="field-label" for="contactNumber">Contact Number</label>
+                            <div class="input-wrap">
+                                <input type="text" class="form-control" name="contact_number" id="contactNumber" value="<?= old_value('contact_number') ?>">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 field-group">
+                            <label class="field-label" for="passwordInput">Password <span class="required">*</span></label>
                             <div class="input-wrap">
                                 <input type="password" class="form-control" name="password" id="passwordInput" required minlength="8" placeholder="At least 8 characters">
                             </div>
                         </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Confirm Password <span class="required">*</span></label>
+
+                        <div class="col-12 col-md-6 field-group">
+                            <label class="field-label" for="confirmPasswordInput">Confirm Password <span class="required">*</span></label>
                             <div class="input-wrap">
                                 <input type="password" class="form-control" name="confirm_password" id="confirmPasswordInput" required minlength="8" placeholder="Re-enter your password">
                             </div>
-                            <small id="passwordMessage" style="font-size: 0.75rem; margin-top: 4px; display: block;"></small>
-                        </div>
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Captcha <span class="required">*</span></label>
-                            <div class="captcha-section">
-                                <img src="<?= $captcha_image ?>" alt="Captcha" class="captcha-image" id="captchaImg">
-                                <i class="bi bi-arrow-clockwise captcha-refresh" onclick="refreshCaptcha()" title="Refresh captcha"></i>
-                            </div>
+                            <small id="passwordMessage" class="field-message"></small>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Row 5: Captcha Input (Full Width) -->
-                    <div class="row form-section">
-                        <div class="col-md-4 field-group">
-                            <label class="field-label">Enter Captcha <span class="required">*</span></label>
+                <section class="form-section" aria-labelledby="securityTitle">
+                    <h2 class="section-title" id="securityTitle">
+                        <i class="bi bi-shield-check"></i>
+                        Security Verification
+                    </h2>
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md-6 field-group">
+                            <label class="field-label">Captcha Image</label>
+                            <div class="captcha-panel">
+                                <img src="<?= isset($captcha_image) ? $captcha_image : '' ?>" alt="Captcha" class="captcha-image" id="captchaImg">
+                                <button type="button" class="captcha-refresh" onclick="refreshCaptcha()" title="Refresh captcha" aria-label="Refresh captcha">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 field-group">
+                            <label class="field-label" for="captchaInput">Enter Captcha <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <input type="text" class="form-control" name="captcha" required>
+                                <input type="text" class="form-control" name="captcha" id="captchaInput" required autocomplete="off">
                             </div>
                         </div>
                     </div>
+                </section>
 
-                    <button type="submit" class="btn-submit">
-                        <i class="bi bi-person-plus"></i>
-                        Create School Account
-                    </button>
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-person-plus"></i>
+                    Create School Account
+                </button>
+
                 <?= form_close() ?>
 
-                <div class="signup-footer">
+                <footer class="signup-footer">
                     <a href="<?= site_url('auth') ?>">
                         <i class="bi bi-arrow-left"></i> Back to Login
                     </a>
-                </div>
+                </footer>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
         function refreshCaptcha() {
             fetch('<?= site_url('auth/captcha_refresh') ?>')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('captchaImg').src = data.image;
+                    if (data && data.image) {
+                        document.getElementById('captchaImg').src = data.image;
+                    }
                 })
                 .catch(error => console.error('Error refreshing captcha:', error));
         }
 
-        let emailTimeout;
-        document.getElementById('emailInput').addEventListener('input', function() {
+        const emailInput = document.getElementById('emailInput');
+        const emailMessage = document.getElementById('emailMessage');
+        let emailTimeout = null;
+
+        emailInput.addEventListener('input', function () {
             clearTimeout(emailTimeout);
-            const email = this.value;
-            const messageEl = document.getElementById('emailMessage');
+            const email = this.value.trim();
 
             if (email.length < 3) {
-                messageEl.textContent = '';
+                emailMessage.textContent = '';
                 return;
             }
 
-            messageEl.textContent = 'Checking...';
-            messageEl.style.color = '#6c757d';
+            emailMessage.textContent = 'Checking...';
+            emailMessage.style.color = '#64748b';
 
-            emailTimeout = setTimeout(function() {
+            emailTimeout = setTimeout(function () {
                 const formData = new FormData();
                 formData.append('email', email);
 
@@ -501,24 +598,23 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.exists) {
-                        messageEl.textContent = 'Email already registered';
-                        messageEl.style.color = '#dc3545';
-                    } else {
-                        messageEl.textContent = 'Email available';
-                        messageEl.style.color = '#28a745';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking email:', error);
-                    messageEl.textContent = '';
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            emailMessage.textContent = 'Email already registered';
+                            emailMessage.style.color = '#dc2626';
+                        } else {
+                            emailMessage.textContent = 'Email available';
+                            emailMessage.style.color = '#16a34a';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking email:', error);
+                        emailMessage.textContent = '';
+                    });
             }, 500);
         });
 
-        // Password confirmation validation
         const passwordInput = document.getElementById('passwordInput');
         const confirmPasswordInput = document.getElementById('confirmPasswordInput');
         const passwordMessage = document.getElementById('passwordMessage');
@@ -531,10 +627,10 @@
 
             if (passwordInput.value !== confirmPasswordInput.value) {
                 passwordMessage.textContent = 'Passwords do not match';
-                passwordMessage.style.color = '#dc3545';
+                passwordMessage.style.color = '#dc2626';
             } else {
                 passwordMessage.textContent = 'Passwords match';
-                passwordMessage.style.color = '#28a745';
+                passwordMessage.style.color = '#16a34a';
             }
         }
 
