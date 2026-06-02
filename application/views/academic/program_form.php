@@ -191,7 +191,7 @@
     </div>
 
     <div class="ap-card">
-        <form action="<?= ($program) ? site_url('academic/edit_program/' . $program->id) : site_url('academic/create_program') ?>" method="post" autocomplete="off">
+        <?= form_open(($program) ? 'academic/edit_program/' . $program->id : 'academic/create_program', ['autocomplete' => 'off']) ?>
 
             <div class="ap-row">
                 <div class="ap-field">
@@ -242,7 +242,7 @@
                     <?= ($program) ? 'Save Changes' : 'Create Program' ?>
                 </button>
             </div>
-        </form>
+        <?= form_close() ?>
     </div>
 </div>
 
