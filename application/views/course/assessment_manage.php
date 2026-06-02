@@ -77,6 +77,7 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
     <div class="am-stack">
         <?php if (!empty($can_edit_assessment)): ?>
         <form action="<?= site_url('course/edit_assessment/' . $quiz->id) ?>" method="post" class="am-panel">
+            <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
             <div class="am-panel-head">
                 <div class="am-panel-title"><i class="bi bi-sliders"></i> Assessment Settings</div>
             </div>
@@ -98,7 +99,7 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                         <input type="number" class="form-control am-input" name="max_attempts" min="1" value="<?= (int) $quiz->max_attempts ?>">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label am-label">Time Limit</label>
+                        <label class="form-label am-label">Time Limit (in minutes)</label>
                         <input type="number" class="form-control am-input" name="time_limit_minutes" min="0" value="<?= (int) $quiz->time_limit_minutes ?>" placeholder="Minutes">
                     </div>
                     <div class="col-md-4">
@@ -151,6 +152,7 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
         </form>
 
         <form action="<?= site_url('course/upload_assessment_questions/' . $quiz->id) ?>" method="post" enctype="multipart/form-data" class="am-panel">
+            <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
             <div class="am-panel-head">
                 <div class="am-panel-title"><i class="bi bi-upload"></i> Import Question Bank</div>
             </div>

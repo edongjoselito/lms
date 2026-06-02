@@ -1,4 +1,29 @@
-<?php $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general'); ?>
+<?php
+$subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
+$is_video_lesson = !empty($is_video_lesson);
+$is_pdf_lesson = !empty($is_pdf_lesson);
+$completion_gate_type = '';
+if (empty($is_completed)) {
+    if ($is_video_lesson) {
+        $completion_gate_type = 'video';
+    } elseif ($is_pdf_lesson) {
+        $completion_gate_type = 'pdf';
+    }
+}
+$completion_gate_required = $completion_gate_type !== '';
+$next_locked = !empty($next_item) && $completion_gate_required;
+$student_csrf_token_name = $this->security->get_csrf_token_name();
+$student_csrf_hash = $this->security->get_csrf_hash();
+$lesson_pdf_url = $is_pdf_lesson ? (string) $lesson->file_path : '';
+$completion_pill_text = $completion_gate_type === 'pdf' ? 'Scroll PDF to complete' : 'Watch video to complete';
+$completion_note_title = $completion_gate_type === 'pdf'
+    ? 'Scroll to the last page to complete this lesson'
+    : 'Finish the video to complete this lesson';
+$completion_note_text = $completion_gate_type === 'pdf'
+    ? 'Your progress and the next content will unlock only after you reach the end of the PDF.'
+    : 'Your progress and the next content will unlock only after the video reaches the end.';
+$completion_note_icon = $completion_gate_type === 'pdf' ? 'bi-file-earmark-pdf' : 'bi-play-circle';
+?>
 
 <div class="lp-wrap">
 
@@ -52,11 +77,19 @@
                 <span class="lp-progress-percent"><?= isset($progress_percent) ? $progress_percent : 0 ?>%</span>
                 <span class="lp-progress-label">Complete</span>
             </div>
-            <div class="lp-completed-pill">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                Completed
+            <div class="lp-completed-pill<?= $completion_gate_required ? ' lp-completed-pill--pending' : '' ?>" id="lessonStatusPill">
+                <?php if ($completion_gate_required): ?>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    <?= htmlspecialchars($completion_pill_text) ?>
+                <?php else: ?>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Completed
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -82,15 +115,36 @@
                         Download
                     </a>
                 </div>
-                <div class="lp-iframe-wrap">
-                    <iframe src="<?= htmlspecialchars($lesson->file_path) ?>" width="100%" height="640" loading="lazy"></iframe>
-                </div>
+                <?php if ($is_pdf_lesson): ?>
+                    <div class="lp-pdf-viewer">
+                        <div class="lp-pdf-viewer-status" id="pdfViewerStatus" data-state="loading">Loading PDF...</div>
+                        <div class="lp-pdf-scroll-area" id="pdfScrollArea">
+                            <div class="lp-pdf-pages" id="pdfPages"></div>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="lp-iframe-wrap">
+                        <iframe src="<?= htmlspecialchars($lesson->file_path) ?>" width="100%" height="640" loading="lazy"></iframe>
+                    </div>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
         <div class="lp-content-body">
             <?= $lesson->content ?>
         </div>
+
+        <?php if ($completion_gate_required): ?>
+            <div class="lp-video-completion-note" id="videoCompletionNote">
+                <div class="lp-video-completion-icon">
+                    <i class="bi <?= htmlspecialchars($completion_note_icon) ?>"></i>
+                </div>
+                <div class="lp-video-completion-copy">
+                    <strong><?= htmlspecialchars($completion_note_title) ?></strong>
+                    <span><?= htmlspecialchars($completion_note_text) ?></span>
+                </div>
+            </div>
+        <?php endif; ?>
 
     </div>
 
@@ -112,7 +166,7 @@
             <div></div>
         <?php endif; ?>
 
-        <?php if ($next_item): ?>
+        <?php if ($next_item && !$next_locked): ?>
             <a href="<?= $next_item->url ?>" class="lp-nav-btn lp-nav-btn--next">
                 <span class="lp-nav-text lp-nav-text--right">
                     <span class="lp-nav-label">Next <?= ucfirst($next_item->type) ?></span>
@@ -124,6 +178,16 @@
                     </svg>
                 </span>
             </a>
+        <?php elseif ($next_item): ?>
+            <div class="lp-nav-btn lp-nav-btn--disabled lp-nav-btn--next">
+                <span class="lp-nav-text lp-nav-text--right">
+                    <span class="lp-nav-label">Next <?= ucfirst($next_item->type) ?></span>
+                    <span class="lp-nav-name"><?= htmlspecialchars($next_item->title) ?></span>
+                </span>
+                <span class="lp-nav-arrow">
+                    <i class="bi bi-lock-fill"></i>
+                </span>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -281,6 +345,11 @@
         flex-shrink: 0;
     }
 
+    .lp-completed-pill--pending {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
     /* ── Body (file + content) ─────────────────────────── */
     .lp-body {
         background: #fff;
@@ -366,6 +435,79 @@
     .lp-iframe-wrap iframe {
         display: block;
         border: none;
+    }
+
+    .lp-pdf-viewer {
+        background: #eef2f7;
+    }
+
+    .lp-pdf-viewer-status {
+        padding: 0.85rem 1.1rem;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #475569;
+        background: #ffffff;
+    }
+
+    .lp-pdf-viewer-status[data-state="loading"] {
+        color: #475569;
+    }
+
+    .lp-pdf-viewer-status[data-state="ready"] {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .lp-pdf-viewer-status[data-state="complete"] {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .lp-pdf-viewer-status[data-state="error"] {
+        background: #fef2f2;
+        color: #b91c1c;
+    }
+
+    .lp-pdf-scroll-area {
+        padding: 1.25rem;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.05)),
+            #e2e8f0;
+    }
+
+    .lp-pdf-pages {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .lp-pdf-page {
+        width: fit-content;
+        max-width: 100%;
+        padding: 0.8rem;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    }
+
+    .lp-pdf-page canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border-radius: 10px;
+    }
+
+    .lp-pdf-page-number {
+        margin-top: 0.7rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #64748b;
+        text-align: center;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
     }
 
     /* ── Rich Content ──────────────────────────────────── */
@@ -456,6 +598,46 @@
         font-size: 0.875rem;
     }
 
+    .lp-video-completion-note {
+        margin: 0 2.5rem 2rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid #fdba74;
+        border-radius: 14px;
+        background: #fff7ed;
+        display: flex;
+        gap: 0.9rem;
+        align-items: flex-start;
+    }
+
+    .lp-video-completion-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(249, 115, 22, 0.12);
+        color: #ea580c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+    }
+
+    .lp-video-completion-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        color: #9a3412;
+    }
+
+    .lp-video-completion-copy strong {
+        font-size: 0.92rem;
+    }
+
+    .lp-video-completion-copy span {
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
     /* ── Navigation ─────────────────────────────────────── */
     .lp-nav {
         display: grid;
@@ -481,6 +663,26 @@
         border-color: rgba(0, 0, 0, 0.12);
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .lp-nav-btn--disabled,
+    .lp-nav-btn--disabled:hover {
+        background: #f8fafc;
+        color: #94a3b8;
+        border-color: #e2e8f0;
+        box-shadow: none;
+        transform: none;
+        cursor: not-allowed;
+    }
+
+    .lp-nav-btn--disabled .lp-nav-arrow {
+        background: #e2e8f0;
+        color: #64748b;
+    }
+
+    .lp-nav-btn--disabled .lp-nav-name,
+    .lp-nav-btn--disabled .lp-nav-label {
+        color: #94a3b8;
     }
 
     .lp-nav-arrow {
@@ -562,6 +764,14 @@
             padding: 1.5rem;
         }
 
+        .lp-pdf-scroll-area {
+            padding: 0.85rem;
+        }
+
+        .lp-pdf-page {
+            padding: 0.5rem;
+        }
+
         .lp-nav {
             grid-template-columns: 1fr;
         }
@@ -606,3 +816,302 @@
         }
     }
 </style>
+
+<?php if ($is_pdf_lesson || $completion_gate_type === 'video'): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var csrfTokenName = <?= json_encode($student_csrf_token_name) ?>;
+    var csrfHash = <?= json_encode($student_csrf_hash) ?>;
+    var markLessonUrl = <?= json_encode(site_url('student/mark_lesson/' . $subject->id . '/' . $lesson->id)) ?>;
+    var completionGateType = <?= json_encode($completion_gate_type) ?>;
+    var isPdfLesson = <?= json_encode($is_pdf_lesson) ?>;
+    var pdfUrl = <?= json_encode($lesson_pdf_url) ?>;
+    var completionRequested = false;
+
+    function refreshCsrfToken(tokenName, tokenHash) {
+        if (tokenName) {
+            csrfTokenName = tokenName;
+        }
+        if (tokenHash) {
+            csrfHash = tokenHash;
+        }
+    }
+
+    function markLessonComplete(completionFieldName) {
+        if (completionRequested || !completionFieldName) {
+            return;
+        }
+
+        completionRequested = true;
+
+        var formData = new FormData();
+        formData.append(csrfTokenName, csrfHash);
+        formData.append(completionFieldName, '1');
+
+        fetch(markLessonUrl, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(function (response) {
+            return response.json().catch(function () {
+                return {
+                    success: false,
+                    message: 'Unable to update lesson progress.'
+                };
+            }).then(function (data) {
+                return {
+                    ok: response.ok,
+                    data: data
+                };
+            });
+        }).then(function (result) {
+            refreshCsrfToken(result.data.csrf_token_name, result.data.csrf_hash);
+
+            if (!result.ok || !result.data.success) {
+                throw new Error(result.data.message || 'Unable to update lesson progress.');
+            }
+
+            if (window.toast && typeof window.toast.success === 'function') {
+                window.toast.success(result.data.message || 'Lesson marked as complete.');
+            }
+
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 350);
+        }).catch(function (error) {
+            completionRequested = false;
+            if (window.toast && typeof window.toast.error === 'function') {
+                window.toast.error(error.message || 'Unable to update lesson progress.');
+            }
+        });
+    }
+
+    function markVideoLessonComplete() {
+        markLessonComplete('video_completed');
+    }
+
+    function updatePdfViewerStatus(message, state) {
+        var pdfViewerStatus = document.getElementById('pdfViewerStatus');
+        if (!pdfViewerStatus) {
+            return;
+        }
+
+        pdfViewerStatus.textContent = message;
+        if (state) {
+            pdfViewerStatus.setAttribute('data-state', state);
+        }
+    }
+
+    function ensurePdfJs(callback) {
+        if (window.pdfjsLib) {
+            callback();
+            return;
+        }
+
+        var existingScript = document.querySelector('script[data-pdfjs-loader="1"]');
+        if (existingScript) {
+            existingScript.addEventListener('load', callback, { once: true });
+            return;
+        }
+
+        var pdfScript = document.createElement('script');
+        pdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        pdfScript.setAttribute('data-pdfjs-loader', '1');
+        pdfScript.onload = callback;
+        pdfScript.onerror = function () {
+            updatePdfViewerStatus('Unable to load the PDF viewer.', 'error');
+        };
+        document.head.appendChild(pdfScript);
+    }
+
+    function initPdfViewer() {
+        if (!isPdfLesson || !pdfUrl || !window.pdfjsLib) {
+            return;
+        }
+
+        var pdfScrollArea = document.getElementById('pdfScrollArea');
+        var pdfPages = document.getElementById('pdfPages');
+        if (!pdfScrollArea || !pdfPages) {
+            return;
+        }
+
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        updatePdfViewerStatus('Loading PDF...', 'loading');
+
+        function attachPdfCompletionTracking() {
+            if (completionGateType !== 'pdf') {
+                updatePdfViewerStatus('PDF loaded.', 'complete');
+                return;
+            }
+
+            updatePdfViewerStatus('Scroll to the last page to complete this lesson.', 'ready');
+            var lastPage = pdfPages.lastElementChild;
+            if (!lastPage) {
+                return;
+            }
+
+            function completePdfLesson() {
+                if (completionRequested) {
+                    return;
+                }
+
+                updatePdfViewerStatus('Saving lesson progress...', 'ready');
+                markLessonComplete('pdf_scrolled');
+            }
+
+            function isLastPageVisible() {
+                var rect = lastPage.getBoundingClientRect();
+                var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+                var visibleTop = Math.max(rect.top, 0);
+                var visibleBottom = Math.min(rect.bottom, viewportHeight);
+                var visibleHeight = Math.max(0, visibleBottom - visibleTop);
+                var requiredHeight = Math.min(rect.height * 0.65, 320);
+                return visibleHeight >= requiredHeight;
+            }
+
+            function handleViewportCheck() {
+                if (completionRequested) {
+                    return;
+                }
+
+                if (isLastPageVisible()) {
+                    window.removeEventListener('scroll', handleViewportCheck);
+                    window.removeEventListener('resize', handleViewportCheck);
+                    completePdfLesson();
+                }
+            }
+
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
+                            observer.disconnect();
+                            completePdfLesson();
+                        }
+                    });
+                }, {
+                    root: null,
+                    threshold: [0.65]
+                });
+                observer.observe(lastPage);
+            } else {
+                window.addEventListener('scroll', handleViewportCheck, { passive: true });
+                window.addEventListener('resize', handleViewportCheck, { passive: true });
+            }
+
+            handleViewportCheck();
+        }
+
+        window.pdfjsLib.getDocument({
+            url: pdfUrl,
+            withCredentials: true
+        }).promise.then(async function (pdfDocument) {
+            pdfPages.innerHTML = '';
+
+            for (var pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber++) {
+                var page = await pdfDocument.getPage(pageNumber);
+                var baseViewport = page.getViewport({ scale: 1 });
+                var availableWidth = Math.max((pdfScrollArea.clientWidth || 960) - 36, 320);
+                var scale = availableWidth / baseViewport.width;
+                var viewport = page.getViewport({ scale: scale });
+                var outputScale = window.devicePixelRatio || 1;
+
+                var pageWrap = document.createElement('div');
+                pageWrap.className = 'lp-pdf-page';
+
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d', { alpha: false });
+                canvas.width = Math.floor(viewport.width * outputScale);
+                canvas.height = Math.floor(viewport.height * outputScale);
+                canvas.style.width = Math.floor(viewport.width) + 'px';
+                canvas.style.height = Math.floor(viewport.height) + 'px';
+                context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                var pageNumberLabel = document.createElement('div');
+                pageNumberLabel.className = 'lp-pdf-page-number';
+                pageNumberLabel.textContent = 'Page ' + pageNumber + ' of ' + pdfDocument.numPages;
+
+                pageWrap.appendChild(canvas);
+                pageWrap.appendChild(pageNumberLabel);
+                pdfPages.appendChild(pageWrap);
+            }
+
+            attachPdfCompletionTracking();
+        }).catch(function () {
+            updatePdfViewerStatus('Unable to display this PDF in the lesson viewer.', 'error');
+        });
+    }
+
+    if (completionGateType === 'video') {
+        var html5Video = document.querySelector('.lesson-video-embed video');
+        if (html5Video) {
+            html5Video.addEventListener('ended', markVideoLessonComplete, { once: true });
+        }
+
+        var youtubeIframe = document.querySelector('.lesson-video-embed iframe[src*="youtube.com/embed/"]');
+        if (youtubeIframe) {
+            var src = youtubeIframe.getAttribute('src') || '';
+            if (src.indexOf('enablejsapi=1') === -1) {
+                youtubeIframe.src = src + (src.indexOf('?') === -1 ? '?' : '&') + 'enablejsapi=1&rel=0';
+            }
+
+            window.onYouTubeIframeAPIReady = function () {
+                new YT.Player(youtubeIframe, {
+                    events: {
+                        onStateChange: function (event) {
+                            if (event.data === YT.PlayerState.ENDED) {
+                                markVideoLessonComplete();
+                            }
+                        }
+                    }
+                });
+            };
+
+            if (window.YT && typeof window.YT.Player === 'function') {
+                window.onYouTubeIframeAPIReady();
+            } else {
+                var youtubeScript = document.createElement('script');
+                youtubeScript.src = 'https://www.youtube.com/iframe_api';
+                document.head.appendChild(youtubeScript);
+            }
+        }
+
+        var vimeoIframe = document.querySelector('.lesson-video-embed iframe[src*="player.vimeo.com/video/"]');
+        if (vimeoIframe) {
+            var vimeoSrc = vimeoIframe.getAttribute('src') || '';
+            if (vimeoSrc.indexOf('api=1') === -1) {
+                vimeoIframe.src = vimeoSrc + (vimeoSrc.indexOf('?') === -1 ? '?' : '&') + 'api=1';
+            }
+
+            function initVimeoTracking() {
+                if (!window.Vimeo || typeof window.Vimeo.Player !== 'function') {
+                    return;
+                }
+
+                var player = new window.Vimeo.Player(vimeoIframe);
+                player.on('ended', markVideoLessonComplete);
+            }
+
+            if (window.Vimeo && typeof window.Vimeo.Player === 'function') {
+                initVimeoTracking();
+            } else {
+                var vimeoScript = document.createElement('script');
+                vimeoScript.src = 'https://player.vimeo.com/api/player.js';
+                vimeoScript.onload = initVimeoTracking;
+                document.head.appendChild(vimeoScript);
+            }
+        }
+    }
+
+    if (isPdfLesson) {
+        ensurePdfJs(initPdfViewer);
+    }
+});
+</script>
+<?php endif; ?>

@@ -135,6 +135,7 @@ if (isset($subject->year_level) && trim((string) $subject->year_level) !== '') {
 
                 <?php if ($can_start): ?>
                     <form action="<?= site_url('course/start_assessment/' . $quiz->id) ?>" method="post">
+                        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
                         <button type="submit" class="am-btn am-btn-primary">
                             <i class="bi bi-pencil-square"></i> Start Assessment
                         </button>

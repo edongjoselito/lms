@@ -12,6 +12,7 @@
                     </div>
                     
                     <form method="post" action="<?= site_url('course/start_assessment/' . $quiz->id) ?>">
+                        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
                         <div class="mb-4">
                             <label for="quiz_password" class="form-label">Enter Password</label>
                             <input type="password" class="form-control form-control-lg" id="quiz_password" name="quiz_password" required autofocus>

@@ -127,6 +127,24 @@ class Lesson_model extends CI_Model {
         return ($row && $row->order_num) ? $row->order_num + 1 : 1;
     }
 
+    public function get_next_content_order($module_id)
+    {
+        $lesson_row = $this->db->select_max('order_num')
+            ->where('module_id', $module_id)
+            ->get('lessons')
+            ->row();
+
+        $activity_row = $this->db->select_max('order_num')
+            ->where('module_id', $module_id)
+            ->get('activities')
+            ->row();
+
+        $lesson_max = ($lesson_row && $lesson_row->order_num) ? (int) $lesson_row->order_num : 0;
+        $activity_max = ($activity_row && $activity_row->order_num) ? (int) $activity_row->order_num : 0;
+
+        return max($lesson_max, $activity_max) + 1;
+    }
+
     // ---- Student Progress ----
     public function get_progress($student_id, $lesson_id)
     {
@@ -343,6 +361,62 @@ class Lesson_model extends CI_Model {
         foreach ($activity_ids as $index => $id) {
             $this->db->where('id', $id)->where('module_id', $module_id)->update('activities', ['order_num' => $index + 1]);
         }
+        return true;
+    }
+
+    public function reorder_module_content($module_id, $items)
+    {
+        $lesson_ids = array_map('intval', array_map(function ($row) {
+            return $row->id;
+        }, $this->db->select('id')->where('module_id', $module_id)->get('lessons')->result()));
+
+        $activity_ids = array_map('intval', array_map(function ($row) {
+            return $row->id;
+        }, $this->db->select('id')->where('module_id', $module_id)->get('activities')->result()));
+
+        $expected_count = count($lesson_ids) + count($activity_ids);
+        if ($expected_count !== count($items)) {
+            return false;
+        }
+
+        $lesson_lookup = array_fill_keys($lesson_ids, true);
+        $activity_lookup = array_fill_keys($activity_ids, true);
+        $seen = array();
+
+        $this->db->trans_begin();
+
+        foreach ($items as $index => $item) {
+            $item_id = isset($item['id']) ? (int) $item['id'] : 0;
+            $item_type = isset($item['item_type']) ? (string) $item['item_type'] : '';
+            $item_key = $item_type . ':' . $item_id;
+
+            if ($item_id < 1 || isset($seen[$item_key])) {
+                $this->db->trans_rollback();
+                return false;
+            }
+
+            if ($item_type === 'lesson' && isset($lesson_lookup[$item_id])) {
+                $this->db->where('id', $item_id)
+                    ->where('module_id', $module_id)
+                    ->update('lessons', array('order_num' => $index + 1));
+            } elseif ($item_type === 'activity' && isset($activity_lookup[$item_id])) {
+                $this->db->where('id', $item_id)
+                    ->where('module_id', $module_id)
+                    ->update('activities', array('order_num' => $index + 1));
+            } else {
+                $this->db->trans_rollback();
+                return false;
+            }
+
+            $seen[$item_key] = true;
+        }
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
         return true;
     }
 

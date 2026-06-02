@@ -72,6 +72,8 @@ $course_avatar_label = strtoupper(substr($course_avatar_source !== '' ? $course_
 $course_back_param = (string) $this->input->get('back', TRUE);
 $course_original_role_slug = isset($original_role_slug) ? (string) $original_role_slug : '';
 $course_back_label = 'Back to Subjects';
+$course_csrf_token_name = $this->security->get_csrf_token_name();
+$course_csrf_hash = $this->security->get_csrf_hash();
 
 if ($course_back_param === 'course/teacher_subjects') {
     $course_back_label = 'Back to My Subjects';
@@ -390,7 +392,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                     <?php endif; ?>
                                 </div>
                             <?php else: ?>
-                                <div class="list-group list-group-flush">
+                                <div class="list-group list-group-flush<?= $edit_mode ? ' cc-sortable-list' : '' ?>"<?= $edit_mode ? ' data-module-id="' . (int) $module->id . '" data-reorder-url="' . htmlspecialchars(site_url('course/reorder_module_items/' . $module->id), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
                                     <?php foreach ($all_items as $item): ?>
                                         <?php
                                         $is_lesson_item = $item->item_type === 'lesson';
@@ -400,7 +402,13 @@ if ($course_back_param === 'course/teacher_subjects') {
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
                                         $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
                                         ?>
+                                        <div class="cc-sortable-entry" data-item-id="<?= (int) $item->id ?>" data-item-type="<?= $is_lesson_item ? 'lesson' : 'activity' ?>">
                                         <div class="list-group-item cc-content-item p-3 d-flex align-items-center justify-content-between <?= (!$item->is_published && $edit_mode) ? 'cc-content-item--hidden bg-light' : '' ?>">
+                                            <?php if ($edit_mode): ?>
+                                                <button type="button" class="cc-drag-handle" draggable="true" aria-label="Drag to reorder" title="Drag to reorder">
+                                                    <i class="bi bi-grip-vertical"></i>
+                                                </button>
+                                            <?php endif; ?>
                                             <?php if ($is_accessible_lesson): ?>
                                                 <a href="<?= $item_url ?>" class="content-item-link d-flex align-items-center flex-grow-1">
                                                 <?php else: ?>
@@ -642,6 +650,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                 </form>
                                             </div>
                                         <?php endif; ?>
+                                        </div>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -745,7 +754,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                 <input type="number" class="form-control" name="max_attempts" min="1" value="1">
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label">Time Limit</label>
+                                                <label class="form-label">Time Limit (in minutes)</label>
                                                 <input type="number" class="form-control" name="time_limit_minutes" min="0">
                                             </div>
                                             <div class="col-md-4">
@@ -764,7 +773,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                 <label class="form-label">Question Format</label>
                                                 <select class="form-select" name="import_format">
                                                     <option value="gift">GIFT</option>
-                                                    <option value="xml">Moodle XML</option>
+                                                    <option value="xml">XML</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-8">
@@ -832,7 +841,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                             <label class="form-label">Question Format</label>
                                                             <select class="form-select" name="import_format">
                                                                 <option value="gift">GIFT</option>
-                                                                <option value="xml">Moodle XML</option>
+                                                                <option value="xml">XML</option>
                                                             </select>
                                                         </div>
                                                         <div class="col-md-8">
@@ -2666,6 +2675,28 @@ if ($course_back_param === 'course/teacher_subjects') {
         overflow: visible;
     }
 
+    .cc-sortable-entry {
+        display: block;
+    }
+
+    .cc-sortable-entry--dragging {
+        opacity: 0.78;
+    }
+
+    .cc-sortable-entry--dragging .cc-content-item {
+        border-color: #93c5fd !important;
+        box-shadow: 0 18px 36px rgba(37, 99, 235, 0.18);
+        transform: rotate(1deg);
+    }
+
+    .cc-sortable-entry--drop-target .cc-content-item {
+        border-top: 2px solid #2563eb !important;
+    }
+
+    .cc-sortable-list--saving {
+        opacity: 0.88;
+    }
+
     .cc-content-item {
         position: relative;
         gap: 0.75rem;
@@ -2694,6 +2725,33 @@ if ($course_back_param === 'course/teacher_subjects') {
 
     .cc-content-item--hidden {
         background: #f8fafc !important;
+    }
+
+    .cc-drag-handle {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #64748b;
+        cursor: grab;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .cc-drag-handle:hover,
+    .cc-drag-handle:focus {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+    }
+
+    .cc-drag-handle:active {
+        cursor: grabbing;
     }
 
     .content-item-link {
@@ -2890,6 +2948,11 @@ if ($course_back_param === 'course/teacher_subjects') {
             align-items: flex-start !important;
         }
 
+        .cc-drag-handle {
+            width: 32px;
+            height: 32px;
+        }
+
         .cc-hero-actions {
             padding: 1rem 1.25rem 1.25rem;
         }
@@ -2929,6 +2992,212 @@ if ($course_back_param === 'course/teacher_subjects') {
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        var courseCsrfTokenName = <?= json_encode($course_csrf_token_name) ?>;
+        var courseCsrfHash = <?= json_encode($course_csrf_hash) ?>;
+
+        function refreshCourseCsrfToken(tokenName, tokenHash) {
+            var previousTokenName = courseCsrfTokenName;
+
+            if (tokenName) {
+                courseCsrfTokenName = tokenName;
+            }
+            if (tokenHash) {
+                courseCsrfHash = tokenHash;
+            }
+
+            document.querySelectorAll('input[type="hidden"]').forEach(function(input) {
+                if (input.name === previousTokenName || input.name === courseCsrfTokenName) {
+                    input.name = courseCsrfTokenName;
+                    input.value = courseCsrfHash;
+                }
+            });
+        }
+
+        function appendCourseCsrfToken(formData) {
+            formData.append(courseCsrfTokenName, courseCsrfHash);
+        }
+
+        function collectModuleOrder(container) {
+            return Array.prototype.map.call(container.querySelectorAll('.cc-sortable-entry'), function(entry) {
+                return {
+                    id: parseInt(entry.getAttribute('data-item-id'), 10),
+                    item_type: entry.getAttribute('data-item-type')
+                };
+            });
+        }
+
+        function restoreModuleOrder(container, previousOrder) {
+            if (!Array.isArray(previousOrder)) {
+                return;
+            }
+
+            previousOrder.forEach(function(item) {
+                var selector = '.cc-sortable-entry[data-item-id="' + item.id + '"][data-item-type="' + item.item_type + '"]';
+                var entry = container.querySelector(selector);
+                if (entry) {
+                    container.appendChild(entry);
+                }
+            });
+        }
+
+        function getDragAfterEntry(container, y, draggingEntry) {
+            var draggableEntries = Array.prototype.filter.call(container.querySelectorAll('.cc-sortable-entry'), function(entry) {
+                return entry !== draggingEntry;
+            });
+
+            var closest = {
+                offset: Number.NEGATIVE_INFINITY,
+                element: null
+            };
+
+            draggableEntries.forEach(function(entry) {
+                var rect = entry.getBoundingClientRect();
+                var offset = y - rect.top - (rect.height / 2);
+                if (offset < 0 && offset > closest.offset) {
+                    closest = {
+                        offset: offset,
+                        element: entry
+                    };
+                }
+            });
+
+            return closest.element;
+        }
+
+        function persistModuleOrder(container, previousOrder) {
+            if (!container || container.dataset.reordering === '1') {
+                return;
+            }
+
+            var currentOrder = collectModuleOrder(container);
+            if (JSON.stringify(currentOrder) === JSON.stringify(previousOrder)) {
+                return;
+            }
+
+            container.dataset.reordering = '1';
+            container.classList.add('cc-sortable-list--saving');
+
+            var formData = new FormData();
+            appendCourseCsrfToken(formData);
+            currentOrder.forEach(function(item, index) {
+                formData.append('items[' + index + '][id]', item.id);
+                formData.append('items[' + index + '][item_type]', item.item_type);
+            });
+
+            fetch(container.getAttribute('data-reorder-url'), {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.json().catch(function() {
+                    return {
+                        success: false,
+                        message: 'Unable to save the new content order.'
+                    };
+                }).then(function(data) {
+                    return {
+                        ok: response.ok,
+                        data: data
+                    };
+                });
+            }).then(function(result) {
+                refreshCourseCsrfToken(result.data.csrf_token_name, result.data.csrf_hash);
+
+                if (!result.ok || !result.data.success) {
+                    throw new Error(result.data.message || 'Unable to save the new content order.');
+                }
+            }).catch(function(error) {
+                restoreModuleOrder(container, previousOrder);
+                if (window.toast && typeof window.toast.error === 'function') {
+                    window.toast.error(error.message || 'Unable to save the new content order.');
+                }
+            }).finally(function() {
+                delete container.dataset.reordering;
+                container.classList.remove('cc-sortable-list--saving');
+            });
+        }
+
+        function setupModuleSortable(container) {
+            if (!container || container.querySelectorAll('.cc-sortable-entry').length < 2) {
+                return;
+            }
+
+            var draggedEntry = null;
+            var previousOrder = null;
+
+            container.querySelectorAll('.cc-drag-handle').forEach(function(handle) {
+                handle.addEventListener('dragstart', function(event) {
+                    if (container.dataset.reordering === '1') {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    draggedEntry = handle.closest('.cc-sortable-entry');
+                    previousOrder = collectModuleOrder(container);
+
+                    if (!draggedEntry) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    draggedEntry.classList.add('cc-sortable-entry--dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', draggedEntry.getAttribute('data-item-type') + ':' + draggedEntry.getAttribute('data-item-id'));
+                });
+
+                handle.addEventListener('dragend', function() {
+                    if (draggedEntry) {
+                        draggedEntry.classList.remove('cc-sortable-entry--dragging');
+                    }
+
+                    container.querySelectorAll('.cc-sortable-entry--drop-target').forEach(function(entry) {
+                        entry.classList.remove('cc-sortable-entry--drop-target');
+                    });
+
+                    if (draggedEntry && previousOrder) {
+                        persistModuleOrder(container, previousOrder);
+                    }
+
+                    draggedEntry = null;
+                    previousOrder = null;
+                });
+            });
+
+            container.addEventListener('dragover', function(event) {
+                if (!draggedEntry || draggedEntry.parentNode !== container) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                var afterEntry = getDragAfterEntry(container, event.clientY, draggedEntry);
+                container.querySelectorAll('.cc-sortable-entry--drop-target').forEach(function(entry) {
+                    entry.classList.remove('cc-sortable-entry--drop-target');
+                });
+
+                if (afterEntry) {
+                    afterEntry.classList.add('cc-sortable-entry--drop-target');
+                    container.insertBefore(draggedEntry, afterEntry);
+                } else {
+                    container.appendChild(draggedEntry);
+                }
+            });
+
+            container.addEventListener('drop', function(event) {
+                if (!draggedEntry || draggedEntry.parentNode !== container) {
+                    return;
+                }
+
+                event.preventDefault();
+                container.querySelectorAll('.cc-sortable-entry--drop-target').forEach(function(entry) {
+                    entry.classList.remove('cc-sortable-entry--drop-target');
+                });
+            });
+        }
+
+        document.querySelectorAll('.cc-sortable-list').forEach(setupModuleSortable);
+
         function getVideoPreviewMarkup(url) {
             url = String(url || '').trim();
             if (!url) {
@@ -3108,6 +3377,167 @@ if ($course_back_param === 'course/teacher_subjects') {
             document.execCommand(command, false, value || null);
         }
 
+        function sanitizePastedUrl(url) {
+            url = String(url || '').trim();
+            if (!url) {
+                return '';
+            }
+
+            if (/^(https?:\/\/|mailto:|tel:|#|\/)/i.test(url)) {
+                return url;
+            }
+
+            return '';
+        }
+
+        function sanitizePastedStyle(styleValue) {
+            styleValue = String(styleValue || '').trim();
+            if (!styleValue) {
+                return '';
+            }
+
+            var safeRules = [];
+            styleValue.split(';').forEach(function(rule) {
+                var parts = rule.split(':');
+                if (parts.length < 2) {
+                    return;
+                }
+
+                var property = parts.shift().trim().toLowerCase();
+                var value = parts.join(':').trim().toLowerCase();
+                if (!property || !value) {
+                    return;
+                }
+
+                if (property === 'font-weight' && (value === 'bold' || parseInt(value, 10) >= 600)) {
+                    safeRules.push('font-weight:bold');
+                } else if (property === 'font-style' && value === 'italic') {
+                    safeRules.push('font-style:italic');
+                } else if (property === 'text-decoration' && (value.indexOf('underline') !== -1 || value.indexOf('line-through') !== -1)) {
+                    var decorations = [];
+                    if (value.indexOf('underline') !== -1) {
+                        decorations.push('underline');
+                    }
+                    if (value.indexOf('line-through') !== -1) {
+                        decorations.push('line-through');
+                    }
+                    if (decorations.length) {
+                        safeRules.push('text-decoration:' + decorations.join(' '));
+                    }
+                } else if (property === 'text-align' && /^(left|center|right|justify)$/.test(value)) {
+                    safeRules.push('text-align:' + value);
+                }
+            });
+
+            return safeRules.join(';');
+        }
+
+        function sanitizePastedHtml(html) {
+            html = String(html || '').trim();
+            if (!html) {
+                return '';
+            }
+
+            var parser = new DOMParser();
+            var sourceDoc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            var sourceRoot = sourceDoc.body.firstElementChild;
+            if (!sourceRoot) {
+                return '';
+            }
+
+            var blockedTags = {
+                script: true,
+                style: true,
+                iframe: true,
+                object: true,
+                embed: true,
+                meta: true,
+                link: true,
+                form: true,
+                input: true,
+                button: true,
+                textarea: true,
+                select: true,
+                option: true
+            };
+
+            var allowedTags = {
+                p: true,
+                br: true,
+                div: true,
+                span: true,
+                strong: true,
+                b: true,
+                em: true,
+                i: true,
+                u: true,
+                s: true,
+                strike: true,
+                sub: true,
+                sup: true,
+                ul: true,
+                ol: true,
+                li: true,
+                a: true,
+                blockquote: true,
+                pre: true,
+                code: true,
+                h1: true,
+                h2: true,
+                h3: true,
+                h4: true,
+                h5: true,
+                h6: true
+            };
+
+            function sanitizeNode(node, targetDoc) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return targetDoc.createTextNode(node.textContent);
+                }
+
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return targetDoc.createDocumentFragment();
+                }
+
+                var tagName = node.tagName.toLowerCase();
+                if (blockedTags[tagName]) {
+                    return targetDoc.createDocumentFragment();
+                }
+
+                var fragment = targetDoc.createDocumentFragment();
+                Array.prototype.forEach.call(node.childNodes, function(childNode) {
+                    fragment.appendChild(sanitizeNode(childNode, targetDoc));
+                });
+
+                if (!allowedTags[tagName]) {
+                    return fragment;
+                }
+
+                var cleanElement = targetDoc.createElement(tagName);
+                if (tagName === 'a') {
+                    var href = sanitizePastedUrl(node.getAttribute('href'));
+                    if (href) {
+                        cleanElement.setAttribute('href', href);
+                    }
+                }
+
+                var safeStyle = sanitizePastedStyle(node.getAttribute('style'));
+                if (safeStyle) {
+                    cleanElement.setAttribute('style', safeStyle);
+                }
+
+                cleanElement.appendChild(fragment);
+                return cleanElement;
+            }
+
+            var wrapper = document.createElement('div');
+            Array.prototype.forEach.call(sourceRoot.childNodes, function(childNode) {
+                wrapper.appendChild(sanitizeNode(childNode, document));
+            });
+
+            return wrapper.innerHTML;
+        }
+
         function insertPlainText(text) {
             if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
                 runCommand('insertText', text);
@@ -3273,9 +3703,19 @@ if ($course_back_param === 'course/teacher_subjects') {
 
             area.addEventListener('paste', function(event) {
                 event.preventDefault();
-                var text = (event.clipboardData || window.clipboardData).getData('text/plain');
-                insertPlainText(text);
+                var clipboard = event.clipboardData || window.clipboardData;
+                var html = clipboard && clipboard.getData ? clipboard.getData('text/html') : '';
+                var sanitizedHtml = sanitizePastedHtml(html);
+
+                if (sanitizedHtml) {
+                    runCommand('insertHTML', sanitizedHtml);
+                } else {
+                    var text = clipboard && clipboard.getData ? clipboard.getData('text/plain') : '';
+                    insertPlainText(text);
+                }
+
                 syncFromEditor();
+                refreshToolbarState();
             });
 
             textarea.addEventListener('input', function() {

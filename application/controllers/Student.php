@@ -419,9 +419,14 @@ class Student extends MY_Controller
         }
 
         $is_completed = in_array((int) $lesson_id, $completed_lesson_ids, true);
+        $is_video_lesson = !empty($lesson->content_type) && $lesson->content_type === 'video';
+        $is_pdf_lesson = !empty($lesson->content_type)
+            && $lesson->content_type === 'file'
+            && !empty($lesson->file_path)
+            && preg_match('/\.pdf(\?.*)?$/i', (string) $lesson->file_path);
 
-        // Auto-mark lesson as complete when opened
-        if (!$is_completed) {
+        // Auto-mark only plain lessons; video and PDF lessons must be completed in the viewer.
+        if (!$is_completed && !$is_video_lesson && !$is_pdf_lesson) {
             $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
             $is_completed = true;
             // Recalculate completed lessons after marking
@@ -491,6 +496,8 @@ class Student extends MY_Controller
         $data['subject'] = $subject;
         $data['lesson'] = $lesson;
         $data['is_completed'] = $is_completed;
+        $data['is_video_lesson'] = $is_video_lesson;
+        $data['is_pdf_lesson'] = $is_pdf_lesson;
         $data['previous_item'] = $previous_item;
         $data['next_item'] = $next_item;
         $data['progress_percent'] = $progress_percent;
@@ -505,6 +512,17 @@ class Student extends MY_Controller
         $this->require_student();
         $this->output->set_content_type('application/json');
 
+        if ($this->input->method() !== 'post') {
+            $this->output->set_status_header(405)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Invalid request method.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
         $user_id = $this->session->userdata('user_id');
         $student = $this->get_or_create_student($user_id);
 
@@ -512,19 +530,117 @@ class Student extends MY_Controller
             $this->output->set_output(json_encode(array(
                 'success' => false,
                 'message' => 'Failed to get student profile. Please contact administrator.',
-                'type' => 'error'
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
+        $subject = $this->Student_model->get_subject($subject_id);
+        if (!$subject) {
+            $this->output->set_status_header(404)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Subject not found.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
+        if (!$this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
+            $this->output->set_status_header(403)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'You need to enroll in this course first.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
+        $ordered_lessons = $this->Student_model->get_ordered_lessons_by_subject($subject_id);
+        $lesson_ids = array_map(function ($lesson) {
+            return (int) $lesson->id;
+        }, $ordered_lessons);
+        $lesson_index = array_search((int) $lesson_id, $lesson_ids, true);
+
+        if ($lesson_index === false) {
+            $this->output->set_status_header(404)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Lesson not found.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
+        $completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
+        $completed_lesson_ids = array_values(array_intersect($lesson_ids, array_map('intval', $completed_lesson_ids)));
+
+        if ($lesson_index > 0) {
+            $previous_lesson_id = (int) $lesson_ids[$lesson_index - 1];
+            if (!in_array($previous_lesson_id, $completed_lesson_ids, true)) {
+                $this->output->set_status_header(422)->set_output(json_encode(array(
+                    'success' => false,
+                    'message' => 'You must complete the previous lesson first.',
+                    'type' => 'error',
+                    'csrf_token_name' => $this->security->get_csrf_token_name(),
+                    'csrf_hash' => $this->security->get_csrf_hash()
+                )));
+                return;
+            }
+        }
+
+        $lesson = $ordered_lessons[$lesson_index];
+        $is_video_lesson = !empty($lesson->content_type) && $lesson->content_type === 'video';
+        $is_pdf_lesson = !empty($lesson->content_type)
+            && $lesson->content_type === 'file'
+            && !empty($lesson->file_path)
+            && preg_match('/\.pdf(\?.*)?$/i', (string) $lesson->file_path);
+        $video_completed = $this->input->post('video_completed', TRUE);
+        $pdf_scrolled = $this->input->post('pdf_scrolled', TRUE);
+
+        if ($is_video_lesson && $video_completed !== '1') {
+            $this->output->set_status_header(422)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Finish the video before completing this lesson.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
+            )));
+            return;
+        }
+
+        if ($is_pdf_lesson && $pdf_scrolled !== '1') {
+            $this->output->set_status_header(422)->set_output(json_encode(array(
+                'success' => false,
+                'message' => 'Scroll to the end of the PDF before completing this lesson.',
+                'type' => 'error',
+                'csrf_token_name' => $this->security->get_csrf_token_name(),
+                'csrf_hash' => $this->security->get_csrf_hash()
             )));
             return;
         }
 
         // Mark lesson as complete
         $this->Student_model->mark_lesson_completed($student->id, $lesson_id);
-        notify_success('Lesson marked as complete.');
+
+        $updated_completed_lesson_ids = $this->Student_model->get_completed_lesson_ids($student->id, $subject_id);
+        $updated_completed_lesson_ids = array_values(array_intersect($lesson_ids, array_map('intval', $updated_completed_lesson_ids)));
+        $progress_percent = count($lesson_ids) > 0
+            ? round((count($updated_completed_lesson_ids) / count($lesson_ids)) * 100)
+            : 0;
 
         $this->output->set_output(json_encode(array(
             'success' => true,
             'message' => 'Lesson marked as complete.',
-            'type' => 'success'
+            'type' => 'success',
+            'progress_percent' => $progress_percent,
+            'csrf_token_name' => $this->security->get_csrf_token_name(),
+            'csrf_hash' => $this->security->get_csrf_hash()
         )));
     }
 

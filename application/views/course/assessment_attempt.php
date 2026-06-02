@@ -22,6 +22,7 @@
     <?php endif; ?>
 
     <form action="<?= site_url('course/submit_assessment/' . $attempt->id) ?>" method="post" class="data-table" id="assessmentForm">
+        <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
         <div class="table-header d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
                 <div class="text-muted small mb-1"><?= htmlspecialchars($subject->code) ?> &middot; Attempt <?= (int) $attempt->attempt_number ?></div>

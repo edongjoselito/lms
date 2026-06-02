@@ -1209,7 +1209,7 @@ class Course extends MY_Controller {
         $this->require_course_manager($module->subject_id);
         
         if ($this->input->method() === 'post') {
-            $order = $this->Lesson_model->get_next_order('lessons', 'module_id', $module_id);
+            $order = $this->Lesson_model->get_next_content_order($module_id);
             $content_type = $this->normalize_lesson_content_type($this->input->post('content_type', TRUE));
 
             $file_path = '';
@@ -1287,6 +1287,67 @@ class Course extends MY_Controller {
         redirect('course/content/' . $module->subject_id . '?edit=1');
     }
 
+    public function reorder_module_items($module_id)
+    {
+        $this->output->set_content_type('application/json');
+
+        $respond = function ($success, $message, $status_code = 200) {
+            $this->output
+                ->set_status_header($status_code)
+                ->set_output(json_encode(array(
+                    'success' => (bool) $success,
+                    'message' => (string) $message,
+                    'csrf_token_name' => $this->security->get_csrf_token_name(),
+                    'csrf_hash' => $this->security->get_csrf_hash(),
+                )));
+        };
+
+        if ($this->input->method() !== 'post') {
+            $respond(false, 'Invalid request method.', 405);
+            return;
+        }
+
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) {
+            $respond(false, 'Module not found.', 404);
+            return;
+        }
+
+        if (!$this->can_manage_course_content($module->subject_id)) {
+            $respond(false, 'You do not have permission to reorder this content.', 403);
+            return;
+        }
+
+        $items = $this->input->post('items');
+        if (!is_array($items) || empty($items)) {
+            $respond(false, 'No content order was provided.', 422);
+            return;
+        }
+
+        $normalized_items = array();
+        foreach ($items as $item) {
+            $item_id = isset($item['id']) ? (int) $item['id'] : 0;
+            $item_type = isset($item['item_type']) ? (string) $item['item_type'] : '';
+
+            if ($item_id < 1 || !in_array($item_type, array('lesson', 'activity'), true)) {
+                $respond(false, 'Invalid content order payload.', 422);
+                return;
+            }
+
+            $normalized_items[] = array(
+                'id' => $item_id,
+                'item_type' => $item_type,
+            );
+        }
+
+        if (!$this->Lesson_model->reorder_module_content($module_id, $normalized_items)) {
+            $respond(false, 'Unable to save the new content order.', 500);
+            return;
+        }
+
+        $respond(true, 'Content order updated successfully.');
+    }
+
     // ---- Activity Management ----
     public function create_activity($module_id)
     {
@@ -1297,7 +1358,7 @@ class Course extends MY_Controller {
         if ($this->input->method() === 'post') {
             $type = $this->input->post('type', TRUE);
             $type = in_array($type, array('assignment', 'quiz', 'forum', 'resource', 'page', 'label')) ? $type : 'page';
-            $order = $this->Lesson_model->get_next_order('activities', 'module_id', $module_id);
+            $order = $this->Lesson_model->get_next_content_order($module_id);
             $data = array(
                 'module_id'     => $module_id,
                 'type'          => $type,
@@ -1879,7 +1940,7 @@ class Course extends MY_Controller {
                 'title'        => $title,
                 'content'      => $this->input->post('description'),
                 'settings'     => json_encode(array()),
-                'order_num'    => $this->Lesson_model->get_next_order('activities', 'module_id', $module_id),
+                'order_num'    => $this->Lesson_model->get_next_content_order($module_id),
                 'is_published' => $is_published,
             ));
 
@@ -2266,7 +2327,7 @@ class Course extends MY_Controller {
             $this->Quiz_model->submit_attempt($attempt->id);
             
             // Mark activity as completed
-            $this->mark_current_activity_completed($activity->id);
+            $this->mark_current_activity_completed($context['activity']->id);
             
             $this->session->set_flashdata('success', 'Assessment submitted successfully.');
         }
