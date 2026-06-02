@@ -506,14 +506,14 @@
                         <div class="col-12 col-md-6 field-group">
                             <label class="field-label" for="passwordInput">Password <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <input type="password" class="form-control" name="password" id="passwordInput" required minlength="8" placeholder="At least 8 characters">
+                                <input type="password" class="form-control" name="password" id="passwordInput" required minlength="8" placeholder="At least 8 characters" value="<?= old_value('password') ?>">
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6 field-group">
                             <label class="field-label" for="confirmPasswordInput">Confirm Password <span class="required">*</span></label>
                             <div class="input-wrap">
-                                <input type="password" class="form-control" name="confirm_password" id="confirmPasswordInput" required minlength="8" placeholder="Re-enter your password">
+                                <input type="password" class="form-control" name="confirm_password" id="confirmPasswordInput" required minlength="8" placeholder="Re-enter your password" value="<?= old_value('confirm_password') ?>">
                             </div>
                             <small id="passwordMessage" class="field-message"></small>
                         </div>

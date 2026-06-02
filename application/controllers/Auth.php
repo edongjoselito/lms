@@ -259,22 +259,27 @@ class Auth extends CI_Controller
         $confirm_password = $this->input->post('confirm_password', TRUE);
         $user_captcha = $this->input->post('captcha', TRUE);
 
+        // Build form_data once so all error paths preserve every field
+        $form_data = array(
+            'school_id_number' => $school_id_number,
+            'name'             => $name,
+            'type'             => $type,
+            'email'            => $email,
+            'contact_number'   => $contact_number,
+            'address'          => $address,
+            'district'         => $district,
+            'division'         => $division,
+            'region'           => $region,
+            'password'         => $password,
+            'confirm_password' => $confirm_password,
+        );
+
         // Validate captcha
         $session_captcha = $this->session->userdata('captcha_word');
 
         if (!$user_captcha || strtolower($user_captcha) !== strtolower($session_captcha)) {
             notify_error('Invalid captcha. Please try again.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
@@ -284,50 +289,20 @@ class Auth extends CI_Controller
         // Validate required fields
         if (empty($school_id_number) || empty($name) || empty($type) || empty($email)) {
             notify_error('Please fill in all required fields.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
         // Validate password
         if (empty($password) || strlen($password) < 8) {
             notify_error('Password must be at least 8 characters long.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
         if ($password !== $confirm_password) {
             notify_error('Passwords do not match.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
@@ -335,17 +310,7 @@ class Auth extends CI_Controller
         $existing = $this->db->where('school_id_number', $school_id_number)->get('schools')->row();
         if ($existing) {
             notify_error('School ID Number already exists.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
@@ -353,17 +318,7 @@ class Auth extends CI_Controller
         $existing_email = $this->db->where('email', $email)->get('schools')->row();
         if ($existing_email) {
             notify_error('Email already registered.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'district' => $district,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
 
@@ -397,16 +352,7 @@ class Auth extends CI_Controller
             redirect('auth');
         } else {
             notify_error('Registration failed. Please try again.');
-            $this->session->set_flashdata('form_data', array(
-                'school_id_number' => $school_id_number,
-                'name' => $name,
-                'type' => $type,
-                'email' => $email,
-                'contact_number' => $contact_number,
-                'address' => $address,
-                'division' => $division,
-                'region' => $region
-            ));
+            $this->session->set_flashdata('form_data', $form_data);
             redirect('auth/signup');
         }
     }
