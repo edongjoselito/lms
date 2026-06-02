@@ -466,7 +466,18 @@ class Auth extends CI_Controller
     private function _send_confirmation_email($email, $school_name, $token)
     {
         $confirmation_link = site_url('auth/confirm_email/' . $token);
+        $this->load->config('email', TRUE);
         $this->load->library('email');
+
+        $email_config = $this->config->item('email');
+        if (!is_array($email_config)) {
+            $email_config = array();
+        }
+
+        if (!empty($email_config)) {
+            $this->email->initialize($email_config);
+        }
+
         $this->email->clear(TRUE);
 
         $message = '<p>Dear School Administrator,</p>';
@@ -485,8 +496,17 @@ class Auth extends CI_Controller
         $plain_message .= "If you did not register for this account, please ignore this email.\n\n";
         $plain_message .= "Best regards,\nBlueCampus LMS";
 
-        $from_email = $this->config->item('from_email') ?: $this->config->item('smtp_user');
-        $from_name = $this->config->item('from_name') ?: 'BlueCampus LMS';
+        $from_email = !empty($email_config['from_email'])
+            ? (string) $email_config['from_email']
+            : (string) $this->email->smtp_user;
+        $from_name = !empty($email_config['from_name'])
+            ? (string) $email_config['from_name']
+            : 'BlueCampus LMS';
+
+        if ($from_email === '') {
+            log_message('error', 'Confirmation email sender address is not configured.');
+            return false;
+        }
 
         $this->email->from($from_email, $from_name, $from_email);
         $this->email->reply_to($from_email, $from_name);
