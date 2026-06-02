@@ -2,13 +2,16 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 $config['protocol']     = 'smtp';
-$config['smtp_host']    = 'mail.srmsportal.com';
-$config['smtp_user']    = 'berps@softtechservices.net';
-$config['smtp_pass']    = getenv('SRMS_SMTP_PASS') ?: 'moth34board';
+$config['smtp_host']    = 'mail.depeddavor.com';
+$config['smtp_user']    = 'lms@depeddavor.com';
+$config['smtp_pass']    = getenv('LMS_SMTP_PASS') ?: getenv('SRMS_SMTP_PASS') ?: '@Moth34board';
 $config['smtp_port']    = 465;
 $config['smtp_crypto']  = 'ssl';
+$config['smtp_timeout'] = 30;
 $config['mailtype']     = 'html';
 $config['charset']      = 'utf-8';
 $config['newline']      = "\r\n";
 $config['crlf']         = "\r\n";
 $config['wordwrap']     = TRUE;
+$config['from_email']   = 'lms@depeddavor.com';
+$config['from_name']    = 'BlueCampus LMS';

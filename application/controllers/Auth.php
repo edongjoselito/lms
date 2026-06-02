@@ -346,9 +346,13 @@ class Auth extends CI_Controller
 
         if ($school_id) {
             // Send confirmation email
-            $this->_send_confirmation_email($email, $name, $confirmation_token);
+            $email_sent = $this->_send_confirmation_email($email, $name, $confirmation_token);
 
-            notify_success('Registration successful! Please check your email to confirm your account.');
+            if ($email_sent) {
+                notify_success('Registration successful! Please check your email to confirm your account.');
+            } else {
+                notify_error('Registration was saved, but the confirmation email could not be sent. Please contact the administrator for assistance.');
+            }
             redirect('auth');
         } else {
             notify_error('Registration failed. Please try again.');
@@ -462,26 +466,41 @@ class Auth extends CI_Controller
     private function _send_confirmation_email($email, $school_name, $token)
     {
         $confirmation_link = site_url('auth/confirm_email/' . $token);
-
-        $message = "Dear School Administrator,\n\n";
-        $message .= "Thank you for registering your school '" . $school_name . "' on BlueCampus LMS.\n\n";
-        $message .= "To complete your registration and activate your account, please click the link below:\n\n";
-        $message .= $confirmation_link . "\n\n";
-        $message .= "If you did not register for this account, please ignore this email.\n\n";
-        $message .= "Best regards,\nBlueCampus LMS Team";
-
-        // For now, just log the email (in production, use actual email library)
-        log_message('info', 'Confirmation email for ' . $email . ': ' . $confirmation_link);
-
-        // In production, uncomment and configure email library:
-        /*
         $this->load->library('email');
-        $this->email->from('noreply@bluecampus.com', 'BlueCampus LMS');
+        $this->email->clear(TRUE);
+
+        $message = '<p>Dear School Administrator,</p>';
+        $message .= '<p>Thank you for registering your school <strong>' . htmlspecialchars($school_name, ENT_QUOTES, 'UTF-8') . '</strong>.</p>';
+        $message .= '<p>To complete your registration and activate your account, please click the button below:</p>';
+        $message .= '<p><a href="' . $confirmation_link . '" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;">Confirm School Account</a></p>';
+        $message .= '<p>If the button does not work, copy and paste this link into your browser:</p>';
+        $message .= '<p><a href="' . $confirmation_link . '">' . $confirmation_link . '</a></p>';
+        $message .= '<p>If you did not register for this account, please ignore this email.</p>';
+        $message .= '<p>Best regards,<br>BlueCampus LMS</p>';
+
+        $plain_message = "Dear School Administrator,\n\n";
+        $plain_message .= "Thank you for registering your school '" . $school_name . "'.\n\n";
+        $plain_message .= "To complete your registration and activate your account, please open the link below:\n\n";
+        $plain_message .= $confirmation_link . "\n\n";
+        $plain_message .= "If you did not register for this account, please ignore this email.\n\n";
+        $plain_message .= "Best regards,\nBlueCampus LMS";
+
+        $from_email = $this->config->item('from_email') ?: $this->config->item('smtp_user');
+        $from_name = $this->config->item('from_name') ?: 'BlueCampus LMS';
+
+        $this->email->from($from_email, $from_name, $from_email);
+        $this->email->reply_to($from_email, $from_name);
         $this->email->to($email);
         $this->email->subject('Confirm Your School Account');
         $this->email->message($message);
-        $this->email->send();
-        */
+        $this->email->set_alt_message($plain_message);
+
+        if ($this->email->send()) {
+            return true;
+        }
+
+        log_message('error', 'Confirmation email failed to send to ' . $email);
+        return false;
     }
 
     private function _create_school_admin($school_id, $email)

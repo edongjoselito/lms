@@ -364,6 +364,10 @@
         'both'  => 'All (K-12, CHED, TESDA)',
     ];
 
+    $selected_school_type = isset($form_data['type']) && $form_data['type'] !== ''
+        ? (string) $form_data['type']
+        : 'deped';
+
     $districts = [
         'Boston District',
         'Cateel 1',
@@ -423,7 +427,7 @@
                                 <select class="form-select" name="type" id="schoolType" required>
                                     <option value="">Select type</option>
                                     <?php foreach ($school_types as $value => $label): ?>
-                                        <option value="<?= h($value) ?>" <?= old_selected('type', $value) ?>><?= h($label) ?></option>
+                                        <option value="<?= h($value) ?>" <?= $selected_school_type === (string) $value ? 'selected' : '' ?>><?= h($label) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
