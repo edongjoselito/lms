@@ -11,6 +11,7 @@
                 Enroll Student
             </h5>
             <form action="<?= site_url('studentprofile/enroll/' . $profile->id) ?>" method="post">
+                <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Student Number</label>

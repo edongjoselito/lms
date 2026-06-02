@@ -1,4 +1,12 @@
 <div class="row">
+    <?php
+    $program_code = isset($program->code) && trim((string) $program->code) !== ''
+        ? trim((string) $program->code)
+        : (isset($program->year_level) ? 'G' . str_pad((int) $program->year_level, 2, '0', STR_PAD_LEFT) : '-');
+    $program_name = isset($program->name) && trim((string) $program->name) !== ''
+        ? trim((string) $program->name)
+        : (isset($program->year_level) ? 'Grade ' . str_pad((int) $program->year_level, 2, '0', STR_PAD_LEFT) : 'Program');
+    ?>
     <div class="col-12">
         <div class="mb-3">
             <a href="<?= site_url('academic/program_subjects/' . $program->id) ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
@@ -9,9 +17,9 @@
             <h5 style="font-weight:700;margin-bottom:1.5rem;">
                 <i class="bi bi-pencil-square me-2" style="color:#6366f1;"></i>Edit Subject
             </h5>
-            <p style="color:#64748b;margin-bottom:1.5rem;"><?= $program->code ?> - <?= $program->name ?></p>
+            <p style="color:#64748b;margin-bottom:1.5rem;"><?= htmlspecialchars($program_code) ?> - <?= htmlspecialchars($program_name) ?></p>
 
-            <form action="<?= site_url('academic/edit_program_subject/' . $program->id . '/' . $subject->id) ?>" method="post">
+            <?= form_open('academic/edit_program_subject/' . $program->id . '/' . $subject->id) ?>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Course Code</label>
@@ -48,7 +56,7 @@
                 <button type="submit" class="btn-primary-custom w-100 mt-2">
                     <i class="bi bi-check-lg"></i> Update Subject
                 </button>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

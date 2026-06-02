@@ -123,7 +123,7 @@
                                                 <?php foreach ($teachers as $t): ?>
                                                     <?php $is_assigned = in_array((int)$t->id, $assigned_ids); ?>
                                                     <div class="ps-teacher-opt" data-name="<?= strtolower(htmlspecialchars(trim($t->last_name . ' ' . $t->first_name))) ?>">
-                                                        <form action="<?= site_url('academic/assign_subject_teacher/' . $program->id . '/' . $s->id) ?>" method="post">
+                                                        <?= form_open('academic/assign_subject_teacher/' . $program->id . '/' . $s->id) ?>
                                                             <input type="hidden" name="user_id" value="<?= $t->id ?>">
                                                             <button type="submit" class="dropdown-item <?= $is_assigned ? 'ps-teacher-assigned' : '' ?>">
                                                                 <span class="ps-opt-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
@@ -132,7 +132,7 @@
                                                                     <i class="bi bi-check2 ps-opt-check"></i>
                                                                 <?php endif; ?>
                                                             </button>
-                                                        </form>
+                                                        <?= form_close() ?>
                                                     </div>
                                                 <?php endforeach; ?>
                                             </li>
@@ -179,7 +179,7 @@
                         <span>Add Subject</span>
                     </div>
                 </div>
-                <form action="<?= site_url('academic/create_program_subject/' . $program->id) ?>" method="post" class="ps-form">
+                <?= form_open('academic/create_program_subject/' . $program->id, ['class' => 'ps-form']) ?>
                     <div class="ps-field">
                         <label class="ps-label">Course Code <span class="ps-req">*</span></label>
                         <input type="text" class="ps-input" name="code" required autocomplete="off">
@@ -215,7 +215,7 @@
                     <button type="submit" class="ps-submit-btn">
                         <i class="bi bi-plus-lg"></i> Create & Add Subject
                     </button>
-                </form>
+                <?= form_close() ?>
             </div>
         </div>
         <?php endif; ?>

@@ -20,7 +20,7 @@
                 <?= ($user) ? 'Edit User' : 'User Information' ?>
             </h5>
 
-            <form action="<?= ($user) ? site_url('users/edit/' . $user->id) : site_url('users/create') ?>" method="post">
+            <?= form_open(($user) ? 'users/edit/' . $user->id : 'users/create') ?>
                 <!-- Personal Information -->
                 <div class="form-section">
                     <h6 class="section-title"><i class="bi bi-person me-2"></i>Personal Information</h6>
@@ -113,7 +113,7 @@
                     </button>
                     <a href="<?= site_url('users') ?>" class="btn btn-light">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

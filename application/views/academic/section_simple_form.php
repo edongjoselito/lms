@@ -13,7 +13,7 @@
             <p style="color:#64748b;margin-bottom:1.5rem;">
                 Grade Level: <?= isset($grade_level->name) ? htmlspecialchars($grade_level->name) : (isset($grade_level->year_level) ? 'Grade ' . str_pad($grade_level->year_level, 2, '0', STR_PAD_LEFT) : '-') ?>
             </p>
-            <form action="<?= site_url('academic/create_section_for_grade/' . $grade_level->id) ?>" method="post">
+            <?= form_open('academic/create_section_for_grade/' . $grade_level->id) ?>
                 <div class="form-group mb-3">
                     <label class="form-label" style="font-weight:600;color:#334155;">Section Name <span style="color:red;">*</span></label>
                     <input type="text" class="form-control" name="name" required style="border-radius:10px;padding:0.75rem;">
@@ -31,7 +31,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Create Section</button>
                     <a href="<?= site_url('academic/sections') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

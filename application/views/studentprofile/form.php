@@ -10,7 +10,7 @@
                 <i class="bi bi-badge me-2" style="color:#6366f1;"></i>
                 <?= isset($profile) ? 'Edit Student Profile' : 'Add Student Profile' ?>
             </h5>
-            <form action="<?= isset($profile) ? site_url('studentprofile/edit/' . $profile->id) : site_url('studentprofile/create') ?>" method="post">
+            <?= form_open(isset($profile) ? 'studentprofile/edit/' . $profile->id : 'studentprofile/create') ?>
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Student Number / LRN <span style="color:red;">*</span></label>
@@ -56,7 +56,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Save</button>
                     <a href="<?= site_url('studentprofile') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

@@ -473,7 +473,32 @@ class Auth extends CI_Controller
             return false;
         }
 
-        $email_config = $this->config->item('email', 'email');
+        $email_config = isset($this->config->config['email']) && is_array($this->config->config['email'])
+            ? $this->config->config['email']
+            : array();
+
+        if (empty($email_config)) {
+            $email_config = array(
+                'protocol'     => $this->config->item('protocol'),
+                'smtp_host'    => $this->config->item('smtp_host'),
+                'smtp_user'    => $this->config->item('smtp_user'),
+                'smtp_pass'    => $this->config->item('smtp_pass'),
+                'smtp_port'    => $this->config->item('smtp_port'),
+                'smtp_crypto'  => $this->config->item('smtp_crypto'),
+                'smtp_timeout' => $this->config->item('smtp_timeout'),
+                'mailtype'     => $this->config->item('mailtype'),
+                'charset'      => $this->config->item('charset'),
+                'newline'      => $this->config->item('newline'),
+                'crlf'         => $this->config->item('crlf'),
+                'wordwrap'     => $this->config->item('wordwrap'),
+                'from_email'   => $this->config->item('from_email'),
+                'from_name'    => $this->config->item('from_name')
+            );
+            $email_config = array_filter($email_config, static function ($value) {
+                return $value !== NULL;
+            });
+        }
+
         if (!is_array($email_config) || empty($email_config)) {
             log_message('error', 'Confirmation email config is empty or invalid.');
             return false;
@@ -511,7 +536,7 @@ class Auth extends CI_Controller
             return false;
         }
 
-        $this->email->from($from_email, $from_name, $from_email);
+        $this->email->from($from_email, $from_name);
         $this->email->reply_to($from_email, $from_name);
         $this->email->to($email);
         $this->email->subject('Confirm Your School Account');

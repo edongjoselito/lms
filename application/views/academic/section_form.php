@@ -10,7 +10,7 @@
                 <i class="bi bi-diagram-3-fill me-2" style="color:#6366f1;"></i>
                 <?= (isset($section) && $section) ? 'Edit Section' : 'Add Section' ?>
             </h5>
-            <form action="<?= (isset($section) && $section && $section->id) ? site_url('academic/edit_section/' . $section->id) : site_url('academic/create_section') ?>" method="post">
+            <?= form_open((isset($section) && $section && $section->id) ? 'academic/edit_section/' . $section->id : 'academic/create_section') ?>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Section Name</label>
@@ -73,7 +73,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> Save</button>
                     <a href="<?= site_url('academic/sections') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

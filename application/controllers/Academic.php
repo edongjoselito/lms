@@ -769,6 +769,7 @@ class Academic extends MY_Controller {
         }
 
         if ($this->input->method() === 'post') {
+            $post_data = $this->input->post(NULL, TRUE);
             $adviser_id = $this->input->post('adviser_id') ?: NULL;
             
             // Check if adviser is already assigned to another section (excluding current section)
@@ -786,10 +787,17 @@ class Academic extends MY_Controller {
             
             $d = array(
                 'name'       => $this->input->post('name', TRUE),
-                'program_id' => $this->input->post('program_id') ?: NULL,
-                'year_level' => $this->input->post('year_level') ?: NULL,
                 'adviser_id' => $adviser_id,
             );
+
+            if (is_array($post_data) && array_key_exists('program_id', $post_data)) {
+                $d['program_id'] = $this->input->post('program_id') ?: NULL;
+            }
+
+            if (is_array($post_data) && array_key_exists('year_level', $post_data)) {
+                $d['year_level'] = $this->input->post('year_level') ?: NULL;
+            }
+
             $this->Academic_model->update_section($id, $d);
             $this->session->set_flashdata('success', 'Section updated.');
             redirect('academic/sections');

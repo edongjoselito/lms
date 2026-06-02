@@ -39,6 +39,7 @@
 
             <div class="settings-actions">
                 <form action="<?= site_url('settings/upload_login_image') ?>" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
                     <div class="mb-3">
                         <label class="form-label">Choose Login Image</label>
                         <input type="file" class="form-control" name="login_image" accept=".jpg,.jpeg,.jfif,.png,.webp,.gif" <?= $settings_ready ? '' : 'disabled' ?> required>

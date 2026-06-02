@@ -239,7 +239,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                     </div>
                     <h5 class="cc-enroll-title">Enter Enrollment Key</h5>
                     <p class="cc-enroll-desc">This course requires an enrollment key to access.</p>
-                    <form action="<?= site_url('course/enroll_subject/' . $subject->id) ?>" method="post" class="cc-enroll-form">
+                    <?= form_open('course/enroll_subject/' . $subject->id, ['class' => 'cc-enroll-form']) ?>
                         <div class="cc-input-wrap">
                             <span class="cc-input-icon">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -322,7 +322,7 @@ if ($course_back_param === 'course/teacher_subjects') {
 
                         <?php if ($edit_mode): ?>
                             <div class="collapse item-edit-panel" id="editModule<?= $module->id ?>">
-                                <form action="<?= site_url('course/edit_module/' . $module->id) ?>" method="post" class="module-add-form">
+                                <?= form_open('course/edit_module/' . $module->id, ['class' => 'module-add-form']) ?>
                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                         <div>
                                             <h6 class="mb-1"><i class="bi bi-pencil me-2"></i>Edit Module</h6>
@@ -522,7 +522,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                             $lesson_editor_content = in_array($item->content_type, array('video', 'file', 'link')) ? course_lesson_notes_content($item->content ?? '') : ($item->content ?? '');
                                             ?>
                                             <div class="collapse item-edit-panel" id="editLesson<?= $item->id ?>">
-                                                <form action="<?= site_url('course/edit_lesson/' . $item->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
+                                                <?= form_open_multipart('course/edit_lesson/' . $item->id, ['class' => 'module-add-form']) ?>
                                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                                         <div>
                                                             <h6 class="mb-1"><i class="bi bi-pencil me-2"></i>Edit Lesson</h6>
@@ -601,7 +601,7 @@ if ($course_back_param === 'course/teacher_subjects') {
 
                                         <?php if ($item->item_type === 'activity' && empty($is_quiz_item) && $edit_mode): ?>
                                             <div class="collapse item-edit-panel" id="editActivity<?= $item->id ?>">
-                                                <form action="<?= site_url('course/edit_activity/' . $item->id) ?>" method="post" class="module-add-form">
+                                                <?= form_open('course/edit_activity/' . $item->id, ['class' => 'module-add-form']) ?>
                                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                                         <div>
                                                             <h6 class="mb-1"><i class="bi bi-pencil me-2"></i>Edit Activity</h6>
@@ -650,7 +650,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                         <?php if ($edit_mode): ?>
                             <div class="module-add-panels border-top" id="moduleAddPanels<?= $module->id ?>">
                                 <div class="collapse" id="addLesson<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
-                                    <form action="<?= site_url('course/create_lesson/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
+                                    <?= form_open_multipart('course/create_lesson/' . $module->id, ['class' => 'module-add-form']) ?>
                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                             <div>
                                                 <h6 class="mb-1"><i class="bi bi-file-text me-2"></i>Add Lesson</h6>
@@ -720,7 +720,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                 </div>
 
                                 <div class="collapse" id="addAssessment<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
-                                    <form action="<?= site_url('course/create_assessment/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
+                                    <?= form_open_multipart('course/create_assessment/' . $module->id, ['class' => 'module-add-form']) ?>
                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                             <div>
                                                 <h6 class="mb-1"><i class="bi bi-ui-checks me-2"></i>Add Assessment</h6>
@@ -797,7 +797,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                 </div>
 
                                 <div class="collapse" id="addActivity<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
-                                    <form action="<?= site_url('course/create_activity/' . $module->id) ?>" method="post" class="module-add-form" enctype="multipart/form-data">
+                                    <?= form_open_multipart('course/create_activity/' . $module->id, ['class' => 'module-add-form']) ?>
                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                             <div>
                                                 <h6 class="mb-1"><i class="bi bi-lightning me-2"></i>Add Activity</h6>
@@ -926,7 +926,7 @@ if ($course_back_param === 'course/teacher_subjects') {
 <?php if ($edit_mode): ?>
     <div class="modal fade" id="addModuleModal" tabindex="-1">
         <div class="modal-dialog">
-            <form action="<?= site_url('course/create_module/' . $subject->id) ?>" method="post" class="modal-content">
+            <?= form_open('course/create_module/' . $subject->id, ['class' => 'modal-content']) ?>
                 <div class="modal-header">
                     <h5 class="modal-title">Add New Module</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -957,7 +957,7 @@ if ($course_back_param === 'course/teacher_subjects') {
 <?php if ($edit_mode): ?>
     <div class="modal fade" id="coverPhotoModal" tabindex="-1">
         <div class="modal-dialog">
-            <form action="<?= site_url('course/upload_cover_photo/' . $subject->id) ?>" method="post" enctype="multipart/form-data" class="modal-content">
+            <?= form_open_multipart('course/upload_cover_photo/' . $subject->id, ['class' => 'modal-content']) ?>
                 <div class="modal-header">
                     <h5 class="modal-title">Course Cover Photo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

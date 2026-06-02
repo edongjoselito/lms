@@ -14,7 +14,7 @@
                 <i class="bi bi-info-circle me-2"></i>
                 Upload a CSV file with the following columns: <strong>First Name, Last Name, Email, Password</strong>
             </div>
-            <form action="<?= site_url('teachers/bulk_upload') ?>" method="post" enctype="multipart/form-data">
+            <?= form_open_multipart('teachers/bulk_upload') ?>
                 <div class="form-group mb-3">
                     <label class="form-label" style="font-weight:600;color:#334155;">CSV File <span style="color:red;">*</span></label>
                     <input type="file" class="form-control" name="csv_file" accept=".csv" required style="border-radius:10px;padding:0.75rem;">
@@ -24,7 +24,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-upload"></i> Upload Teachers</button>
                     <a href="<?= site_url('teachers') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

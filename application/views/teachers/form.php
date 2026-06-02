@@ -10,7 +10,7 @@
                 <i class="bi bi-person-badge me-2" style="color:#6366f1;"></i>
                 <?= isset($teacher) ? 'Edit Teacher' : 'Add Teacher' ?>
             </h5>
-            <form action="<?= isset($teacher) ? site_url('teachers/edit/' . (isset($teacher->IDNumber) ? $teacher->IDNumber : (isset($teacher->id) ? $teacher->id : ''))) : site_url('teachers/create') ?>" method="post">
+            <?= form_open(isset($teacher) ? 'teachers/edit/' . (isset($teacher->IDNumber) ? $teacher->IDNumber : (isset($teacher->id) ? $teacher->id : '')) : 'teachers/create') ?>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group mb-3">
@@ -47,7 +47,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-check-lg"></i> <?= isset($teacher) ? 'Update Teacher' : 'Create Teacher' ?></button>
                     <a href="<?= site_url('teachers') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>
