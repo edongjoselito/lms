@@ -26,7 +26,7 @@
                     <i class="bi bi-download me-1"></i> Download CSV Template
                 </a>
             </div>
-            <form action="<?= site_url('studentprofile/bulk_upload') ?>" method="post" enctype="multipart/form-data">
+            <?= form_open_multipart('studentprofile/bulk_upload') ?>
                 <div class="form-group mb-3">
                     <label class="form-label" style="font-weight:600;color:#334155;">Upload CSV File <span style="color:red;">*</span></label>
                     <input type="file" class="form-control" name="file" accept=".csv" required style="border-radius:10px;padding:0.75rem;">
@@ -36,7 +36,7 @@
                     <button type="submit" class="btn-primary-custom"><i class="bi bi-upload"></i> Upload Students</button>
                     <a href="<?= site_url('studentprofile') ?>" class="btn btn-light" style="border-radius:10px;font-size:0.875rem;font-weight:500;padding:0.6rem 1.25rem;">Cancel</a>
                 </div>
-            </form>
+            <?= form_close() ?>
         </div>
     </div>
 </div>

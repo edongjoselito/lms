@@ -344,17 +344,24 @@
     }
 
     $form_data = isset($form_data) && is_array($form_data) ? $form_data : [];
+    $GLOBALS['signup_form_data'] = $form_data;
 
     function old_value($field, $default = '')
     {
-        global $form_data;
-        return isset($form_data[$field]) ? h($form_data[$field]) : h($default);
+        $data = isset($GLOBALS['signup_form_data']) && is_array($GLOBALS['signup_form_data'])
+            ? $GLOBALS['signup_form_data']
+            : [];
+
+        return isset($data[$field]) ? h($data[$field]) : h($default);
     }
 
     function old_selected($field, $value)
     {
-        global $form_data;
-        return (isset($form_data[$field]) && (string) $form_data[$field] === (string) $value) ? 'selected' : '';
+        $data = isset($GLOBALS['signup_form_data']) && is_array($GLOBALS['signup_form_data'])
+            ? $GLOBALS['signup_form_data']
+            : [];
+
+        return (isset($data[$field]) && (string) $data[$field] === (string) $value) ? 'selected' : '';
     }
 
     $school_types = [
