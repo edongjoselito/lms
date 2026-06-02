@@ -350,10 +350,12 @@ class Auth extends CI_Controller
 
             if ($email_sent) {
                 notify_success('Registration successful! Please check your email to confirm your account.');
+                redirect('auth');
             } else {
                 notify_error('Registration was saved, but the confirmation email could not be sent. Please contact the administrator for assistance.');
+                $this->session->set_flashdata('form_data', $form_data);
+                redirect('auth/signup');
             }
-            redirect('auth');
         } else {
             notify_error('Registration failed. Please try again.');
             $this->session->set_flashdata('form_data', $form_data);
@@ -466,18 +468,19 @@ class Auth extends CI_Controller
     private function _send_confirmation_email($email, $school_name, $token)
     {
         $confirmation_link = site_url('auth/confirm_email/' . $token);
-        $this->load->config('email', TRUE);
+        if (!$this->config->load('email', TRUE, TRUE)) {
+            log_message('error', 'Confirmation email config file could not be loaded.');
+            return false;
+        }
+
+        $email_config = $this->config->item('email', 'email');
+        if (!is_array($email_config) || empty($email_config)) {
+            log_message('error', 'Confirmation email config is empty or invalid.');
+            return false;
+        }
+
         $this->load->library('email');
-
-        $email_config = $this->config->item('email');
-        if (!is_array($email_config)) {
-            $email_config = array();
-        }
-
-        if (!empty($email_config)) {
-            $this->email->initialize($email_config);
-        }
-
+        $this->email->initialize($email_config);
         $this->email->clear(TRUE);
 
         $message = '<p>Dear School Administrator,</p>';
@@ -498,7 +501,7 @@ class Auth extends CI_Controller
 
         $from_email = !empty($email_config['from_email'])
             ? (string) $email_config['from_email']
-            : (string) $this->email->smtp_user;
+            : (!empty($email_config['smtp_user']) ? (string) $email_config['smtp_user'] : '');
         $from_name = !empty($email_config['from_name'])
             ? (string) $email_config['from_name']
             : 'BlueCampus LMS';
@@ -519,7 +522,7 @@ class Auth extends CI_Controller
             return true;
         }
 
-        log_message('error', 'Confirmation email failed to send to ' . $email);
+        log_message('error', 'Confirmation email failed to send to ' . $email . '. ' . strip_tags($this->email->print_debugger(array('headers', 'subject'))));
         return false;
     }
 
