@@ -10,6 +10,7 @@
                 <i class="bi bi-calendar3 me-2" style="color:#6366f1;"></i>Add School Year
             </h5>
             <form action="<?= site_url('academic/create_school_year') ?>" method="post">
+                <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Year Start</label>

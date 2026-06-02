@@ -140,6 +140,10 @@ if ($rs === 'student') {
 
         <?php if ($nav_role === 'school_admin'): ?>
             <div class="nav-section-title">Academic Setup</div>
+            <a href="<?= site_url('academic/school_years') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('school_years', 'create_school_year', 'activate_school_year'))) ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span>School Years</span>
+            </a>
             <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">school</span>
                 <span>Programs</span>
