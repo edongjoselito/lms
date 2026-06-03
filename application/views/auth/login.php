@@ -328,6 +328,204 @@
             font-size: 0.76rem;
         }
 
+        .why-brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: var(--blue-850);
+            font-size: 0.84rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .why-brand-link:hover {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .brand-story-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 1200;
+        }
+
+        .brand-story-modal.is-open {
+            display: flex;
+        }
+
+        .brand-story-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(8, 23, 52, 0.58);
+            backdrop-filter: blur(10px);
+        }
+
+        .brand-story-dialog {
+            position: relative;
+            width: min(920px, 100%);
+            max-height: min(88vh, 920px);
+            overflow: auto;
+            border-radius: 28px;
+            background:
+                radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 24%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
+            border: 1px solid rgba(219, 234, 254, 0.95);
+            box-shadow: 0 30px 70px rgba(8, 23, 52, 0.28);
+        }
+
+        .brand-story-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 28px 28px 18px;
+            border-bottom: 1px solid var(--ink-200);
+        }
+
+        .brand-story-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            border-radius: 999px;
+            background: var(--blue-050);
+            color: var(--blue-900);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .brand-story-header h2 {
+            margin: 0 0 8px;
+            font-family: var(--font-heading);
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
+            color: var(--blue-950);
+        }
+
+        .brand-story-header p {
+            margin: 0;
+            max-width: 560px;
+            color: var(--ink-500);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .brand-story-close {
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 14px;
+            background: var(--blue-050);
+            color: var(--blue-900);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+
+        .brand-story-close:hover {
+            background: var(--blue-100);
+            transform: translateY(-1px);
+        }
+
+        .brand-story-body {
+            padding: 24px 28px 28px;
+        }
+
+        .brand-story-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .brand-story-card {
+            padding: 20px;
+            border-radius: 22px;
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 16px 34px rgba(37, 99, 235, 0.08);
+        }
+
+        .brand-story-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 14px;
+            font-family: var(--font-heading);
+            font-size: 1.12rem;
+            color: var(--blue-950);
+            letter-spacing: -0.03em;
+        }
+
+        .brand-story-card h3 i {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--blue-850), var(--blue-600));
+            color: var(--white);
+            font-size: 0.92rem;
+            box-shadow: 0 14px 22px rgba(37, 99, 235, 0.16);
+        }
+
+        .brand-story-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .brand-story-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: #f8fbff;
+            border: 1px solid #edf4ff;
+        }
+
+        .brand-story-item-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--blue-850);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.92rem;
+            flex-shrink: 0;
+        }
+
+        .brand-story-item strong {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--blue-950);
+            font-size: 0.88rem;
+            font-weight: 800;
+        }
+
+        .brand-story-item span {
+            display: block;
+            color: var(--ink-500);
+            font-size: 0.8rem;
+            line-height: 1.55;
+        }
+
         .hero-panel {
             grid-column: 1;
             grid-row: 1;
@@ -1003,6 +1201,20 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+
+            .brand-story-modal {
+                padding: 12px;
+            }
+
+            .brand-story-header,
+            .brand-story-body {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .brand-story-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -1056,6 +1268,10 @@
                     <div class="login-footer">
                         <a href="<?= site_url('auth/forgot_password') ?>">Forgot password?</a>
                         <a href="<?= site_url('auth/signup') ?>">Sign up for a school account</a>
+                        <button type="button" class="why-brand-link" id="openBrandStory">
+                            <i class="bi bi-info-circle-fill"></i>
+                            Why BLUECAMPUS?
+                        </button>
                         <span>Need help? Contact your school administrator.</span>
                     </div>
                 </div>
@@ -1066,6 +1282,95 @@
             <?php else: ?>
                 <section class="hero-panel hero-panel--image" style="background-image: url('<?= base_url('assets/images/sample.png') ?>');" aria-label="BlueCampus login image"></section>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="brand-story-modal" id="brandStoryModal" aria-hidden="true">
+        <div class="brand-story-backdrop" data-close-brand-story="1"></div>
+        <div class="brand-story-dialog" role="dialog" aria-modal="true" aria-labelledby="brandStoryTitle">
+            <div class="brand-story-header">
+                <div>
+                    <div class="brand-story-kicker">
+                        <i class="bi bi-stars"></i>
+                        Why BLUECAMPUS?
+                    </div>
+                    <h2 id="brandStoryTitle">The Meaning Behind the Name</h2>
+                    <p>BlueCampus is more than a platform name. It reflects the values, purpose, and learning environment the LMS is built to support.</p>
+                </div>
+                <button type="button" class="brand-story-close" id="closeBrandStory" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="brand-story-body">
+                <div class="brand-story-grid">
+                    <section class="brand-story-card" aria-labelledby="blueMeaningTitle">
+                        <h3 id="blueMeaningTitle">
+                            <i class="bi bi-droplet-half"></i>
+                            BLUE represents
+                        </h3>
+                        <div class="brand-story-list">
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-shield-check"></i></span>
+                                <div>
+                                    <strong>Trust and Reliability</strong>
+                                    <span>A dependable platform for students, teachers, parents, and administrators.</span>
+                                </div>
+                            </div>
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-lightbulb"></i></span>
+                                <div>
+                                    <strong>Knowledge and Intelligence</strong>
+                                    <span>The color blue is strongly associated with wisdom, learning, and academic excellence.</span>
+                                </div>
+                            </div>
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-cpu"></i></span>
+                                <div>
+                                    <strong>Innovation and Technology</strong>
+                                    <span>It reflects modern digital transformation in education through cloud-based and AI-powered solutions.</span>
+                                </div>
+                            </div>
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-lock"></i></span>
+                                <div>
+                                    <strong>Professionalism and Security</strong>
+                                    <span>It symbolizes a secure, professional learning environment where educational data is protected.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="brand-story-card" aria-labelledby="campusMeaningTitle">
+                        <h3 id="campusMeaningTitle">
+                            <i class="bi bi-buildings"></i>
+                            CAMPUS represents
+                        </h3>
+                        <div class="brand-story-list">
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-diagram-3"></i></span>
+                                <div>
+                                    <strong>A Complete Learning Ecosystem</strong>
+                                    <span>It brings together learners, educators, parents, and school administrators in one platform.</span>
+                                </div>
+                            </div>
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-globe2"></i></span>
+                                <div>
+                                    <strong>Learning Beyond Physical Boundaries</strong>
+                                    <span>It extends the campus experience through online and hybrid learning.</span>
+                                </div>
+                            </div>
+                            <div class="brand-story-item">
+                                <span class="brand-story-item-icon"><i class="bi bi-journal-check"></i></span>
+                                <div>
+                                    <strong>Academic Excellence</strong>
+                                    <span>It supports teaching, learning, assessment, communication, and school management.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1086,6 +1391,43 @@
                 icon.className = 'bi bi-eye';
             }
         }
+
+        (function () {
+            const modal = document.getElementById('brandStoryModal');
+            const openButton = document.getElementById('openBrandStory');
+            const closeButton = document.getElementById('closeBrandStory');
+
+            if (!modal || !openButton || !closeButton) {
+                return;
+            }
+
+            function openBrandStory() {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                closeButton.focus();
+            }
+
+            function closeBrandStory() {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                openButton.focus();
+            }
+
+            openButton.addEventListener('click', openBrandStory);
+            closeButton.addEventListener('click', closeBrandStory);
+            modal.addEventListener('click', function (event) {
+                if (event.target && event.target.getAttribute('data-close-brand-story') === '1') {
+                    closeBrandStory();
+                }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                    closeBrandStory();
+                }
+            });
+        }());
     </script>
 </body>
 
