@@ -435,7 +435,8 @@ class Academic extends MY_Controller {
             redirect('academic/programs');
         }
 
-        if (!$this->Academic_model->delete_legacy_program_for_all_schools($id)) {
+        $deleted = $this->Academic_model->delete_legacy_program_for_all_schools($id);
+        if (!$deleted) {
             $this->session->set_flashdata('error', 'Cannot delete this grade level because it is still used by sections or subjects.');
             redirect('academic/programs');
         }
@@ -837,6 +838,7 @@ class Academic extends MY_Controller {
         if ($this->school_id) $filters['school_id'] = $this->school_id;
         $global_subject_rows = $this->Academic_model->get_subjects();
         $subjects_by_year_level = array();
+        $preferred_subject_school_id = (int) $this->school_id;
 
         foreach ($global_subject_rows as $subject_row) {
             $subject_year_level = '';
@@ -858,14 +860,32 @@ class Academic extends MY_Controller {
             $subject_code = isset($subject_row->code) ? trim((string) $subject_row->code) : '';
             $subject_description = isset($subject_row->description) ? trim((string) $subject_row->description) : '';
             $subject_key = strtolower($subject_code . '|' . $subject_description);
+            $subject_school_id = isset($subject_row->school_id) ? (int) $subject_row->school_id : 0;
+            $subject_rank = 2;
+
+            if ($preferred_subject_school_id > 0 && $subject_school_id === $preferred_subject_school_id) {
+                $subject_rank = 0;
+            } elseif ($subject_school_id === 0) {
+                $subject_rank = 1;
+            }
 
             if (isset($subjects_by_year_level[$subject_year_level][$subject_key])) {
-                continue;
+                $existing_rank = isset($subjects_by_year_level[$subject_year_level][$subject_key]->_rank)
+                    ? (int) $subjects_by_year_level[$subject_year_level][$subject_key]->_rank
+                    : 99;
+
+                if ($subject_rank >= $existing_rank) {
+                    continue;
+                }
             }
 
             $subjects_by_year_level[$subject_year_level][$subject_key] = (object) array(
+                'id' => isset($subject_row->id) ? (int) $subject_row->id : 0,
+                'program_id' => isset($subject_row->program_id) ? (int) $subject_row->program_id : 0,
+                'school_id' => $subject_school_id,
                 'code' => $subject_code,
                 'description' => $subject_description,
+                '_rank' => $subject_rank,
             );
         }
 
@@ -880,6 +900,12 @@ class Academic extends MY_Controller {
 
                 return strcmp($left_code, $right_code);
             });
+
+            foreach ($subject_items as $subject_item) {
+                if (isset($subject_item->_rank)) {
+                    unset($subject_item->_rank);
+                }
+            }
 
             $subjects_by_year_level[$year_level] = array_values($subject_items);
         }

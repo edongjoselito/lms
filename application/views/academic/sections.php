@@ -155,9 +155,25 @@ foreach ($grade_groups as $grade_group) {
                                 <?php if (!empty($group->subjects)): ?>
                                     <div class="ps-grade-subject-list">
                                         <?php foreach ($group->subjects as $subject_item): ?>
+                                            <?php
+                                            $subject_back_path = !empty($subject_item->program_id)
+                                                ? 'academic/program_subjects/' . (int) $subject_item->program_id
+                                                : 'academic/sections';
+                                            $subject_content_url = !empty($subject_item->id)
+                                                ? site_url('course/content/' . (int) $subject_item->id . '?back=' . urlencode($subject_back_path))
+                                                : '';
+                                            ?>
                                             <div class="ps-grade-subject-item" data-subject-search="<?= htmlspecialchars(strtolower(trim($subject_item->code . ' ' . $subject_item->description)), ENT_QUOTES, 'UTF-8') ?>">
-                                                <span class="ps-grade-subject-code"><?= htmlspecialchars($subject_item->code !== '' ? $subject_item->code : 'SUB') ?></span>
-                                                <span class="ps-grade-subject-name"><?= htmlspecialchars($subject_item->description !== '' ? $subject_item->description : 'No description') ?></span>
+                                                <div class="ps-grade-subject-main">
+                                                    <span class="ps-grade-subject-code"><?= htmlspecialchars($subject_item->code !== '' ? $subject_item->code : 'SUB') ?></span>
+                                                    <span class="ps-grade-subject-name"><?= htmlspecialchars($subject_item->description !== '' ? $subject_item->description : 'No description') ?></span>
+                                                </div>
+                                                <?php if ($subject_content_url !== ''): ?>
+                                                    <a href="<?= $subject_content_url ?>" class="ps-grade-subject-link" title="Open subject content">
+                                                        <i class="bi bi-journal-text"></i>
+                                                        Content
+                                                    </a>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
@@ -683,12 +699,21 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
 .ps-grade-subject-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.6rem;
     min-width: 0;
     padding: 0.7rem 0.8rem;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     background: #fff;
+}
+
+.ps-grade-subject-main {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    flex: 1;
 }
 
 .ps-grade-subject-code {
@@ -711,6 +736,29 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
     font-weight: 600;
     color: #1e293b;
     line-height: 1.35;
+}
+
+.ps-grade-subject-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    padding: 0.35rem 0.62rem;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-size: 0.76rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: all 0.14s ease;
+}
+
+.ps-grade-subject-link:hover {
+    background: #dbeafe;
+    color: #1e40af;
+    text-decoration: none;
+    transform: translateY(-1px);
 }
 
 .ps-grade-subject-empty {

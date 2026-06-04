@@ -148,7 +148,7 @@ if ($rs === 'student') {
             <div class="nav-section-title">Academic Setup</div>
             <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">groups</span>
-                <span>Sections</span>
+                <span>Subjects and Sections</span>
             </a>
             <div class="nav-section-title">School Settings</div>
             <a href="<?= site_url('schools/edit/' . $selected_school_id) ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'edit') ? 'active' : '' ?>">

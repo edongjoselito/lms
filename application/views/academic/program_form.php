@@ -185,7 +185,7 @@
             <?php if (isset($school_type) && $school_type === 'deped'): ?>
                 Grade Level (DepEd)
             <?php else: ?>
-                Program (CHED)
+                Program
             <?php endif; ?>
         </p>
     </div>

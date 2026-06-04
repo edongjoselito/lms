@@ -238,27 +238,18 @@ class Academic_model extends CI_Model
             return false;
         }
 
-        $program_rows = $this->db->select('id')
-            ->where('year_level', $program->year_level)
-            ->get('programs')
-            ->result();
+        // Delete all programs with this year_level (string comparison for consistency)
+        $this->db->where('year_level', (string) $program->year_level)->delete('programs');
+        $affected = $this->db->affected_rows();
 
-        $program_ids = array_map(function ($row) {
-            return (int) $row->id;
-        }, $program_rows);
-
-        if (empty($program_ids)) {
-            return false;
+        // Also delete from academic_programs table if it exists
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            $this->db->where('year_level', (string) $program->year_level)->delete('academic_programs');
+            $affected += $this->db->affected_rows();
         }
 
-        $subject_refs = $this->db->where_in('program_id', $program_ids)->count_all_results('subjects');
-        $section_refs = $this->db->where_in('program_id', $program_ids)->count_all_results('sections');
-
-        if ($subject_refs > 0 || $section_refs > 0) {
-            return false;
-        }
-
-        return $this->db->where_in('id', $program_ids)->delete('programs');
+        return $affected > 0;
     }
 
     // ---- School Years ----
@@ -858,7 +849,9 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
 
-        $select_fields = 'class_programs.*, sections.name as section_name, 
+        $select_fields = 'class_programs.*, sections.name as section_name,
+                          sections.school_id as section_school_id,
+                          schools.name as school_name,
                           (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = class_programs.section_id AND enrollments.status = 1) as student_count';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
@@ -867,6 +860,7 @@ class Academic_model extends CI_Model
         $this->db->select($select_fields, FALSE)
             ->join('sections', 'sections.id = class_programs.section_id')
             ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->join('schools', 'schools.id = sections.school_id', 'left')
             ->where('class_programs.subject_id', $subject_id)
             ->where('class_programs.status', 1);
         if ($created_by_user_id !== null) {
@@ -875,36 +869,47 @@ class Academic_model extends CI_Model
                 ->or_where('class_programs.created_by_user_id IS NULL', null, false)
                 ->group_end();
         }
-        return $this->db->order_by('sections.name', 'ASC')
+        return $this->db->order_by('schools.name', 'ASC')
+            ->order_by('sections.name', 'ASC')
             ->get('class_programs')
             ->result();
     }
 
     public function get_sections_by_program($program_id, $school_id = null)
     {
-        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
-        
+        $select_fields = 'sections.*,
+                          sections.school_id as section_school_id,
+                          schools.name as school_name,
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
+
         $this->db->select($select_fields, FALSE)
             ->join('programs', 'programs.id = sections.program_id', 'left')
+            ->join('schools', 'schools.id = sections.school_id', 'left')
             ->where('sections.program_id', $program_id);
         if ($school_id) {
             $this->db->where('sections.school_id', $school_id);
         }
-        return $this->db->order_by('sections.name', 'ASC')
+        return $this->db->order_by('schools.name', 'ASC')
+            ->order_by('sections.name', 'ASC')
             ->get('sections')
             ->result();
     }
 
     public function get_sections_by_year_level($year_level, $school_id = null)
     {
-        $select_fields = 'sections.*, (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
-        
+        $select_fields = 'sections.*,
+                          sections.school_id as section_school_id,
+                          schools.name as school_name,
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id) as student_count';
+
         $this->db->select($select_fields, FALSE)
+            ->join('schools', 'schools.id = sections.school_id', 'left')
             ->where('sections.year_level', $year_level);
         if ($school_id) {
             $this->db->where('sections.school_id', $school_id);
         }
-        return $this->db->order_by('sections.name', 'ASC')
+        return $this->db->order_by('schools.name', 'ASC')
+            ->order_by('sections.name', 'ASC')
             ->get('sections')
             ->result();
     }

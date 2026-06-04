@@ -73,14 +73,14 @@
                         <tbody>
                             <?php foreach ($enrollments as $e): ?>
                                 <tr style="border-bottom:1px solid #f1f5f9;">
-                                    <td style="padding:0.75rem 1rem;font-weight:500;"><?= htmlspecialchars($e->student_number) ?></td>
+                                    <td style="padding:0.75rem 1rem;font-weight:500;"><?= htmlspecialchars($e->student_number ?? '') ?></td>
                                     <td style="padding:0.75rem 1rem;">
-                                        <?= htmlspecialchars($e->last_name . ', ' . $e->first_name) ?>
+                                        <?= htmlspecialchars(($e->last_name ?? '') . ', ' . ($e->first_name ?? '')) ?>
                                         <?php if ($e->middle_name): ?>
                                             <?= ' ' . htmlspecialchars(substr($e->middle_name, 0, 1) . '.') ?>
                                         <?php endif; ?>
                                     </td>
-                                    <td style="padding:0.75rem 1rem;"><?= htmlspecialchars($e->birth_date) ?></td>
+                                    <td style="padding:0.75rem 1rem;"><?= htmlspecialchars($e->birth_date ?? '') ?></td>
                                     <td style="padding:0.75rem 1rem;">
                                         <?php if (isset($e->year_level) && $e->year_level): ?>
                                             <?= 'Grade ' . str_pad($e->year_level, 2, '0', STR_PAD_LEFT) ?>

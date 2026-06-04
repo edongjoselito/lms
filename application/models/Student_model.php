@@ -125,18 +125,18 @@ class Student_model extends CI_Model {
 
         $this->db->select('subjects.*');
         $this->db->from('subjects');
-        $this->db->group_start();
-        $this->db->where('school_id', $student->school_id);
-        $this->db->or_where('school_id IS NULL', null, false);
-        $this->db->group_end();
+        $this->db->join('programs', 'programs.id = subjects.program_id', 'left');
 
-        // Filter by student's year level if available
+        // Filter by student's year level if available (check both year_level and program's year_level)
         if ($year_level) {
-            $this->db->where('year_level', $year_level);
+            $this->db->group_start();
+            $this->db->where('subjects.year_level', $year_level);
+            $this->db->or_where('programs.year_level', $year_level);
+            $this->db->group_end();
         }
 
         if (!empty($filters['system_type'])) {
-            $this->db->where('system_type', $filters['system_type']);
+            $this->db->where('subjects.system_type', $filters['system_type']);
         }
 
         return $this->db->get()->result();

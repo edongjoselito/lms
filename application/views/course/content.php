@@ -80,7 +80,9 @@ $course_return_path = 'course/content/' . (int) $subject->id;
 if ($course_back_param === 'course/teacher_subjects') {
     $course_back_label = 'Back to My Subjects';
 } elseif (strpos($course_back_param, 'academic/program_subjects/') === 0) {
-    $course_back_label = 'Back to Program Subjects';
+    $course_back_label = ($course_original_role_slug === 'super_admin')
+        ? 'Back to Program Subjects'
+        : 'Back to Sections';
 } elseif ($course_back_param === 'student') {
     $course_back_label = 'Back to Student';
 } elseif ($course_back_param === 'dashboard') {
@@ -303,6 +305,9 @@ if ($course_back_param !== '') {
                                         <span class="cc-module-status">View Only</span>
                                     <?php endif; ?>
                                     <span class="cc-module-count"><?= (int) $module_item_count ?> <?= $module_item_count === 1 ? 'item' : 'items' ?></span>
+                                    <?php if (!$student_content_view && !empty($module->owner_name)): ?>
+                                        <span class="cc-module-owner">Original author: <?= htmlspecialchars($module->owner_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <?php if ($edit_mode && $can_manage_module): ?>
@@ -1002,19 +1007,41 @@ if ($course_back_param !== '') {
                         </h5>
                     </div>
                     <div class="cc-section-list">
-                        <?php foreach ($subject_sections as $section): ?>
-                            <?php
-                            $section_target_id = !empty($section->section_id) ? (int) $section->section_id : (int) $section->id;
-                            $section_target_name = !empty($section->section_name) ? $section->section_name : ($section->name ?? '');
-                            $section_url = 'academic/section_students/' . $section_target_id . '?subject_id=' . (int) $subject->id;
-                            if ($course_back_param !== '') {
-                                $section_url .= '&back=' . urlencode($course_back_param);
+                        <?php
+                        $sections_by_school = array();
+                        foreach ($subject_sections as $section) {
+                            $school_key = !empty($section->section_school_id) ? (int) $section->section_school_id : 0;
+                            $school_label = !empty($section->school_name) ? $section->school_name : 'Unassigned School';
+                            if (!isset($sections_by_school[$school_key])) {
+                                $sections_by_school[$school_key] = array(
+                                    'name' => $school_label,
+                                    'sections' => array(),
+                                );
                             }
-                            ?>
-                            <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
-                                <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
-                                <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
-                            </a>
+                            $sections_by_school[$school_key]['sections'][] = $section;
+                        }
+                        ?>
+                        <?php foreach ($sections_by_school as $school_group): ?>
+                            <div class="cc-section-school-group">
+                                <div class="cc-section-school-label">
+                                    <i class="bi bi-building"></i>
+                                    <?= htmlspecialchars($school_group['name'], ENT_QUOTES, 'UTF-8') ?>
+                                </div>
+                                <?php foreach ($school_group['sections'] as $section): ?>
+                                    <?php
+                                    $section_target_id = !empty($section->section_id) ? (int) $section->section_id : (int) $section->id;
+                                    $section_target_name = !empty($section->section_name) ? $section->section_name : ($section->name ?? '');
+                                    $section_url = 'academic/section_students/' . $section_target_id . '?subject_id=' . (int) $subject->id;
+                                    if ($course_back_param !== '') {
+                                        $section_url .= '&back=' . urlencode($course_back_param);
+                                    }
+                                    ?>
+                                    <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
+                                        <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -1517,6 +1544,14 @@ if ($course_back_param !== '') {
         letter-spacing: 0.03em;
     }
 
+    .cc-module-owner {
+        flex-basis: 100%;
+        font-size: 0.76rem;
+        color: #64748b;
+        font-weight: 500;
+        line-height: 1.35;
+    }
+
     .cc-module-desc {
         padding: 0.75rem 1.25rem;
         background: #fafafa;
@@ -1694,6 +1729,31 @@ if ($course_back_param !== '') {
     /* Sections List */
     .cc-sections-list {
         padding: 0.5rem 1rem 1rem;
+    }
+
+    .cc-section-school-group {
+        margin-bottom: 0.5rem;
+    }
+
+    .cc-section-school-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .cc-section-school-label {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem 0.35rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+    }
+
+    .cc-section-school-label i {
+        font-size: 0.85rem;
+        color: #2563eb;
     }
 
     .cc-subtitle {

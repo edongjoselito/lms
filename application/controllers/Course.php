@@ -9,6 +9,7 @@ class Course extends MY_Controller {
     private $teacher_year_levels = null;
     private $school_year_levels = null;
     private $module_owner_role_slugs = array();
+    private $module_owner_names = array();
 
     public function __construct()
     {
@@ -62,11 +63,13 @@ class Course extends MY_Controller {
         }
 
         if ($this->original_role_slug === 'school_admin') {
-            return (int) $subject->school_id === (int) $this->school_id;
+            $subject_school_id = (int) $subject->school_id;
+            return $subject_school_id === 0 || $subject_school_id === (int) $this->school_id;
         }
 
         if ($this->original_role_slug === 'teacher') {
-            if ((int) $subject->school_id !== (int) $this->school_id) {
+            $subject_school_id = (int) $subject->school_id;
+            if ($subject_school_id !== 0 && $subject_school_id !== (int) $this->school_id) {
                 return false;
             }
 
@@ -203,6 +206,32 @@ class Course extends MY_Controller {
 
         $this->module_owner_role_slugs[$module_id] = $slug;
         return $slug;
+    }
+
+    private function get_module_owner_name($module)
+    {
+        $module_id = $module ? (int) $module->id : 0;
+        if ($module_id < 1) {
+            return '';
+        }
+
+        if (array_key_exists($module_id, $this->module_owner_names)) {
+            return $this->module_owner_names[$module_id];
+        }
+
+        $name = '';
+        if (!empty($module->created_by)) {
+            $owner = $this->db->select('CONCAT(TRIM(COALESCE(first_name, "")), " ", TRIM(COALESCE(last_name, ""))) AS full_name', false)
+                ->from('users')
+                ->where('id', (int) $module->created_by)
+                ->get()
+                ->row();
+
+            $name = $owner ? trim((string) $owner->full_name) : '';
+        }
+
+        $this->module_owner_names[$module_id] = $name;
+        return $name;
     }
 
     private function can_access_shared_grade_level_lesson($subject, $module)
@@ -415,10 +444,20 @@ class Course extends MY_Controller {
         $subject_sections = array();
         if (!$student_content_view) {
             $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
+
+            // Restrict non-super-admin viewers to sections from their own school.
+            if ($this->original_role_slug !== 'super_admin' && !empty($this->school_id)) {
+                $current_school_id = (int) $this->school_id;
+                $subject_sections = array_values(array_filter($subject_sections, function ($section) use ($current_school_id) {
+                    $section_school_id = isset($section->section_school_id) ? (int) $section->section_school_id : 0;
+                    return $section_school_id === $current_school_id;
+                }));
+            }
         }
         if (empty($subject_sections) && !empty($subject->program_id)) {
             $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
-        } elseif (empty($subject_sections) && !empty($subject->year_level)) {
+        }
+        if (empty($subject_sections) && !empty($subject->year_level)) {
             $subject_sections = $this->Academic_model->get_sections_by_year_level($subject->year_level, $this->school_id);
         }
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
@@ -434,6 +473,7 @@ class Course extends MY_Controller {
 
             $module->can_manage = !$student_content_view && $this->can_manage_module_content($module);
             $module->is_shared = false;
+            $module->owner_name = $this->get_module_owner_name($module);
 
             $module->lessons = $this->Lesson_model->get_lessons($module->id);
             $module->activities = $this->Lesson_model->get_activities($module->id);
@@ -514,7 +554,11 @@ class Course extends MY_Controller {
 
         $back_param = $this->input->get('back', TRUE);
         if ($back_param) {
-            $data['back_url'] = site_url($back_param);
+            if (strpos($back_param, 'academic/program_subjects/') === 0 && $this->original_role_slug !== 'super_admin') {
+                $data['back_url'] = site_url('academic/sections');
+            } else {
+                $data['back_url'] = site_url($back_param);
+            }
         } elseif ($this->original_role_slug === 'teacher') {
             $data['back_url'] = site_url('course/teacher_subjects');
         } elseif ($this->original_role_slug === 'student') {
