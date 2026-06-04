@@ -5,14 +5,32 @@ $sy_label = isset($school_year) && $school_year ? $school_year->year_start . '-'
 $grade_groups = array();
 $total_sections = 0;
 $sections_with_adviser = 0;
+$total_subjects = 0;
+$subjects_by_year_level = isset($subjects_by_year_level) && is_array($subjects_by_year_level) ? $subjects_by_year_level : array();
+$sections_back_url = isset($role_slug) && $role_slug === 'super_admin'
+    ? site_url('academic/programs')
+    : site_url('dashboard');
+$sections_back_label = isset($role_slug) && $role_slug === 'super_admin'
+    ? 'Back to Programs'
+    : 'Back to Dashboard';
 
 if (!empty($grade_levels)) {
     foreach ($grade_levels as $gl) {
         $gl_sections = array();
+        $grade_year_level = isset($gl->year_level) ? trim((string) $gl->year_level) : '';
 
         if (!empty($sections)) {
             foreach ($sections as $sec) {
-                if (isset($sec->program_id) && (int) $sec->program_id === (int) $gl->id) {
+                $section_year_level = isset($sec->year_level) ? trim((string) $sec->year_level) : '';
+                $matches_grade_level = false;
+
+                if ($grade_year_level !== '' && $section_year_level !== '') {
+                    $matches_grade_level = $section_year_level === $grade_year_level;
+                } elseif (isset($sec->program_id) && (int) $sec->program_id === (int) $gl->id) {
+                    $matches_grade_level = true;
+                }
+
+                if ($matches_grade_level) {
                     $gl_sections[] = $sec;
                     $total_sections++;
 
@@ -36,17 +54,21 @@ if (!empty($grade_levels)) {
             'name' => $grade_name,
             'code' => $grade_code,
             'year_level' => isset($gl->year_level) ? $gl->year_level : '',
+            'subjects' => isset($subjects_by_year_level[$grade_year_level]) ? $subjects_by_year_level[$grade_year_level] : array(),
             'sections' => $gl_sections,
         );
     }
 }
 
 $grade_level_count = count($grade_groups);
+foreach ($grade_groups as $grade_group) {
+    $total_subjects += count($grade_group->subjects);
+}
 ?>
 
 <div class="ps-page">
-    <a href="<?= site_url('academic/programs') ?>" class="ps-back">
-        <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> Back to Programs
+    <a href="<?= $sections_back_url ?>" class="ps-back">
+        <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> <?= htmlspecialchars($sections_back_label) ?>
     </a>
 
     <div class="ps-hero">
@@ -60,7 +82,6 @@ $grade_level_count = count($grade_groups);
                         <span class="ps-tag ps-tag-code">S.Y. <?= htmlspecialchars($sy_label) ?></span>
                     </div>
                     <h1 class="ps-hero-title">Sections</h1>
-                    <p class="ps-hero-desc">Manage sections by grade level and keep adviser assignments organized for the active school year.</p>
                 </div>
             </div>
             <div class="ps-hero-stats">
@@ -75,6 +96,10 @@ $grade_level_count = count($grade_groups);
                 <div class="ps-hero-stat">
                     <div class="ps-hero-stat-num"><?= (int) $sections_with_adviser ?></div>
                     <div class="ps-hero-stat-lbl">With Adviser</div>
+                </div>
+                <div class="ps-hero-stat">
+                    <div class="ps-hero-stat-num"><?= (int) $total_subjects ?></div>
+                    <div class="ps-hero-stat-lbl">Subjects</div>
                 </div>
             </div>
         </div>
@@ -92,12 +117,14 @@ $grade_level_count = count($grade_groups);
                     <?php if (!empty($grade_groups)): ?>
                     <div class="ps-search-wrap">
                         <i class="bi bi-search ps-search-icon"></i>
-                        <input type="text" class="ps-search" id="sectionSearch" placeholder="Search sections or advisers...">
+                        <input type="text" class="ps-search" id="sectionSearch" placeholder="Search sections, advisers, or subjects...">
                     </div>
                     <?php endif; ?>
-                    <a href="<?= site_url('academic/create_section') ?>" class="ps-submit-btn ps-submit-btn-inline">
-                        <i class="bi bi-plus-lg"></i> Add Section
-                    </a>
+                    <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
+                        <a href="<?= site_url('academic/create_section') ?>" class="ps-submit-btn ps-submit-btn-inline">
+                            <i class="bi bi-plus-lg"></i> Add Section
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -111,13 +138,32 @@ $grade_level_count = count($grade_groups);
                                     <div class="ps-grade-copy">
                                         <h3 class="ps-grade-title"><?= htmlspecialchars($group->name) ?></h3>
                                         <div class="ps-grade-sub">
-                                            <?= count($group->sections) ?> Section<?= count($group->sections) != 1 ? 's' : '' ?>
+                                            <?= count($group->sections) ?> Section<?= count($group->sections) != 1 ? 's' : '' ?> • <?= count($group->subjects) ?> Subject<?= count($group->subjects) != 1 ? 's' : '' ?>
                                         </div>
                                     </div>
                                 </div>
                                 <a href="<?= site_url('academic/create_section_for_grade/' . $group->id) ?>" class="ps-action-btn ps-action-view">
                                     <i class="bi bi-plus-lg"></i> Add Section
                                 </a>
+                            </div>
+
+                            <div class="ps-grade-subjects">
+                                <div class="ps-grade-subjects-head">
+                                    <span class="ps-grade-subjects-label">Subjects for this Grade Level</span>
+                                    <span class="ps-grade-subjects-count"><?= count($group->subjects) ?></span>
+                                </div>
+                                <?php if (!empty($group->subjects)): ?>
+                                    <div class="ps-grade-subject-list">
+                                        <?php foreach ($group->subjects as $subject_item): ?>
+                                            <div class="ps-grade-subject-item" data-subject-search="<?= htmlspecialchars(strtolower(trim($subject_item->code . ' ' . $subject_item->description)), ENT_QUOTES, 'UTF-8') ?>">
+                                                <span class="ps-grade-subject-code"><?= htmlspecialchars($subject_item->code !== '' ? $subject_item->code : 'SUB') ?></span>
+                                                <span class="ps-grade-subject-name"><?= htmlspecialchars($subject_item->description !== '' ? $subject_item->description : 'No description') ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="ps-grade-subject-empty">No shared subjects found for this grade level yet.</div>
+                                <?php endif; ?>
                             </div>
 
                             <?php if (!empty($group->sections)): ?>
@@ -185,10 +231,14 @@ $grade_level_count = count($grade_groups);
                         <i class="bi bi-layers"></i>
                     </div>
                     <div class="ps-empty-title">No grade levels found</div>
-                    <div class="ps-empty-sub">Create grade levels first to manage sections.</div>
-                    <a href="<?= site_url('academic/programs') ?>" class="ps-submit-btn ps-empty-btn">
-                        <i class="bi bi-plus-lg"></i> Add Grade Level
-                    </a>
+                    <?php if (isset($role_slug) && $role_slug === 'super_admin'): ?>
+                        <div class="ps-empty-sub">Create grade levels first to manage sections.</div>
+                        <a href="<?= site_url('academic/programs') ?>" class="ps-submit-btn ps-empty-btn">
+                            <i class="bi bi-plus-lg"></i> Add Grade Level
+                        </a>
+                    <?php else: ?>
+                        <div class="ps-empty-sub">No shared grade levels are available yet. Please ask the Super Admin to set them up first.</div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -203,12 +253,26 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
 
     cards.forEach(function (card) {
         var rows = card.querySelectorAll('.ps-section-item');
+        var subjectItems = card.querySelectorAll('.ps-grade-subject-item');
         var head = card.querySelector('.ps-section-table-head');
         var visibleRows = 0;
+        var subjectMatch = false;
 
         if (rows.length === 0) {
-            card.style.display = q ? 'none' : '';
-            if (!q) visibleCards++;
+            if (!q) {
+                card.style.display = '';
+                visibleCards++;
+                return;
+            }
+
+            subjectItems.forEach(function (subjectItem) {
+                if (subjectItem.dataset.subjectSearch.indexOf(q) !== -1) {
+                    subjectMatch = true;
+                }
+            });
+
+            card.style.display = subjectMatch ? '' : 'none';
+            if (subjectMatch) visibleCards++;
             return;
         }
 
@@ -218,12 +282,20 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
             if (match) visibleRows++;
         });
 
+        if (q) {
+            subjectItems.forEach(function (subjectItem) {
+                if (subjectItem.dataset.subjectSearch.indexOf(q) !== -1) {
+                    subjectMatch = true;
+                }
+            });
+        }
+
         if (head) {
             head.style.display = visibleRows > 0 ? 'grid' : 'none';
         }
 
-        card.style.display = visibleRows > 0 ? '' : 'none';
-        if (visibleRows > 0) {
+        card.style.display = (visibleRows > 0 || subjectMatch) ? '' : 'none';
+        if (visibleRows > 0 || subjectMatch) {
             visibleCards++;
         }
     });
@@ -564,6 +636,87 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
 .ps-grade-sub {
     font-size: 0.82rem;
     color: #64748b;
+}
+
+.ps-grade-subjects {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eef2f7;
+    background: #fdfefe;
+}
+
+.ps-grade-subjects-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.ps-grade-subjects-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.ps-grade-subjects-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.ps-grade-subject-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.6rem;
+}
+
+.ps-grade-subject-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.ps-grade-subject-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 8px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.ps-grade-subject-name {
+    min-width: 0;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.35;
+}
+
+.ps-grade-subject-empty {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    font-style: italic;
 }
 
 .ps-section-table-head {
@@ -925,6 +1078,14 @@ document.getElementById('sectionSearch') && document.getElementById('sectionSear
 
     .ps-grade-head {
         padding: 1rem;
+    }
+
+    .ps-grade-subjects {
+        padding: 1rem;
+    }
+
+    .ps-grade-subject-list {
+        grid-template-columns: 1fr;
     }
 
     .ps-subject-item {

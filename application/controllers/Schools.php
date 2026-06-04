@@ -10,6 +10,8 @@ class Schools extends MY_Controller
         $this->require_login();
         $this->load->model('School_model');
         $this->load->model('Audit_model');
+        $this->load->model('User_model');
+        $this->load->model('Academic_model');
     }
 
     public function index()
@@ -107,13 +109,8 @@ class Schools extends MY_Controller
             );
             $school_id = $this->School_model->create($d);
 
-            // Create default school year
-            $this->db->insert('school_years', array(
-                'school_id'  => $school_id,
-                'year_start' => date('Y'),
-                'year_end'   => date('Y') + 1,
-                'is_active'  => 1,
-            ));
+            $this->Academic_model->sync_school_years_to_school($school_id);
+            $this->Academic_model->sync_programs_to_school($school_id);
 
             // Create school admin user account
             $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
@@ -430,10 +427,22 @@ class Schools extends MY_Controller
             redirect('schools/select');
         }
 
-        $this->session->set_userdata(array(
+        $session_data = array(
             'school_id' => (int) $school->id,
             'school_name' => $school->name,
-        ));
+        );
+
+        $school_year = $this->Academic_model->get_active_school_year($school->id);
+
+        if ($school_year) {
+            $session_data['school_year_id'] = (int) $school_year->id;
+            $session_data['school_year_name'] = $school_year->year_start . '-' . $school_year->year_end;
+        } else {
+            $this->session->unset_userdata('school_year_id');
+            $this->session->unset_userdata('school_year_name');
+        }
+
+        $this->session->set_userdata($session_data);
         $this->session->set_flashdata('success', 'Switched to: ' . htmlspecialchars($school->name, ENT_QUOTES, 'UTF-8'));
 
         redirect('dashboard');
@@ -445,9 +454,49 @@ class Schools extends MY_Controller
 
         $this->session->unset_userdata('school_id');
         $this->session->unset_userdata('school_name');
+        $this->session->unset_userdata('school_year_id');
+        $this->session->unset_userdata('school_year_name');
         $this->session->set_flashdata('success', 'Switched to platform view.');
 
         redirect('schools');
+    }
+
+    public function view_users($id)
+    {
+        $this->require_role(array('super_admin'));
+
+        $school = $this->School_model->get($id);
+        if (!$school) {
+            show_404();
+        }
+
+        $filters = array('school_id' => (int) $school->id);
+
+        $per_page = 15;
+        $page = $this->input->get('page') ? (int) $this->input->get('page') : 1;
+        $page = $page > 0 ? $page : 1;
+        $offset = ($page - 1) * $per_page;
+
+        $total_users = $this->User_model->count_all($filters);
+        $users = $this->User_model->get_all($filters, $per_page, $offset);
+
+        $data['title'] = 'Users - ' . $school->name;
+        $data['users'] = $users;
+        $data['roles'] = $this->User_model->get_roles();
+        $data['total_users'] = $total_users;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['total_pages'] = ceil($total_users / $per_page);
+        $data['page_title'] = 'Users in ' . $school->name;
+        $data['page_description'] = 'View all user accounts assigned to this school.';
+        $data['list_title'] = 'School Users';
+        $data['pagination_base_url'] = 'schools/view_users/' . (int) $school->id;
+        $data['back_url'] = site_url('schools');
+        $data['back_label'] = 'Back to Schools';
+        $data['can_create_users'] = false;
+        $data['selected_school_name'] = $school->name;
+
+        $this->render('users/index', $data);
     }
 
     public function migrate_grade_levels()
@@ -597,16 +646,28 @@ class Schools extends MY_Controller
     public function delete($id)
     {
         $this->require_role(array('super_admin'));
+        $redirect_to = $this->input->post('redirect_to', TRUE) === 'schools/select' ? 'schools/select' : 'schools';
         $school = $this->School_model->get($id);
-        $school_name = $school ? $school->name : 'Unknown';
+        if (!$school) {
+            $this->session->set_flashdata('error', 'School not found.');
+            redirect($redirect_to);
+        }
 
+        $school_name = $school->name;
         $this->School_model->delete($id);
 
         // Audit log
         $this->Audit_model->log('delete', 'school', $id, $school_name, 'Deleted school: ' . $school_name);
 
+        if ((int) $this->session->userdata('school_id') === (int) $id) {
+            $this->session->unset_userdata('school_id');
+            $this->session->unset_userdata('school_name');
+            $this->session->unset_userdata('school_year_id');
+            $this->session->unset_userdata('school_year_name');
+        }
+
         $this->session->set_flashdata('success', 'School deleted.');
-        redirect('schools');
+        redirect($redirect_to);
     }
 
     public function download_template()
@@ -685,13 +746,8 @@ class Schools extends MY_Controller
                     $school_id = $this->School_model->create($school_data);
 
                     if ($school_id) {
-                        // Create default school year
-                        $this->db->insert('school_years', array(
-                            'school_id'  => $school_id,
-                            'year_start' => date('Y'),
-                            'year_end'   => date('Y') + 1,
-                            'is_active'  => 1,
-                        ));
+                        $this->Academic_model->sync_school_years_to_school($school_id);
+                        $this->Academic_model->sync_programs_to_school($school_id);
 
                         // Create school admin user account
                         $school_admin_role = $this->db->where('slug', 'school_admin')->get('roles')->row();
@@ -775,13 +831,8 @@ class Schools extends MY_Controller
         // Create school admin account
         $this->_create_school_admin_for_signup($id, $school->email, $school->name);
 
-        // Create default school year
-        $this->db->insert('school_years', array(
-            'school_id'  => $id,
-            'year_start' => date('Y'),
-            'year_end'   => date('Y') + 1,
-            'is_active'  => 1,
-        ));
+        $this->Academic_model->sync_school_years_to_school($id);
+        $this->Academic_model->sync_programs_to_school($id);
 
         // Audit log
         $this->Audit_model->log('update', 'school', $id, $school->name, 'Manually approved school: ' . $school->name);

@@ -5,6 +5,11 @@ $lesson_records = isset($lesson_records) && is_array($lesson_records) ? $lesson_
 $assessment_records = isset($assessment_records) && is_array($assessment_records) ? $assessment_records : array();
 $grade_label = '';
 $subject_label = !empty($subject->description) ? $subject->description : (!empty($subject->name) ? $subject->name : 'Subject Records');
+$student_records_back = isset($back) ? trim((string) $back) : '';
+$student_records_url = 'academic/section_students/' . $section->id . '?subject_id=' . (int) $subject_id;
+if ($student_records_back !== '') {
+    $student_records_url .= '&back=' . urlencode($student_records_back);
+}
 
 if (isset($subject->year_level) && trim((string) $subject->year_level) !== '') {
     $grade_value = trim((string) $subject->year_level);
@@ -13,7 +18,7 @@ if (isset($subject->year_level) && trim((string) $subject->year_level) !== '') {
 ?>
 
 <div class="sr-page">
-    <a href="<?= site_url('academic/section_students/' . $section->id . '?subject_id=' . $subject_id) ?>" class="sr-back">
+    <a href="<?= site_url($student_records_url) ?>" class="sr-back">
         <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> Back to Section Students
     </a>
 

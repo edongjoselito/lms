@@ -1,3 +1,17 @@
+<?php
+$section_back = isset($back) ? trim((string) $back) : '';
+$section_course_url = '';
+if (isset($subject_id) && $subject_id) {
+    $section_course_url = 'course/content/' . (int) $subject_id . '?edit=1';
+    if ($section_back !== '') {
+        $section_course_url .= '&back=' . urlencode($section_back);
+    }
+}
+$student_records_suffix = '?subject_id=' . (int) $subject_id;
+if ($section_back !== '') {
+    $student_records_suffix .= '&back=' . urlencode($section_back);
+}
+?>
 <div class="data-table">
     <div class="table-header">
         <div>
@@ -9,7 +23,7 @@
         </div>
         <div>
             <?php if (isset($subject_id) && $subject_id): ?>
-                <a href="<?= site_url('course/content/' . $subject_id . '?edit=1') ?>" class="btn btn-outline-secondary">
+                <a href="<?= site_url($section_course_url) ?>" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Back to Course
                 </a>
             <?php else: ?>
@@ -54,7 +68,7 @@
                                     <small class="text-muted"><?= $student->completed_items ?> / <?= $student->total_items ?> items</small>
                                 </td>
                                 <td>
-                                    <a href="<?= site_url('academic/student_subject_records/' . $section->id . '/' . $student->user_id . '?subject_id=' . $subject_id) ?>" class="btn btn-sm btn-outline-primary">
+                                    <a href="<?= site_url('academic/student_subject_records/' . $section->id . '/' . $student->user_id . $student_records_suffix) ?>" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-folder2-open me-1"></i> View Records
                                     </a>
                                 </td>

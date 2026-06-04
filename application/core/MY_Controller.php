@@ -8,6 +8,7 @@ class MY_Controller extends CI_Controller {
     protected $role_slug = null;
     protected $school_id = null;
     protected $current_school = null;
+    protected $current_school_year = null;
     protected $is_student_mode = false;
     protected $original_role_slug = null;
 
@@ -40,6 +41,8 @@ class MY_Controller extends CI_Controller {
             if ($this->school_id) {
                 $this->current_school = $this->db->where('id', $this->school_id)->get('schools')->row();
             }
+
+            $this->sync_current_school_year();
 
             // Auto-logout students using configured session lifetime (only for actual students, not teachers in student mode)
             if ($this->role_slug === 'student' && !$this->is_student_mode) {
@@ -130,12 +133,37 @@ class MY_Controller extends CI_Controller {
         }
     }
 
+    protected function sync_current_school_year()
+    {
+        if (!$this->school_id) {
+            $this->current_school_year = null;
+            $this->session->unset_userdata('school_year_id');
+            $this->session->unset_userdata('school_year_name');
+            return;
+        }
+
+        $this->load->model('Academic_model');
+        $this->current_school_year = $this->Academic_model->get_active_school_year($this->school_id);
+
+        if ($this->current_school_year) {
+            $this->session->set_userdata(array(
+                'school_year_id' => (int) $this->current_school_year->id,
+                'school_year_name' => $this->current_school_year->year_start . '-' . $this->current_school_year->year_end,
+            ));
+            return;
+        }
+
+        $this->session->unset_userdata('school_year_id');
+        $this->session->unset_userdata('school_year_name');
+    }
+
     protected function render($view, $data = array())
     {
         $data['current_user'] = $this->current_user;
         $data['role_slug'] = $this->role_slug;
         $data['school_id'] = $this->school_id;
         $data['current_school'] = $this->current_school;
+        $data['current_school_year'] = $this->current_school_year;
         $data['is_student_mode'] = $this->is_student_mode;
         $data['original_role_slug'] = $this->original_role_slug;
         $this->load->view('layouts/header', $data);

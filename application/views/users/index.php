@@ -6,6 +6,14 @@ $current_user_id = (int) $CI->session->userdata('user_id');
 $role_count = !empty($roles) ? count($roles) : 0;
 $page_user_count = !empty($users) ? count($users) : 0;
 $active_page_count = 0;
+$page_title = isset($page_title) && $page_title !== '' ? $page_title : 'Manage Users';
+$page_description = isset($page_description) && $page_description !== '' ? $page_description : 'View and manage user accounts, roles, and account status across your school.';
+$list_title = isset($list_title) && $list_title !== '' ? $list_title : 'All Users';
+$pagination_base_url = isset($pagination_base_url) && $pagination_base_url !== '' ? $pagination_base_url : 'users';
+$can_create_users = isset($can_create_users) ? (bool) $can_create_users : true;
+$create_url = isset($create_url) && $create_url !== '' ? $create_url : site_url('users/create');
+$back_url = isset($back_url) ? $back_url : '';
+$back_label = isset($back_label) && $back_label !== '' ? $back_label : 'Back';
 
 if (!empty($users)) {
     foreach ($users as $user_item) {
@@ -17,6 +25,14 @@ if (!empty($users)) {
 ?>
 
 <div class="ps-page">
+    <?php if ($back_url): ?>
+        <div class="mb-3">
+            <a href="<?= htmlspecialchars($back_url, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:0.8rem;">
+                <i class="bi bi-arrow-left me-1"></i> <?= htmlspecialchars($back_label) ?>
+            </a>
+        </div>
+    <?php endif; ?>
+
     <div class="ps-hero">
         <div class="ps-hero-bg"></div>
         <div class="ps-hero-content">
@@ -27,8 +43,8 @@ if (!empty($users)) {
                         <span class="ps-tag ps-tag-degree">Administration</span>
                         <span class="ps-tag ps-tag-code">User Directory</span>
                     </div>
-                    <h1 class="ps-hero-title">Manage Users</h1>
-                    <p class="ps-hero-desc">View and manage user accounts, roles, and account status across your school.</p>
+                    <h1 class="ps-hero-title"><?= htmlspecialchars($page_title) ?></h1>
+                    <p class="ps-hero-desc"><?= htmlspecialchars($page_description) ?></p>
                 </div>
             </div>
             <div class="ps-hero-stats">
@@ -53,7 +69,7 @@ if (!empty($users)) {
             <div class="ps-card-head">
                 <div class="ps-card-title">
                     <i class="bi bi-people-fill"></i>
-                    <span>All Users</span>
+                    <span><?= htmlspecialchars($list_title) ?></span>
                     <span class="ps-count-pill"><?= (int) $page_user_count ?></span>
                 </div>
                 <div class="ps-card-tools">
@@ -63,9 +79,11 @@ if (!empty($users)) {
                         <input type="text" class="ps-search" id="userSearch" placeholder="Search users...">
                     </div>
                     <?php endif; ?>
-                    <a href="<?= site_url('users/create') ?>" class="ps-submit-btn ps-submit-btn-inline">
+                    <?php if ($can_create_users): ?>
+                    <a href="<?= htmlspecialchars($create_url, ENT_QUOTES, 'UTF-8') ?>" class="ps-submit-btn ps-submit-btn-inline">
                         <i class="bi bi-plus-lg"></i> Add User
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -157,9 +175,11 @@ if (!empty($users)) {
                     </div>
                     <div class="ps-empty-title">No users found</div>
                     <div class="ps-empty-sub">Create your first user account to get started.</div>
-                    <a href="<?= site_url('users/create') ?>" class="ps-submit-btn ps-empty-btn">
+                    <?php if ($can_create_users): ?>
+                    <a href="<?= htmlspecialchars($create_url, ENT_QUOTES, 'UTF-8') ?>" class="ps-submit-btn ps-empty-btn">
                         <i class="bi bi-plus-lg"></i> Add User
                     </a>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 
@@ -170,7 +190,7 @@ if (!empty($users)) {
                     </span>
                     <div class="ps-pagination">
                         <?php if ($current_page > 1): ?>
-                            <a href="<?= site_url('users?page=' . ($current_page - 1)) ?>" class="ps-page-btn">
+                            <a href="<?= site_url($pagination_base_url . '?page=' . ($current_page - 1)) ?>" class="ps-page-btn">
                                 <i class="bi bi-chevron-left"></i> Previous
                             </a>
                         <?php else: ?>
@@ -183,12 +203,12 @@ if (!empty($users)) {
                             <?php if ($i == $current_page): ?>
                                 <span class="ps-page-num ps-page-num-active"><?= $i ?></span>
                             <?php else: ?>
-                                <a href="<?= site_url('users?page=' . $i) ?>" class="ps-page-num"><?= $i ?></a>
+                                <a href="<?= site_url($pagination_base_url . '?page=' . $i) ?>" class="ps-page-num"><?= $i ?></a>
                             <?php endif; ?>
                         <?php endfor; ?>
 
                         <?php if ($current_page < $total_pages): ?>
-                            <a href="<?= site_url('users?page=' . ($current_page + 1)) ?>" class="ps-page-btn">
+                            <a href="<?= site_url($pagination_base_url . '?page=' . ($current_page + 1)) ?>" class="ps-page-btn">
                                 Next <i class="bi bi-chevron-right"></i>
                             </a>
                         <?php else: ?>

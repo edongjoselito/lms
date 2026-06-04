@@ -48,6 +48,7 @@ $student_content_view = !empty($student_content_view) || !empty($is_student_mode
 $is_student_mode = $student_content_view;
 $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
 $course_modules = isset($modules) && is_array($modules) ? $modules : array();
+$shared_modules = isset($shared_modules) && is_array($shared_modules) ? $shared_modules : array();
 $course_module_count = count($course_modules);
 $course_lesson_count = 0;
 $course_activity_count = 0;
@@ -74,6 +75,7 @@ $course_original_role_slug = isset($original_role_slug) ? (string) $original_rol
 $course_back_label = 'Back to Subjects';
 $course_csrf_token_name = $this->security->get_csrf_token_name();
 $course_csrf_hash = $this->security->get_csrf_hash();
+$course_return_path = 'course/content/' . (int) $subject->id;
 
 if ($course_back_param === 'course/teacher_subjects') {
     $course_back_label = 'Back to My Subjects';
@@ -85,6 +87,13 @@ if ($course_back_param === 'course/teacher_subjects') {
     $course_back_label = 'Back to Dashboard';
 } elseif ($course_original_role_slug === 'teacher') {
     $course_back_label = 'Back to My Subjects';
+}
+
+if ($edit_mode) {
+    $course_return_path .= '?edit=1';
+}
+if ($course_back_param !== '') {
+    $course_return_path .= (strpos($course_return_path, '?') === false ? '?' : '&') . 'back=' . urlencode($course_back_param);
 }
 ?>
 
@@ -254,7 +263,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                         <button type="submit" class="cc-btn cc-btn--primary cc-btn--block">Access Course</button>
                     </form>
                 </div>
-            <?php elseif (empty($modules)): ?>
+            <?php elseif (empty($modules) && empty($shared_modules)): ?>
                 <div class="cc-empty-card">
                     <div class="cc-empty-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
@@ -278,6 +287,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                     $module_lessons_count = !empty($module->lessons) && is_array($module->lessons) ? count($module->lessons) : 0;
                     $module_activities_count = !empty($module->activities) && is_array($module->activities) ? count($module->activities) : 0;
                     $module_item_count = $module_lessons_count + $module_activities_count;
+                    $can_manage_module = !empty($module->can_manage);
                     ?>
                     <!-- Module Card -->
                     <div class="cc-module-card" id="module-<?= $module->id ?>">
@@ -289,11 +299,13 @@ if ($course_back_param === 'course/teacher_subjects') {
                                     <h5 class="cc-module-title"><?= htmlspecialchars($module->title) ?></h5>
                                     <?php if (!$module->is_published): ?>
                                         <span class="cc-module-status">Hidden</span>
+                                    <?php elseif ($edit_mode && !$can_manage_module): ?>
+                                        <span class="cc-module-status">View Only</span>
                                     <?php endif; ?>
                                     <span class="cc-module-count"><?= (int) $module_item_count ?> <?= $module_item_count === 1 ? 'item' : 'items' ?></span>
                                 </div>
                             </div>
-                            <?php if ($edit_mode): ?>
+                            <?php if ($edit_mode && $can_manage_module): ?>
                                 <div class="dropdown">
                                     <button class="cc-btn cc-btn--ghost cc-btn--icon" data-bs-toggle="dropdown">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -322,7 +334,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                             </div>
                         <?php endif; ?>
 
-                        <?php if ($edit_mode): ?>
+                        <?php if ($edit_mode && $can_manage_module): ?>
                             <div class="collapse item-edit-panel" id="editModule<?= $module->id ?>">
                                 <?= form_open('course/edit_module/' . $module->id, ['class' => 'module-add-form']) ?>
                                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -377,7 +389,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                             <?php if (empty($all_items)): ?>
                                 <div class="p-4 text-center" style="color:#94a3b8;">
                                     <p class="mb-0">No content in this module yet.</p>
-                                    <?php if ($edit_mode): ?>
+                                    <?php if ($edit_mode && $can_manage_module): ?>
                                         <div class="mt-3">
                                             <a href="#addLesson<?= $module->id ?>" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="addLesson<?= $module->id ?>">
                                                 <i class="bi bi-file-text me-1"></i>Add Lesson
@@ -392,7 +404,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                     <?php endif; ?>
                                 </div>
                             <?php else: ?>
-                                <div class="list-group list-group-flush<?= $edit_mode ? ' cc-sortable-list' : '' ?>"<?= $edit_mode ? ' data-module-id="' . (int) $module->id . '" data-reorder-url="' . htmlspecialchars(site_url('course/reorder_module_items/' . $module->id), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
+                                <div class="list-group list-group-flush<?= ($edit_mode && $can_manage_module) ? ' cc-sortable-list' : '' ?>"<?= ($edit_mode && $can_manage_module) ? ' data-module-id="' . (int) $module->id . '" data-reorder-url="' . htmlspecialchars(site_url('course/reorder_module_items/' . $module->id), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
                                     <?php foreach ($all_items as $item): ?>
                                         <?php
                                         $is_lesson_item = $item->item_type === 'lesson';
@@ -401,10 +413,11 @@ if ($course_back_param === 'course/teacher_subjects') {
                                         $is_completed_activity = !$is_lesson_item && in_array((int) $item->id, $completed_activity_ids ?? array());
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
                                         $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
+                                        $can_manage_item = !empty($item->can_manage);
                                         ?>
                                         <div class="cc-sortable-entry" data-item-id="<?= (int) $item->id ?>" data-item-type="<?= $is_lesson_item ? 'lesson' : 'activity' ?>">
                                         <div class="list-group-item cc-content-item p-3 d-flex align-items-center justify-content-between <?= (!$item->is_published && $edit_mode) ? 'cc-content-item--hidden bg-light' : '' ?>">
-                                            <?php if ($edit_mode): ?>
+                                            <?php if ($edit_mode && $can_manage_module): ?>
                                                 <button type="button" class="cc-drag-handle" draggable="true" aria-label="Drag to reorder" title="Drag to reorder">
                                                     <i class="bi bi-grip-vertical"></i>
                                                 </button>
@@ -491,15 +504,21 @@ if ($course_back_param === 'course/teacher_subjects') {
                                                     <ul class="dropdown-menu dropdown-menu-end">
                                                         <li><a class="dropdown-item" href="<?= $item_url ?>"><i class="bi bi-eye me-2"></i>View</a></li>
                                                         <?php if ($item->item_type === 'lesson'): ?>
-                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
-                                                            <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                            <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php if ($can_manage_item): ?>
+                                                                <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
+                                                                <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                                <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php endif; ?>
                                                         <?php elseif ($is_quiz_item): ?>
-                                                            <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-ui-checks me-2"></i>Manage Questions</a></li>
-                                                            <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this assessment and all attempts?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php if ($can_manage_item): ?>
+                                                                <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-ui-checks me-2"></i>Manage Questions</a></li>
+                                                                <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this assessment and all attempts?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
-                                                            <li><a class="dropdown-item" href="#editActivity<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editActivity<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                            <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this activity?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php if ($can_manage_item): ?>
+                                                                <li><a class="dropdown-item" href="#editActivity<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editActivity<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                                                <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_activity/' . $item->id) ?>" onclick="return confirm('Delete this activity?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
                                                     </ul>
                                                 </div>
@@ -520,7 +539,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                             <?php endif; ?>
                                         </div>
 
-                                        <?php if ($item->item_type === 'lesson' && $edit_mode): ?>
+                                        <?php if ($item->item_type === 'lesson' && $edit_mode && $can_manage_item): ?>
                                             <?php
                                             $lesson_video_url = course_lesson_video_url($item->content ?? '');
                                             $lesson_file_url = course_lesson_file_url($item->content ?? '');
@@ -607,7 +626,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                                             </div>
                                         <?php endif; ?>
 
-                                        <?php if ($item->item_type === 'activity' && empty($is_quiz_item) && $edit_mode): ?>
+                                        <?php if ($item->item_type === 'activity' && empty($is_quiz_item) && $edit_mode && $can_manage_item): ?>
                                             <div class="collapse item-edit-panel" id="editActivity<?= $item->id ?>">
                                                 <?= form_open('course/edit_activity/' . $item->id, ['class' => 'module-add-form']) ?>
                                                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -656,7 +675,7 @@ if ($course_back_param === 'course/teacher_subjects') {
                             <?php endif; ?>
                         </div>
 
-                        <?php if ($edit_mode): ?>
+                        <?php if ($edit_mode && $can_manage_module): ?>
                             <div class="module-add-panels border-top" id="moduleAddPanels<?= $module->id ?>">
                                 <div class="collapse" id="addLesson<?= $module->id ?>" data-bs-parent="#moduleAddPanels<?= $module->id ?>">
                                     <?= form_open_multipart('course/create_lesson/' . $module->id, ['class' => 'module-add-form']) ?>
@@ -874,6 +893,72 @@ if ($course_back_param === 'course/teacher_subjects') {
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
+
+                <?php if (!empty($shared_modules)): ?>
+                    <div class="cc-shared-library">
+                        <div class="cc-shared-library-header">
+                            <div>
+                                <h5 class="cc-shared-library-title">Shared Grade Level Lessons</h5>
+                                <p class="cc-shared-library-subtitle">Published lessons from other schools in this grade level are available here as view-only shared content.</p>
+                            </div>
+                        </div>
+
+                        <div class="cc-shared-library-grid">
+                            <?php foreach ($shared_modules as $shared_module): ?>
+                                <div class="cc-shared-card">
+                                    <div class="cc-shared-card-header">
+                                        <div>
+                                            <h6 class="cc-shared-card-title"><?= htmlspecialchars($shared_module->title ?? '', ENT_QUOTES, 'UTF-8') ?></h6>
+                                            <div class="cc-shared-card-meta">
+                                                <?php if (!empty($shared_module->source_subject_code)): ?>
+                                                    <span><?= htmlspecialchars($shared_module->source_subject_code, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($shared_module->source_school_name)): ?>
+                                                    <span><?= htmlspecialchars($shared_module->source_school_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($shared_module->owner_name)): ?>
+                                                    <span>By <?= htmlspecialchars($shared_module->owner_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <span class="cc-shared-badge">View Only</span>
+                                    </div>
+
+                                    <?php if (!empty($shared_module->description)): ?>
+                                        <p class="cc-shared-card-description"><?= htmlspecialchars($shared_module->description, ENT_QUOTES, 'UTF-8') ?></p>
+                                    <?php endif; ?>
+
+                                    <div class="list-group list-group-flush">
+                                        <?php foreach ($shared_module->lessons as $shared_lesson): ?>
+                                            <?php
+                                            $shared_lesson_type = !empty($shared_lesson->content_type) ? $shared_lesson->content_type : 'text';
+                                            $shared_lesson_icons = array(
+                                                'text'  => array('icon' => 'bi-file-text', 'color' => '#dbeafe', 'icon_color' => '#1e40af', 'label' => 'Lesson'),
+                                                'page'  => array('icon' => 'bi-file-earmark-text', 'color' => '#f3f4f6', 'icon_color' => '#374151', 'label' => 'Page'),
+                                                'video' => array('icon' => 'bi-play-btn', 'color' => '#fee2e2', 'icon_color' => '#b91c1c', 'label' => 'Video Lesson'),
+                                                'file'  => array('icon' => 'bi-file-earmark-pdf', 'color' => '#eff6ff', 'icon_color' => '#1d4ed8', 'label' => 'File Lesson'),
+                                                'link'  => array('icon' => 'bi-link-45deg', 'color' => '#f0fdf4', 'icon_color' => '#15803d', 'label' => 'Link Lesson'),
+                                            );
+                                            $shared_lesson_icon = $shared_lesson_icons[$shared_lesson_type] ?? $shared_lesson_icons['text'];
+                                            $shared_lesson_url = site_url('course/lesson/' . $shared_lesson->id . '?back=' . urlencode($course_return_path));
+                                            ?>
+                                            <a href="<?= $shared_lesson_url ?>" class="list-group-item cc-shared-lesson-link">
+                                                <span class="cc-shared-lesson-icon" style="background:<?= $shared_lesson_icon['color'] ?>;color:<?= $shared_lesson_icon['icon_color'] ?>;">
+                                                    <i class="bi <?= $shared_lesson_icon['icon'] ?>"></i>
+                                                </span>
+                                                <span class="cc-shared-lesson-body">
+                                                    <strong><?= htmlspecialchars($shared_lesson->title ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
+                                                    <small><?= htmlspecialchars($shared_lesson_icon['label'], ENT_QUOTES, 'UTF-8') ?></small>
+                                                </span>
+                                                <i class="bi bi-arrow-right-short cc-shared-lesson-arrow"></i>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 
@@ -918,8 +1003,16 @@ if ($course_back_param === 'course/teacher_subjects') {
                     </div>
                     <div class="cc-section-list">
                         <?php foreach ($subject_sections as $section): ?>
-                            <a href="<?= site_url('academic/section_students/' . $section->id . '?subject_id=' . $subject->id) ?>" class="cc-nav-item">
-                                <span class="cc-nav-text"><?= htmlspecialchars($section->name ?? '', ENT_QUOTES, 'UTF-8') ?></span>
+                            <?php
+                            $section_target_id = !empty($section->section_id) ? (int) $section->section_id : (int) $section->id;
+                            $section_target_name = !empty($section->section_name) ? $section->section_name : ($section->name ?? '');
+                            $section_url = 'academic/section_students/' . $section_target_id . '?subject_id=' . (int) $subject->id;
+                            if ($course_back_param !== '') {
+                                $section_url .= '&back=' . urlencode($course_back_param);
+                            }
+                            ?>
+                            <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
+                                <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
                                 <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
                             </a>
                         <?php endforeach; ?>
@@ -1628,6 +1721,145 @@ if ($course_back_param === 'course/teacher_subjects') {
     .cc-section-name {
         font-size: 0.8125rem;
         color: #1e293b;
+    }
+
+    .cc-shared-library {
+        margin-top: 1.5rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+
+    .cc-shared-library-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .cc-shared-library-title {
+        margin: 0 0 0.25rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .cc-shared-library-subtitle {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .cc-shared-library-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .cc-shared-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+
+    .cc-shared-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1rem 0.75rem;
+    }
+
+    .cc-shared-card-title {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .cc-shared-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        margin-top: 0.35rem;
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    .cc-shared-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    .cc-shared-card-description {
+        margin: 0;
+        padding: 0 1rem 0.9rem;
+        font-size: 0.82rem;
+        color: #475569;
+    }
+
+    .cc-shared-lesson-link {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        border: 0;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .cc-shared-lesson-link:hover {
+        background: #f8fafc;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .cc-shared-lesson-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .cc-shared-lesson-body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .cc-shared-lesson-body strong {
+        font-size: 0.9rem;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cc-shared-lesson-body small {
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    .cc-shared-lesson-arrow {
+        font-size: 1.2rem;
+        color: #94a3b8;
     }
 
     .cc-section-badge {

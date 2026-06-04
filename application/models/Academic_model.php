@@ -4,22 +4,295 @@ defined('BASEPATH') or exit('No direct script access allowed');
 #[\AllowDynamicProperties]
 class Academic_model extends CI_Model
 {
+    private function get_all_school_ids()
+    {
+        $rows = $this->db->select('id')
+            ->order_by('id', 'ASC')
+            ->get('schools')
+            ->result();
+
+        return array_map(function ($row) {
+            return (int) $row->id;
+        }, $rows);
+    }
+
+    private function school_year_exists_for_school($school_id, $year_start, $year_end)
+    {
+        return $this->db->where('school_id', (int) $school_id)
+            ->where('year_start', $year_start)
+            ->where('year_end', $year_end)
+            ->count_all_results('school_years') > 0;
+    }
+
+    public function sync_school_years_to_school($school_id)
+    {
+        $school_id = (int) $school_id;
+        if ($school_id < 1) {
+            return;
+        }
+
+        $templates = $this->db->distinct()
+            ->select('year_start, year_end')
+            ->order_by('year_start', 'DESC')
+            ->order_by('year_end', 'DESC')
+            ->get('school_years')
+            ->result();
+
+        foreach ($templates as $template) {
+            if (!$this->school_year_exists_for_school($school_id, $template->year_start, $template->year_end)) {
+                $this->db->insert('school_years', array(
+                    'school_id'  => $school_id,
+                    'year_start' => $template->year_start,
+                    'year_end'   => $template->year_end,
+                    'is_active'  => 0,
+                ));
+            }
+        }
+
+        $active_template = $this->db->select('year_start, year_end')
+            ->where('is_active', 1)
+            ->order_by('year_start', 'DESC')
+            ->order_by('id', 'DESC')
+            ->get('school_years')
+            ->row();
+
+        if ($active_template) {
+            $this->db->where('school_id', $school_id)
+                ->update('school_years', array('is_active' => 0));
+
+            $this->db->where('school_id', $school_id)
+                ->where('year_start', $active_template->year_start)
+                ->where('year_end', $active_template->year_end)
+                ->update('school_years', array('is_active' => 1));
+        }
+    }
+
+    public function create_school_year_for_all_schools($data)
+    {
+        $school_ids = $this->get_all_school_ids();
+        if (empty($school_ids)) {
+            return 0;
+        }
+
+        $inserted_id = 0;
+        foreach ($school_ids as $school_id) {
+            if ($this->school_year_exists_for_school($school_id, $data['year_start'], $data['year_end'])) {
+                continue;
+            }
+
+            $row = $data;
+            $row['school_id'] = $school_id;
+            $row['is_active'] = 0;
+            $this->db->insert('school_years', $row);
+
+            if (!$inserted_id) {
+                $inserted_id = (int) $this->db->insert_id();
+            }
+        }
+
+        if (!$inserted_id) {
+            $existing = $this->db->where('year_start', $data['year_start'])
+                ->where('year_end', $data['year_end'])
+                ->order_by('id', 'ASC')
+                ->get('school_years')
+                ->row();
+            $inserted_id = $existing ? (int) $existing->id : 0;
+        }
+
+        if (!empty($data['is_active'])) {
+            $this->activate_school_year_globally($inserted_id);
+        }
+
+        return $inserted_id;
+    }
+
+    public function activate_school_year_globally($id)
+    {
+        $school_year = $this->get_school_year($id);
+        if (!$school_year) {
+            return false;
+        }
+
+        $this->db->update('school_years', array('is_active' => 0));
+
+        $this->db->where('year_start', $school_year->year_start)
+            ->where('year_end', $school_year->year_end)
+            ->update('school_years', array('is_active' => 1));
+
+        return true;
+    }
+
+    private function get_legacy_program_templates()
+    {
+        $year_levels = $this->db->distinct()
+            ->select('year_level')
+            ->from('programs')
+            ->where('year_level IS NOT NULL', null, false)
+            ->where('year_level !=', '')
+            ->order_by('year_level + 0', 'ASC', false)
+            ->get()
+            ->result();
+
+        $templates = array();
+        foreach ($year_levels as $row) {
+            $template = $this->db->from('programs')
+                ->where('year_level', $row->year_level)
+                ->order_by('description != ""', 'DESC', false)
+                ->order_by('id', 'ASC')
+                ->get()
+                ->row();
+
+            if ($template) {
+                $templates[] = $template;
+            }
+        }
+
+        return $templates;
+    }
+
+    public function sync_programs_to_school($school_id)
+    {
+        $school_id = (int) $school_id;
+        if ($school_id < 1) {
+            return;
+        }
+
+        $templates = $this->get_legacy_program_templates();
+        foreach ($templates as $template) {
+            $exists = $this->db->where('school_id', $school_id)
+                ->where('year_level', $template->year_level)
+                ->count_all_results('programs');
+
+            if ($exists) {
+                continue;
+            }
+
+            $this->db->insert('programs', array(
+                'school_id'   => $school_id,
+                'year_level'  => $template->year_level,
+                'description' => $template->description,
+            ));
+        }
+    }
+
+    public function create_legacy_program_for_all_schools($data)
+    {
+        $school_ids = $this->get_all_school_ids();
+        $inserted_id = 0;
+
+        foreach ($school_ids as $school_id) {
+            $exists = $this->db->where('school_id', $school_id)
+                ->where('year_level', $data['year_level'])
+                ->count_all_results('programs');
+
+            if ($exists) {
+                continue;
+            }
+
+            $row = array(
+                'school_id'   => $school_id,
+                'year_level'  => $data['year_level'],
+                'description' => isset($data['description']) ? $data['description'] : null,
+            );
+
+            $this->db->insert('programs', $row);
+            if (!$inserted_id) {
+                $inserted_id = (int) $this->db->insert_id();
+            }
+        }
+
+        return $inserted_id;
+    }
+
+    public function update_legacy_program_for_all_schools($program_id, $data)
+    {
+        $program = $this->db->where('id', $program_id)->get('programs')->row();
+        if (!$program) {
+            return false;
+        }
+
+        $old_year_level = (string) $program->year_level;
+        $new_year_level = isset($data['year_level']) ? (string) $data['year_level'] : $old_year_level;
+
+        if ($new_year_level !== $old_year_level) {
+            $duplicate = $this->db->where('year_level', $new_year_level)
+                ->where('id !=', $program_id)
+                ->count_all_results('programs');
+
+            if ($duplicate > 0) {
+                return false;
+            }
+        }
+
+        return $this->db->where('year_level', $old_year_level)
+            ->update('programs', array(
+                'year_level'  => $new_year_level,
+                'description' => isset($data['description']) ? $data['description'] : $program->description,
+            ));
+    }
+
+    public function delete_legacy_program_for_all_schools($program_id)
+    {
+        $program = $this->db->where('id', $program_id)->get('programs')->row();
+        if (!$program) {
+            return false;
+        }
+
+        $program_rows = $this->db->select('id')
+            ->where('year_level', $program->year_level)
+            ->get('programs')
+            ->result();
+
+        $program_ids = array_map(function ($row) {
+            return (int) $row->id;
+        }, $program_rows);
+
+        if (empty($program_ids)) {
+            return false;
+        }
+
+        $subject_refs = $this->db->where_in('program_id', $program_ids)->count_all_results('subjects');
+        $section_refs = $this->db->where_in('program_id', $program_ids)->count_all_results('sections');
+
+        if ($subject_refs > 0 || $section_refs > 0) {
+            return false;
+        }
+
+        return $this->db->where_in('id', $program_ids)->delete('programs');
+    }
 
     // ---- School Years ----
     public function get_school_years($school_id = null)
     {
         if ($school_id) {
+            $this->sync_school_years_to_school($school_id);
             $this->db->where('school_id', $school_id);
         }
         return $this->db->order_by('year_start', 'DESC')->get('school_years')->result();
     }
 
+    public function get_global_school_years()
+    {
+        return $this->db->select('MIN(id) AS id, year_start, year_end, MAX(is_active) AS is_active', false)
+            ->from('school_years')
+            ->group_by(array('year_start', 'year_end'))
+            ->order_by('year_start', 'DESC')
+            ->order_by('year_end', 'DESC')
+            ->get()
+            ->result();
+    }
+
     public function get_active_school_year($school_id = null)
     {
         if ($school_id) {
+            $this->sync_school_years_to_school($school_id);
             $this->db->where('school_id', $school_id);
         }
-        return $this->db->where('is_active', 1)->get('school_years')->row();
+        return $this->db->where('is_active', 1)
+            ->order_by('year_start', 'DESC')
+            ->order_by('id', 'DESC')
+            ->get('school_years')
+            ->row();
     }
 
     public function get_school_year($id)
@@ -40,8 +313,17 @@ class Academic_model extends CI_Model
 
     public function set_active_school_year($id)
     {
-        $this->db->update('school_years', array('is_active' => 0));
-        return $this->db->where('id', $id)->update('school_years', array('is_active' => 1));
+        $school_year = $this->get_school_year($id);
+        if (!$school_year) {
+            return false;
+        }
+
+        $this->db->where('school_id', $school_year->school_id)
+            ->update('school_years', array('is_active' => 0));
+
+        return $this->db->where('id', $id)
+            ->where('school_id', $school_year->school_id)
+            ->update('school_years', array('is_active' => 1));
     }
 
     // ---- Semesters / Quarters ----
@@ -62,6 +344,10 @@ class Academic_model extends CI_Model
     // ---- Grade Levels (DepEd) ----
     public function get_grade_levels($category = null, $school_id = null)
     {
+        if ($school_id) {
+            $this->sync_programs_to_school($school_id);
+        }
+
         // Get distinct year_level values from programs table
         $this->db->distinct();
         $this->db->select('id, school_id, year_level');
@@ -71,6 +357,18 @@ class Academic_model extends CI_Model
         }
         $this->db->order_by('year_level', 'ASC');
         return $this->db->get('programs')->result();
+    }
+
+    public function get_section_grade_levels()
+    {
+        return $this->db->select('MIN(id) as id, year_level', FALSE)
+            ->from('programs')
+            ->where('year_level IS NOT NULL', null, false)
+            ->where('year_level !=', '')
+            ->group_by('year_level')
+            ->order_by('year_level + 0', 'ASC', false)
+            ->get()
+            ->result();
     }
 
     public function get_grade_level($id)
@@ -107,17 +405,59 @@ class Academic_model extends CI_Model
     // ---- Programs (CHED) ----
     public function get_programs($school_id = null)
     {
-        if ($school_id) {
-            $this->db->where('school_id', $school_id);
-        }
         // Use academic_programs table if it exists, otherwise fall back to programs
         $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
         if ($checkTable > 0) {
+            $global_rows = $this->db->where('status', 1)
+                ->where('school_id', 0)
+                ->order_by('type, level_order, name')
+                ->get('academic_programs')
+                ->result();
+
+            if (!empty($global_rows)) {
+                return $global_rows;
+            }
+
             $this->db->where('status', 1);
             return $this->db->order_by('type, level_order, name')->get('academic_programs')->result();
         }
+
+        if ($school_id) {
+            $this->sync_programs_to_school($school_id);
+            $this->db->where('school_id', $school_id);
+        }
         // Order by year_level ascending for programs table
         return $this->db->order_by('year_level ASC, id ASC')->get('programs')->result();
+    }
+
+    public function get_global_programs()
+    {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+        if ($checkTable > 0) {
+            $global_rows = $this->db->where('status', 1)
+                ->where('school_id', 0)
+                ->order_by('type, level_order, name')
+                ->get('academic_programs')
+                ->result();
+
+            if (!empty($global_rows)) {
+                return $global_rows;
+            }
+
+            return $this->db->where('status', 1)
+                ->order_by('type, level_order, name')
+                ->get('academic_programs')
+                ->result();
+        }
+
+        return $this->db->select('MIN(id) AS id, 0 AS school_id, year_level, MAX(description) AS description', false)
+            ->from('programs')
+            ->where('year_level IS NOT NULL', null, false)
+            ->where('year_level !=', '')
+            ->group_by('year_level')
+            ->order_by('year_level + 0', 'ASC', false)
+            ->get()
+            ->result();
     }
 
     public function get_program($id)
@@ -223,6 +563,7 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
+        $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
 
         $select_fields = 'subjects.*';
         if ($checkCode > 0) {
@@ -230,6 +571,9 @@ class Academic_model extends CI_Model
         }
         if ($checkName > 0) {
             $select_fields .= ', programs.name as program_name';
+        }
+        if ($checkYearLevel > 0) {
+            $select_fields .= ', programs.year_level as program_year_level';
         }
 
         $this->db->select($select_fields);
@@ -1203,6 +1547,25 @@ class Academic_model extends CI_Model
             ->where('subjects.status', 1)
             ->order_by('subjects.code')
             ->get('subjects')
+            ->result();
+    }
+
+    public function get_teacher_assignment_report_rows()
+    {
+        $this->ensure_subject_teachers_table();
+
+        return $this->db->select('subjects.id as subject_id, subjects.code, subjects.description, subjects.year_level, users.id as teacher_id, users.first_name as teacher_first_name, users.last_name as teacher_last_name, schools.name as teacher_school_name')
+            ->from('subjects')
+            ->join('subject_teachers', 'subject_teachers.subject_id = subjects.id', 'left')
+            ->join('users', 'users.id = subject_teachers.user_id', 'left')
+            ->join('schools', 'schools.id = users.school_id', 'left')
+            ->where('subjects.status', 1)
+            ->order_by('CASE WHEN subjects.year_level IS NULL OR subjects.year_level = "" THEN 999 ELSE CAST(subjects.year_level AS UNSIGNED) END', 'ASC', false)
+            ->order_by('subjects.code', 'ASC')
+            ->order_by('subjects.description', 'ASC')
+            ->order_by('users.last_name', 'ASC')
+            ->order_by('users.first_name', 'ASC')
+            ->get()
             ->result();
     }
 }

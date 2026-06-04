@@ -10,6 +10,8 @@ $nav_role = ($rs === 'super_admin' && $selected_school_id) ? 'school_admin' : $r
 $is_school_select_page = ($this->uri->segment(1) == 'schools' && $this->uri->segment(2) == 'select');
 $school_name = $selected_school_id ? $this->session->userdata('school_name') : '';
 $brand_text = $school_name ?: 'LMS Platform';
+$super_admin_programs_url = site_url('academic/programs');
+$super_admin_school_years_url = site_url('academic/school_years');
 
 // Get school logo if available
 $school_logo = null;
@@ -76,7 +78,15 @@ if ($rs === 'student') {
                 <span class="material-symbols-outlined">domain</span>
                 <span>Schools</span>
             </a>
-            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic') ? 'active' : '' ?>">
+        <?php endif; ?>
+
+        <?php if ($session_role_slug === 'super_admin'): ?>
+            <div class="nav-section-title">Academic Setup</div>
+            <a href="<?= $super_admin_school_years_url ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('school_years', 'create_school_year', 'activate_school_year'))) ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span>School Years</span>
+            </a>
+            <a href="<?= $super_admin_programs_url ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('programs', 'program_subjects', 'create_program', 'edit_program', 'create_program_subject', 'edit_program_subject'))) ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">school</span>
                 <span>Programs</span>
             </a>
@@ -132,22 +142,10 @@ if ($rs === 'student') {
                 <span class="material-symbols-outlined">speed</span>
                 <span>Dashboard</span>
             </a>
-            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('programs', 'program_subjects'))) ? 'active' : '' ?>">
-                <span class="material-symbols-outlined">school</span>
-                <span>Programs</span>
-            </a>
         <?php endif; ?>
 
         <?php if ($nav_role === 'school_admin'): ?>
             <div class="nav-section-title">Academic Setup</div>
-            <a href="<?= site_url('academic/school_years') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && in_array($this->uri->segment(2), array('school_years', 'create_school_year', 'activate_school_year'))) ? 'active' : '' ?>">
-                <span class="material-symbols-outlined">calendar_month</span>
-                <span>School Years</span>
-            </a>
-            <a href="<?= site_url('academic/programs') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'programs') ? 'active' : '' ?>">
-                <span class="material-symbols-outlined">school</span>
-                <span>Programs</span>
-            </a>
             <a href="<?= site_url('academic/sections') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'sections') ? 'active' : '' ?>">
                 <span class="material-symbols-outlined">groups</span>
                 <span>Sections</span>

@@ -2,10 +2,14 @@
 
 <div class="ps-page">
 
-    <!-- Back -->
-    <a href="<?= site_url('academic/programs') ?>" class="ps-back">
-        <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> Back to Programs
-    </a>
+    <div class="ps-top-actions">
+        <a href="<?= site_url('academic/programs') ?>" class="ps-back">
+            <i class="bi bi-arrow-left-short" style="font-size:1.1rem;"></i> Back to Programs
+        </a>
+        <a href="<?= site_url('academic/teacher_assignment_report') ?>" class="ps-report-link">
+            <i class="bi bi-file-earmark-text"></i> Teacher Assignment Report
+        </a>
+    </div>
 
     <!-- Hero header -->
     <div class="ps-hero">
@@ -86,10 +90,23 @@
                                     <div class="ps-teacher-badges">
                                         <?php foreach ($teachers as $t): ?>
                                             <?php if (in_array((int)$t->id, $assigned_ids)): ?>
-                                                <span class="ps-teacher-badge">
-                                                    <span class="ps-teacher-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
-                                                    <?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?>
-                                                </span>
+                                                <?php if ($can_manage_teachers): ?>
+                                                    <?= form_open('academic/assign_subject_teacher/' . $program->id . '/' . $s->id, array('class' => 'ps-teacher-badge-form')) ?>
+                                                        <input type="hidden" name="user_id" value="<?= $t->id ?>">
+                                                        <span class="ps-teacher-badge">
+                                                            <span class="ps-teacher-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
+                                                            <span class="ps-teacher-name"><?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?></span>
+                                                            <button type="submit" class="ps-teacher-remove" title="Remove assigned teacher" aria-label="Remove assigned teacher" onclick="return confirm('Remove this assigned teacher?');">
+                                                                <i class="bi bi-x-lg"></i>
+                                                            </button>
+                                                        </span>
+                                                    <?= form_close() ?>
+                                                <?php else: ?>
+                                                    <span class="ps-teacher-badge">
+                                                        <span class="ps-teacher-avatar"><?= strtoupper(substr($t->last_name, 0, 1)) ?></span>
+                                                        <span class="ps-teacher-name"><?= htmlspecialchars(trim($t->last_name . ', ' . $t->first_name)) ?></span>
+                                                    </span>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
                                     </div>
@@ -282,6 +299,16 @@ $(document).ready(function() {
     max-width: 100%;
 }
 
+.ps-top-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.ps-top-actions .ps-back { margin-bottom: 0; }
+
 /* Back */
 .ps-back {
     display: inline-flex;
@@ -297,6 +324,25 @@ $(document).ready(function() {
     transition: background 0.15s, color 0.15s;
 }
 .ps-back:hover { background: #dbeafe; color: #1d4ed8; text-decoration: none; }
+.ps-report-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.ps-report-link:hover {
+    background: #dbeafe;
+    color: #1e40af;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
 
 /* Hero */
 .ps-hero {
@@ -602,6 +648,7 @@ $(document).ready(function() {
 .ps-action-teacher { background: #dbeafe; color: #2563eb; border: none; }
 .ps-action-teacher:hover { background: #bfdbfe; color: #1d4ed8; transform: translateY(-1px); }
 .ps-teacher-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.ps-teacher-badge-form { margin: 0; }
 .ps-teacher-badge {
     display: inline-flex;
     align-items: center;
@@ -614,6 +661,7 @@ $(document).ready(function() {
     border-radius: 20px;
     padding: 3px 10px 3px 4px;
 }
+.ps-teacher-name { line-height: 1.1; }
 .ps-teacher-avatar {
     width: 20px;
     height: 20px;
@@ -626,6 +674,28 @@ $(document).ready(function() {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+.ps-teacher-remove {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #1d4ed8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.ps-teacher-remove:hover {
+    background: #bfdbfe;
+    color: #1e3a8a;
+}
+.ps-teacher-remove i {
+    font-size: 0.6rem;
+    line-height: 1;
 }
 .ps-teacher-empty {
     font-size: 0.8rem;

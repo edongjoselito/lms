@@ -35,6 +35,193 @@ class Student extends MY_Controller
         return $student;
     }
 
+    private function get_student_current_level($student)
+    {
+        $level = array(
+            'grade_level_id' => null,
+            'year_level' => null,
+        );
+
+        if (!$student) {
+            return $level;
+        }
+
+        $enrollment_student_ids = array();
+        if (!empty($student->id)) {
+            $enrollment_student_ids[] = (int) $student->id;
+        }
+        if (!empty($student->user_id)) {
+            $enrollment_student_ids[] = (int) $student->user_id;
+        }
+        $enrollment_student_ids = array_values(array_unique($enrollment_student_ids));
+
+        $enrollment = null;
+        if (!empty($enrollment_student_ids)) {
+            $enrollment = $this->db->select('e.grade_level_id, e.year_level, sections.year_level as section_year_level, programs.year_level as program_year_level')
+                ->from('enrollments e')
+                ->join('sections', 'sections.id = e.section_id', 'left')
+                ->join('programs', 'programs.id = e.program_id', 'left')
+                ->where_in('e.student_id', $enrollment_student_ids)
+                ->where('e.status', 'enrolled')
+                ->order_by('e.enrollment_date', 'DESC')
+                ->order_by('e.id', 'DESC')
+                ->limit(1);
+
+            if (!empty($student->school_id)) {
+                $this->db->where('e.school_id', (int) $student->school_id);
+            }
+
+            $enrollment = $this->db->get()->row();
+        }
+
+        if ($enrollment) {
+            if (!empty($enrollment->grade_level_id)) {
+                $level['grade_level_id'] = (int) $enrollment->grade_level_id;
+            }
+            if (isset($enrollment->year_level) && $enrollment->year_level !== null && $enrollment->year_level !== '') {
+                $level['year_level'] = (string) $enrollment->year_level;
+            } elseif (isset($enrollment->section_year_level) && $enrollment->section_year_level !== null && $enrollment->section_year_level !== '') {
+                $level['year_level'] = (string) $enrollment->section_year_level;
+            } elseif (isset($enrollment->program_year_level) && $enrollment->program_year_level !== null && $enrollment->program_year_level !== '') {
+                $level['year_level'] = (string) $enrollment->program_year_level;
+            }
+        }
+
+        if (empty($level['grade_level_id']) && !empty($student->grade_level_id)) {
+            $level['grade_level_id'] = (int) $student->grade_level_id;
+        }
+        if (($level['year_level'] === null || $level['year_level'] === '') && isset($student->year_level) && $student->year_level !== null && $student->year_level !== '') {
+            $level['year_level'] = (string) $student->year_level;
+        }
+
+        return $level;
+    }
+
+    private function get_subject_year_level($subject)
+    {
+        if (!$subject) {
+            return null;
+        }
+
+        if (isset($subject->year_level) && $subject->year_level !== null && $subject->year_level !== '') {
+            return (string) $subject->year_level;
+        }
+
+        if (empty($subject->program_id)) {
+            return null;
+        }
+
+        $check_year_level = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+        if ($check_year_level === 0) {
+            return null;
+        }
+
+        $program = $this->db->select('year_level')
+            ->where('id', (int) $subject->program_id)
+            ->get('programs')
+            ->row();
+
+        if ($program && isset($program->year_level) && $program->year_level !== null && $program->year_level !== '') {
+            return (string) $program->year_level;
+        }
+
+        return null;
+    }
+
+    private function can_auto_enroll_subject($student, $subject)
+    {
+        if (!$student || !$subject) {
+            return false;
+        }
+
+        if (!empty($subject->school_id) && !empty($student->school_id) && (int) $subject->school_id !== (int) $student->school_id) {
+            return false;
+        }
+
+        $student_level = $this->get_student_current_level($student);
+
+        if (!empty($subject->grade_level_id) && !empty($student_level['grade_level_id']) && (int) $subject->grade_level_id === (int) $student_level['grade_level_id']) {
+            return true;
+        }
+
+        $subject_year_level = $this->get_subject_year_level($subject);
+        if ($subject_year_level !== null && $subject_year_level !== '' && $student_level['year_level'] !== null && $student_level['year_level'] !== '') {
+            return (string) $subject_year_level === (string) $student_level['year_level'];
+        }
+
+        return false;
+    }
+
+    private function ensure_student_course_enrollment($student, $subject_id)
+    {
+        if (!$student || !$subject_id) {
+            return false;
+        }
+
+        $existing_enrollment = $this->db->where('user_id', $student->user_id)
+            ->where('course_id', $subject_id)
+            ->where('role', 'student')
+            ->get('course_enrollments')
+            ->row();
+
+        if (!$existing_enrollment) {
+            $this->db->insert('course_enrollments', array(
+                'user_id' => $student->user_id,
+                'course_id' => $subject_id,
+                'role' => 'student',
+                'status' => 'active',
+                'enrolled_at' => date('Y-m-d H:i:s')
+            ));
+            return true;
+        }
+
+        if ($existing_enrollment->status !== 'active') {
+            $this->db->where('id', $existing_enrollment->id)
+                ->update('course_enrollments', array(
+                    'status' => 'active',
+                    'enrolled_at' => date('Y-m-d H:i:s')
+                ));
+        }
+
+        return true;
+    }
+
+    private function auto_enroll_student_in_subject_if_eligible($student, $subject)
+    {
+        if (!$this->can_auto_enroll_subject($student, $subject)) {
+            return false;
+        }
+
+        return $this->ensure_student_course_enrollment($student, (int) $subject->id);
+    }
+
+    private function auto_enroll_student_subjects_for_current_level($student)
+    {
+        if (!$student) {
+            return;
+        }
+
+        $student_level = $this->get_student_current_level($student);
+        if (empty($student_level['grade_level_id']) && ($student_level['year_level'] === null || $student_level['year_level'] === '')) {
+            return;
+        }
+
+        $school_subjects = $this->db->where('school_id', $student->school_id)
+            ->where('status', 1)
+            ->get('subjects')
+            ->result();
+
+        foreach ($school_subjects as $subject) {
+            $this->auto_enroll_student_in_subject_if_eligible($student, $subject);
+        }
+    }
+
+    private function subject_requires_enrollment_key($subject_id)
+    {
+        $this->load->model('Academic_model');
+        return $this->Academic_model->subject_has_enrollment_keys((int) $subject_id);
+    }
+
     public function index()
     {
         $this->require_student();
@@ -46,6 +233,8 @@ class Student extends MY_Controller
             show_error('Failed to create student profile. Please contact administrator.', 500);
             return;
         }
+
+        $this->auto_enroll_student_subjects_for_current_level($student);
 
         $subjects = $this->Student_model->get_subjects($student->id);
         foreach ($subjects as &$subject) {
@@ -86,48 +275,11 @@ class Student extends MY_Controller
             return;
         }
 
-        // Get student's current grade level from enrollment
-        $enrollment = $this->db->where('student_id', $user_id)
-            ->order_by('enrollment_date', 'DESC')
-            ->limit(1)
-            ->get('enrollments')
-            ->row();
+        $student_level = $this->get_student_current_level($student);
+        $year_level = $student_level['year_level'];
 
-        $year_level = null;
-        if ($enrollment && isset($enrollment->year_level)) {
-            $year_level = $enrollment->year_level;
-        } elseif (isset($student->year_level)) {
-            $year_level = $student->year_level;
-        }
-
-        // Auto-enroll student in subjects matching their year_level
-        if ($year_level) {
-            $matching_subjects = $this->db->where('year_level', $year_level)
-                ->where('school_id', $student->school_id)
-                ->where('status', 1)
-                ->get('subjects')
-                ->result();
-
-            foreach ($matching_subjects as $subject) {
-                // Check if already enrolled using course_enrollments table
-                $existing = $this->db->where('user_id', $student->user_id)
-                    ->where('course_id', $subject->id)
-                    ->where('role', 'student')
-                    ->get('course_enrollments')
-                    ->row();
-
-                if (!$existing) {
-                    // Auto-enroll using course_enrollments table
-                    $this->db->insert('course_enrollments', array(
-                        'user_id' => $student->user_id,
-                        'course_id' => $subject->id,
-                        'role' => 'student',
-                        'status' => 'active',
-                        'enrolled_at' => date('Y-m-d H:i:s')
-                    ));
-                }
-            }
-        }
+        // Auto-enroll student in subjects that match their current grade level/year level.
+        $this->auto_enroll_student_subjects_for_current_level($student);
 
         $filters = array();
         if ($this->input->get('system_type')) {
@@ -177,7 +329,26 @@ class Student extends MY_Controller
             show_404();
         }
 
+        $subject_title = trim(
+            !empty($subject->description)
+                ? (string) $subject->description
+                : (!empty($subject->name) ? (string) $subject->name : (string) $subject->code)
+        );
+
         if ($this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
+            redirect('student/content/' . $subject_id);
+            return;
+        }
+
+        if ($this->auto_enroll_student_in_subject_if_eligible($student, $subject)) {
+            $this->session->set_flashdata('success', 'Automatically enrolled in ' . htmlspecialchars($subject_title) . ' based on your current grade level.');
+            redirect('student/content/' . $subject_id);
+            return;
+        }
+
+        if (!$this->subject_requires_enrollment_key($subject_id)) {
+            $this->ensure_student_course_enrollment($student, $subject_id);
+            $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject_title));
             redirect('student/content/' . $subject_id);
             return;
         }
@@ -210,25 +381,9 @@ class Student extends MY_Controller
             }
 
             // Create enrollment record
-            $existing_enrollment = $this->db->where('user_id', $user_id)
-                ->where('course_id', $subject_id)
-                ->where('role', 'student')
-                ->get('course_enrollments')
-                ->row();
+            $this->ensure_student_course_enrollment($student, $subject_id);
 
-            if (!$existing_enrollment) {
-                $this->db->insert('course_enrollments', array(
-                    'user_id' => $user_id,
-                    'course_id' => $subject_id,
-                    'role' => 'student',
-                    'status' => 'active'
-                ));
-            } elseif ($existing_enrollment->status !== 'active') {
-                $this->db->where('id', $existing_enrollment->id)
-                    ->update('course_enrollments', array('status' => 'active'));
-            }
-
-            $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject->name));
+            $this->session->set_flashdata('success', 'Successfully enrolled in ' . htmlspecialchars($subject_title));
             redirect('student/content/' . $subject_id);
         }
 
@@ -259,10 +414,17 @@ class Student extends MY_Controller
             show_404();
         }
 
-        if (!$this->Student_model->is_subject_enrolled($student->id, $subject_id)) {
-            $this->session->set_flashdata('error', 'You need to enroll in this course first.');
-            redirect('student/enroll/' . $subject_id);
-            return;
+        if (
+            !$this->Student_model->is_subject_enrolled($student->id, $subject_id)
+            && !$this->auto_enroll_student_in_subject_if_eligible($student, $subject)
+        ) {
+            if (!$this->subject_requires_enrollment_key($subject_id)) {
+                $this->ensure_student_course_enrollment($student, $subject_id);
+            } else {
+                $this->session->set_flashdata('error', 'You need to enroll in this course first.');
+                redirect('student/enroll/' . $subject_id);
+                return;
+            }
         }
 
         // Log course access
@@ -662,6 +824,12 @@ class Student extends MY_Controller
             show_404();
         }
 
+        $subject_title = trim(
+            !empty($subject->description)
+                ? (string) $subject->description
+                : (!empty($subject->name) ? (string) $subject->name : (string) $subject->code)
+        );
+
         if ($this->input->method() === 'post') {
             // Remove lesson completions for this subject
             $this->Student_model->remove_lesson_completions($student->id, $subject_id);
@@ -671,7 +839,7 @@ class Student extends MY_Controller
             $this->db->where('course_id', $subject_id);
             $this->db->delete('course_enrollments');
 
-            $this->session->set_flashdata('success', 'Successfully unenrolled from ' . htmlspecialchars($subject->name));
+            $this->session->set_flashdata('success', 'Successfully unenrolled from ' . htmlspecialchars($subject_title));
             redirect('student/subjects');
         }
 

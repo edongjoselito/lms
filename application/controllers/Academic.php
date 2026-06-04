@@ -6,13 +6,47 @@ class Academic extends MY_Controller {
     public function __construct()
     {
         parent::__construct();
-        if (in_array($this->router->fetch_method(), array('section_students', 'student_subject_records'))) {
+        $method = $this->router->fetch_method();
+
+        if (in_array($method, array('section_students', 'student_subject_records'))) {
             $this->require_login();
         } else {
             $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
         }
-        $this->require_school();
+
+        if (!$this->is_global_super_admin_academic_setup_method($method)) {
+            $this->require_school();
+        }
+
         $this->load->model(array('Academic_model', 'User_model'));
+    }
+
+    private function is_global_super_admin_academic_setup_method($method)
+    {
+        return $this->is_super_admin() && in_array($method, array(
+            'school_years',
+            'create_school_year',
+            'activate_school_year',
+            'programs',
+            'teacher_assignment_report',
+            'create_program',
+            'edit_program',
+            'delete_program',
+            'program_subjects',
+            'assign_subject_teacher',
+            'remove_subject_from_program',
+            'create_program_subject',
+            'edit_program_subject',
+        ));
+    }
+
+    private function require_super_admin_academic_setup()
+    {
+        if ($this->is_super_admin()) {
+            return;
+        }
+
+        show_error('Only Super Admin accounts can access this page.', 403);
     }
 
     private function is_teacher_assigned_to_subject($subject_id)
@@ -59,25 +93,23 @@ class Academic extends MY_Controller {
     // ---- School Years ----
     public function school_years()
     {
+        $this->require_super_admin_academic_setup();
         $data['title'] = 'School Years';
-        $data['school_years'] = $this->Academic_model->get_school_years($this->school_id);
+        $data['school_years'] = $this->Academic_model->get_global_school_years();
         $this->render('academic/school_years', $data);
     }
 
     public function create_school_year()
     {
+        $this->require_super_admin_academic_setup();
         if ($this->input->method() === 'post') {
             $d = array(
-                'school_id'  => $this->school_id,
                 'year_start' => $this->input->post('year_start'),
                 'year_end'   => $this->input->post('year_end'),
                 'is_active'  => $this->input->post('is_active') ? 1 : 0,
             );
-            $sy_id = $this->Academic_model->create_school_year($d);
-            if ($d['is_active']) {
-                $this->Academic_model->set_active_school_year($sy_id);
-            }
-            $this->session->set_flashdata('success', 'School year created.');
+            $sy_id = $this->Academic_model->create_school_year_for_all_schools($d);
+            $this->session->set_flashdata('success', 'School year created for all schools.');
             redirect('academic/school_years');
         }
         $data['title'] = 'Add School Year';
@@ -86,8 +118,25 @@ class Academic extends MY_Controller {
 
     public function activate_school_year($id)
     {
-        $this->Academic_model->set_active_school_year($id);
-        $this->session->set_flashdata('success', 'School year activated.');
+        $this->require_super_admin_academic_setup();
+        $school_year = $this->Academic_model->get_school_year($id);
+        if (!$school_year) {
+            show_404();
+        }
+
+        $this->Academic_model->activate_school_year_globally($id);
+
+        if ($this->school_id) {
+            $school_year = $this->Academic_model->get_active_school_year($this->school_id);
+            if ($school_year) {
+                $this->session->set_userdata(array(
+                    'school_year_id' => (int) $school_year->id,
+                    'school_year_name' => $school_year->year_start . '-' . $school_year->year_end,
+                ));
+            }
+        }
+
+        $this->session->set_flashdata('success', 'School year activated for all schools.');
         redirect('academic/school_years');
     }
 
@@ -240,13 +289,15 @@ class Academic extends MY_Controller {
     // ---- Programs (CHED) ----
     public function programs()
     {
+        $this->require_super_admin_academic_setup();
         $data['title'] = 'Programs';
-        $data['programs'] = $this->Academic_model->get_programs($this->school_id);
+        $data['programs'] = $this->Academic_model->get_global_programs();
         $this->render('academic/programs', $data);
     }
 
     public function create_program()
     {
+        $this->require_super_admin_academic_setup();
         // Get school type
         $school = $this->db->where('id', $this->school_id)->get('schools')->row();
         $school_type = $school ? $school->type : null;
@@ -272,12 +323,18 @@ class Academic extends MY_Controller {
                 'code'              => $code,
                 'description'       => $this->input->post('description', TRUE),
                 'type'              => $type,
-                'school_id'         => $this->school_id,
+                'school_id'         => 0,
                 'year_level'        => $year_level,
             );
 
-            $this->Academic_model->create_academic_program($d);
-            $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level created.' : 'Program created.');
+            $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+            if ($check_academic > 0) {
+                $this->Academic_model->create_academic_program($d);
+            } else {
+                $this->Academic_model->create_legacy_program_for_all_schools($d);
+            }
+
+            $this->session->set_flashdata('success', ($type === 'grade_level') ? 'Grade level created for all schools.' : 'Program created for all schools.');
             redirect('academic/programs');
         }
         $data['title'] = 'Add Program';
@@ -287,6 +344,7 @@ class Academic extends MY_Controller {
 
     public function edit_program($id)
     {
+        $this->require_super_admin_academic_setup();
         // Try to fetch from programs table first
         $data['program'] = $this->db->where('id', $id)->get('programs')->row();
 
@@ -331,40 +389,34 @@ class Academic extends MY_Controller {
                         'name' => $name,
                         'code' => $code,
                         'description' => $description,
+                        'school_id' => 0,
                     );
                     $this->db->where('id', $id)->update('academic_programs', $d);
                 } else {
                     // Update programs table - check which columns exist
-                    $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
-                    $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
-                    $checkDesc = $this->db->query("SHOW COLUMNS FROM programs LIKE 'description'")->num_rows();
-                    $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+                    $updated = $this->Academic_model->update_legacy_program_for_all_schools($id, array(
+                        'year_level' => $year_level,
+                        'description' => $description,
+                    ));
 
-                    $d = array();
-                    if ($checkName > 0) $d['name'] = $name;
-                    if ($checkCode > 0) $d['code'] = $code;
-                    if ($checkDesc > 0) $d['description'] = $description;
-                    if ($checkYearLevel > 0 && $year_level) $d['year_level'] = $year_level;
-
-                    $this->db->where('id', $id)->update('programs', $d);
+                    if (!$updated) {
+                        $this->session->set_flashdata('error', 'Unable to update grade level because the target year level already exists.');
+                        redirect('academic/edit_program/' . $id);
+                    }
                 }
             } else {
-                // Update programs table - check which columns exist
-                $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
-                $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
-                $checkDesc = $this->db->query("SHOW COLUMNS FROM programs LIKE 'description'")->num_rows();
-                $checkYearLevel = $this->db->query("SHOW COLUMNS FROM programs LIKE 'year_level'")->num_rows();
+                $updated = $this->Academic_model->update_legacy_program_for_all_schools($id, array(
+                    'year_level' => $year_level,
+                    'description' => $description,
+                ));
 
-                $d = array();
-                if ($checkName > 0) $d['name'] = $name;
-                if ($checkCode > 0) $d['code'] = $code;
-                if ($checkDesc > 0) $d['description'] = $description;
-                if ($checkYearLevel > 0 && $year_level) $d['year_level'] = $year_level;
-
-                $this->db->where('id', $id)->update('programs', $d);
+                if (!$updated) {
+                    $this->session->set_flashdata('error', 'Unable to update grade level because the target year level already exists.');
+                    redirect('academic/edit_program/' . $id);
+                }
             }
 
-            $this->session->set_flashdata('success', 'Program updated.');
+            $this->session->set_flashdata('success', 'Program updated for all schools.');
             redirect('academic/programs');
         }
 
@@ -374,15 +426,30 @@ class Academic extends MY_Controller {
 
     public function delete_program($id)
     {
-        $this->Academic_model->delete_program($id);
-        $this->session->set_flashdata('success', 'Program deleted.');
+        $this->require_super_admin_academic_setup();
+        $check_academic = $this->db->query("SHOW TABLES LIKE 'academic_programs'")->num_rows();
+
+        if ($check_academic > 0) {
+            $this->Academic_model->delete_program($id);
+            $this->session->set_flashdata('success', 'Program deleted.');
+            redirect('academic/programs');
+        }
+
+        if (!$this->Academic_model->delete_legacy_program_for_all_schools($id)) {
+            $this->session->set_flashdata('error', 'Cannot delete this grade level because it is still used by sections or subjects.');
+            redirect('academic/programs');
+        }
+
+        $this->session->set_flashdata('success', 'Program deleted for all schools.');
         redirect('academic/programs');
     }
 
     public function program_subjects($program_id)
     {
+        $this->require_super_admin_academic_setup();
         $program = $this->Academic_model->get_program($program_id);
         if (!$program) show_404();
+        $program_school_id = $this->school_id ? (int) $this->school_id : 0;
 
         if ($this->input->method() === 'post') {
             // Add subject to program
@@ -418,7 +485,7 @@ class Academic extends MY_Controller {
 
                 $d = array(
                     'program_id'      => $program_id,
-                    'school_id'       => $this->school_id,
+                    'school_id'       => $program_school_id,
                     'year_level'      => $year_level,
                     'units'           => $units,
                 );
@@ -463,6 +530,7 @@ class Academic extends MY_Controller {
 
     public function assign_subject_teacher($program_id, $subject_id)
     {
+        $this->require_super_admin_academic_setup();
         $program = $this->Academic_model->get_program($program_id);
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$program || !$subject || $subject->program_id != $program_id) show_404();
@@ -477,6 +545,7 @@ class Academic extends MY_Controller {
 
     public function remove_subject_from_program($program_id, $subject_id)
     {
+        $this->require_super_admin_academic_setup();
         $subject = $this->Academic_model->get_subject($subject_id);
         if ($subject) {
             $this->Academic_model->delete_subject($subject_id, $this->school_id, true);
@@ -487,10 +556,8 @@ class Academic extends MY_Controller {
 
     public function create_program_subject($program_id)
     {
-        if (!in_array($this->role_slug, array('super_admin', 'school_admin'))) {
-            $this->session->set_flashdata('error', 'Only school admins can add subjects.');
-            redirect('academic/program_subjects/' . $program_id);
-        }
+        $this->require_super_admin_academic_setup();
+        $program_school_id = $this->school_id ? (int) $this->school_id : 0;
 
         if ($this->input->method() === 'post') {
             $code = $this->input->post('code', TRUE);
@@ -526,7 +593,7 @@ class Academic extends MY_Controller {
                 'code'        => $code,
                 'description' => $this->input->post('description', TRUE),
                 'program_id'  => $program_id,
-                'school_id'   => $this->school_id,
+                'school_id'   => $program_school_id,
                 'year_level'  => $year_level,
                 'status'      => 1,
             );
@@ -548,6 +615,7 @@ class Academic extends MY_Controller {
 
     public function edit_program_subject($program_id, $subject_id)
     {
+        $this->require_super_admin_academic_setup();
         $subject = $this->Academic_model->get_subject($subject_id);
         if (!$subject || $subject->program_id != $program_id) show_404();
 
@@ -585,6 +653,97 @@ class Academic extends MY_Controller {
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
         $data['assigned_teachers'] = $this->Academic_model->get_subject_teachers($subject_id);
         $this->render('academic/edit_program_subject', $data);
+    }
+
+    public function teacher_assignment_report()
+    {
+        $this->require_super_admin_academic_setup();
+
+        $rows = $this->Academic_model->get_teacher_assignment_report_rows();
+        $report_groups = array();
+        $total_subjects = 0;
+        $total_assignments = 0;
+
+        foreach ($rows as $row) {
+            $year_level_value = trim((string) $row->year_level);
+            if ($year_level_value !== '' && is_numeric($year_level_value)) {
+                $group_key = (string) ((int) $year_level_value);
+                $group_label = 'Grade ' . str_pad((int) $year_level_value, 2, '0', STR_PAD_LEFT);
+            } else {
+                $group_key = 'unassigned';
+                $group_label = 'Unassigned Grade Level';
+            }
+
+            if (!isset($report_groups[$group_key])) {
+                $report_groups[$group_key] = array(
+                    'key' => $group_key,
+                    'label' => $group_label,
+                    'subjects' => array(),
+                );
+            }
+
+            $subject_id = (int) $row->subject_id;
+            if (!isset($report_groups[$group_key]['subjects'][$subject_id])) {
+                $report_groups[$group_key]['subjects'][$subject_id] = array(
+                    'id' => $subject_id,
+                    'code' => (string) $row->code,
+                    'description' => (string) $row->description,
+                    'teachers' => array(),
+                );
+                $total_subjects++;
+            }
+
+            if (!empty($row->teacher_id)) {
+                $teacher_name = trim((string) $row->teacher_last_name . ', ' . (string) $row->teacher_first_name, ', ');
+                if ($teacher_name === '') {
+                    $teacher_name = 'Teacher #' . (int) $row->teacher_id;
+                }
+
+                if (!empty($row->teacher_school_name)) {
+                    $teacher_name .= ' (' . $row->teacher_school_name . ')';
+                }
+
+                if (!in_array($teacher_name, $report_groups[$group_key]['subjects'][$subject_id]['teachers'], true)) {
+                    $report_groups[$group_key]['subjects'][$subject_id]['teachers'][] = $teacher_name;
+                    $total_assignments++;
+                }
+            }
+        }
+
+        $numeric_group_keys = array();
+        $special_group_keys = array();
+        foreach (array_keys($report_groups) as $group_key) {
+            if (ctype_digit((string) $group_key)) {
+                $numeric_group_keys[] = (int) $group_key;
+            } else {
+                $special_group_keys[] = $group_key;
+            }
+        }
+
+        sort($numeric_group_keys, SORT_NUMERIC);
+
+        $ordered_groups = array();
+        foreach ($numeric_group_keys as $numeric_group_key) {
+            $group = $report_groups[(string) $numeric_group_key];
+            $group['subjects'] = array_values($group['subjects']);
+            $group['subject_total'] = count($group['subjects']);
+            $ordered_groups[] = $group;
+        }
+
+        foreach ($special_group_keys as $special_group_key) {
+            $group = $report_groups[$special_group_key];
+            $group['subjects'] = array_values($group['subjects']);
+            $group['subject_total'] = count($group['subjects']);
+            $ordered_groups[] = $group;
+        }
+
+        $data['title'] = 'Teacher Assignment Report';
+        $data['report_groups'] = $ordered_groups;
+        $data['report_group_total'] = count($ordered_groups);
+        $data['report_subject_total'] = $total_subjects;
+        $data['report_assignment_total'] = $total_assignments;
+        $data['generated_at'] = date('F j, Y g:i A');
+        $this->render('academic/teacher_assignment_report', $data);
     }
 
     // ---- Subjects ----
@@ -676,17 +835,72 @@ class Academic extends MY_Controller {
         $filters = array();
         if ($sy) $filters['school_year_id'] = $sy->id;
         if ($this->school_id) $filters['school_id'] = $this->school_id;
+        $global_subject_rows = $this->Academic_model->get_subjects();
+        $subjects_by_year_level = array();
+
+        foreach ($global_subject_rows as $subject_row) {
+            $subject_year_level = '';
+
+            if (isset($subject_row->year_level) && trim((string) $subject_row->year_level) !== '') {
+                $subject_year_level = trim((string) $subject_row->year_level);
+            } elseif (isset($subject_row->program_year_level) && trim((string) $subject_row->program_year_level) !== '') {
+                $subject_year_level = trim((string) $subject_row->program_year_level);
+            }
+
+            if ($subject_year_level === '') {
+                continue;
+            }
+
+            if (!isset($subjects_by_year_level[$subject_year_level])) {
+                $subjects_by_year_level[$subject_year_level] = array();
+            }
+
+            $subject_code = isset($subject_row->code) ? trim((string) $subject_row->code) : '';
+            $subject_description = isset($subject_row->description) ? trim((string) $subject_row->description) : '';
+            $subject_key = strtolower($subject_code . '|' . $subject_description);
+
+            if (isset($subjects_by_year_level[$subject_year_level][$subject_key])) {
+                continue;
+            }
+
+            $subjects_by_year_level[$subject_year_level][$subject_key] = (object) array(
+                'code' => $subject_code,
+                'description' => $subject_description,
+            );
+        }
+
+        foreach ($subjects_by_year_level as $year_level => $subject_items) {
+            uasort($subject_items, function ($left, $right) {
+                $left_code = strtolower((string) $left->code);
+                $right_code = strtolower((string) $right->code);
+
+                if ($left_code === $right_code) {
+                    return strcmp(strtolower((string) $left->description), strtolower((string) $right->description));
+                }
+
+                return strcmp($left_code, $right_code);
+            });
+
+            $subjects_by_year_level[$year_level] = array_values($subject_items);
+        }
+
         $data['title'] = 'Sections';
         $data['school_year'] = $sy;
         $data['sections'] = $this->Academic_model->get_sections($filters);
-        $data['grade_levels'] = $this->Academic_model->get_grade_levels(null, $this->school_id);
+        $data['grade_levels'] = $this->Academic_model->get_section_grade_levels();
         $data['programs'] = $this->Academic_model->get_programs($this->school_id);
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
+        $data['subjects_by_year_level'] = $subjects_by_year_level;
         $this->render('academic/sections', $data);
     }
 
     public function create_section()
     {
+        if ($this->role_slug === 'school_admin') {
+            $this->session->set_flashdata('error', 'Please add sections from the grade level list.');
+            redirect('academic/sections');
+        }
+
         $sy = $this->Academic_model->get_active_school_year($this->school_id);
         if ($this->input->method() === 'post') {
             $d = array(
@@ -721,6 +935,25 @@ class Academic extends MY_Controller {
             show_404();
         }
 
+        $local_grade_level = $this->db->where('school_id', $this->school_id)
+            ->where('year_level', $grade_level->year_level)
+            ->order_by('id', 'ASC')
+            ->get('programs')
+            ->row();
+
+        if (!$local_grade_level) {
+            $this->Academic_model->sync_programs_to_school($this->school_id);
+            $local_grade_level = $this->db->where('school_id', $this->school_id)
+                ->where('year_level', $grade_level->year_level)
+                ->order_by('id', 'ASC')
+                ->get('programs')
+                ->row();
+        }
+
+        if (!$local_grade_level) {
+            show_404();
+        }
+
         if ($this->input->method() === 'post') {
             $adviser_id = $this->input->post('adviser_id') ?: NULL;
             
@@ -740,7 +973,7 @@ class Academic extends MY_Controller {
                 'school_year_id' => $sy->id,
                 'school_id'      => $this->school_id,
                 'name'           => $this->input->post('name', TRUE),
-                'program_id'     => $grade_level_id,
+                'program_id'     => $local_grade_level->id,
                 'year_level'     => isset($grade_level->year_level) ? $grade_level->year_level : NULL,
                 'adviser_id'     => $adviser_id,
             );
@@ -853,6 +1086,7 @@ class Academic extends MY_Controller {
         if (!$section) show_404();
 
         $subject_id = (int) $this->input->get('subject_id', TRUE);
+        $back = (string) $this->input->get('back', TRUE);
         if (!$this->can_access_section_students($section, $subject_id)) {
             show_error('You do not have permission to access this page.', 403);
         }
@@ -863,6 +1097,7 @@ class Academic extends MY_Controller {
         $data['section'] = $section;
         $data['students'] = $students;
         $data['subject_id'] = $subject_id;
+        $data['back'] = $back;
         $this->render('academic/section_students', $data);
     }
 
@@ -872,6 +1107,7 @@ class Academic extends MY_Controller {
         if (!$section) show_404();
 
         $subject_id = (int) $this->input->get('subject_id', TRUE);
+        $back = (string) $this->input->get('back', TRUE);
         if ($subject_id <= 0) show_404();
 
         if (!$this->can_access_section_students($section, $subject_id)) {
@@ -925,6 +1161,7 @@ class Academic extends MY_Controller {
         $data['completed_items'] = $completed_items;
         $data['total_items'] = $total_items;
         $data['progress_percent'] = $progress_percent;
+        $data['back'] = $back;
         $this->render('academic/student_subject_records', $data);
     }
 

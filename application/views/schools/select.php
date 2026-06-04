@@ -18,38 +18,55 @@
                 $type_labels = array('deped' => 'DepEd', 'basic' => 'DepEd', 'ched' => 'CHED', 'college' => 'CHED', 'tesda' => 'TESDA', 'tech_voc' => 'TESDA', 'both' => 'Both');
                 $type = isset($s->type) ? $s->type : 'deped';
                 $type_label = isset($type_labels[$type]) ? $type_labels[$type] : ucfirst($type);
+                $delete_message = 'Delete ' . $s->name . '? This action cannot be undone.';
                 ?>
                 <div class="col-md-6 col-lg-4">
-                    <a href="<?= site_url('schools/switch_school/' . $s->id) ?>" class="school-card">
-                        <div class="card-inner">
-                            <div class="card-header-row">
-                                <div class="icon-box">
-                                    <span class="material-symbols-outlined">apartment</span>
+                    <div class="school-card">
+                        <a href="<?= site_url('schools/switch_school/' . $s->id) ?>" class="school-card-main">
+                            <div class="card-inner">
+                                <div class="card-header-row">
+                                    <div class="icon-box">
+                                        <span class="material-symbols-outlined">apartment</span>
+                                    </div>
+                                    <span class="type-tag"><?= $type_label ?></span>
                                 </div>
-                                <span class="type-tag"><?= $type_label ?></span>
+                                <div class="card-body">
+                                    <h4 class="school-name"><?= htmlspecialchars($s->name) ?></h4>
+                                    <p class="school-id"><?= $s->school_id_number ?: 'No ID' ?></p>
+                                    <?php if ($s->division): ?>
+                                        <p class="school-location">
+                                            <span class="material-symbols-outlined">location_on</span>
+                                            <?= htmlspecialchars($s->division) ?><?= $s->region ? ', ' . htmlspecialchars($s->region) : '' ?>
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-footer-row">
+                                    <span class="status-pill <?= $s->status ? 'active' : 'inactive' ?>">
+                                        <span class="dot"></span>
+                                        <?= $s->status ? 'Active' : 'Inactive' ?>
+                                    </span>
+                                    <span class="action-link">
+                                        Enter
+                                        <span class="material-symbols-outlined">arrow_forward</span>
+                                    </span>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <h4 class="school-name"><?= htmlspecialchars($s->name) ?></h4>
-                                <p class="school-id"><?= $s->school_id_number ?: 'No ID' ?></p>
-                                <?php if ($s->division): ?>
-                                    <p class="school-location">
-                                        <span class="material-symbols-outlined">location_on</span>
-                                        <?= htmlspecialchars($s->division) ?><?= $s->region ? ', ' . htmlspecialchars($s->region) : '' ?>
-                                    </p>
-                                <?php endif; ?>
-                            </div>
-                            <div class="card-footer-row">
-                                <span class="status-pill <?= $s->status ? 'active' : 'inactive' ?>">
-                                    <span class="dot"></span>
-                                    <?= $s->status ? 'Active' : 'Inactive' ?>
-                                </span>
-                                <span class="action-link">
-                                    Enter
-                                    <span class="material-symbols-outlined">arrow_forward</span>
-                                </span>
-                            </div>
+                        </a>
+                        <div class="school-card-actions">
+                            <a href="<?= site_url('schools/edit/' . $s->id) ?>" class="school-action-btn edit-action">
+                                <span class="material-symbols-outlined">edit</span>
+                                Edit
+                            </a>
+                            <form method="post" action="<?= site_url('schools/delete/' . $s->id) ?>" class="school-delete-form" onsubmit="return confirm(<?= htmlspecialchars(json_encode($delete_message), ENT_QUOTES, 'UTF-8') ?>);">
+                                <input type="hidden" name="<?= $this->security->get_csrf_token_name(); ?>" value="<?= $this->security->get_csrf_hash(); ?>">
+                                <input type="hidden" name="redirect_to" value="schools/select">
+                                <button type="submit" class="school-action-btn delete-action">
+                                    <span class="material-symbols-outlined">delete</span>
+                                    Delete
+                                </button>
+                            </form>
                         </div>
-                    </a>
+                    </div>
                 </div>
             <?php endforeach; ?>
 
@@ -136,8 +153,8 @@
         overflow: hidden;
         transition: all 0.2s ease;
         height: 100%;
-        display: block;
-        text-decoration: none;
+        display: flex;
+        flex-direction: column;
         box-shadow: 0 2px 6px 0 rgba(67, 89, 113, 0.08);
     }
 
@@ -145,6 +162,13 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px 0 rgba(67, 89, 113, 0.15);
         border-color: #3b82f6;
+    }
+
+    .school-card-main {
+        display: block;
+        flex: 1;
+        text-decoration: none;
+        color: inherit;
     }
 
     .card-inner {
@@ -274,6 +298,60 @@
 
     .school-card:hover .action-link {
         gap: 0.375rem;
+    }
+
+    .school-card-actions {
+        display: flex;
+        gap: 0.625rem;
+        padding: 0 1.25rem 1.25rem;
+    }
+
+    .school-delete-form {
+        flex: 1;
+        margin: 0;
+    }
+
+    .school-action-btn {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        padding: 0.625rem 0.875rem;
+        border-radius: 8px;
+        border: 1px solid #d9dee3;
+        background: #ffffff;
+        color: #566a7f;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .school-action-btn .material-symbols-outlined {
+        font-size: 1rem;
+    }
+
+    .school-action-btn:hover {
+        color: #2563eb;
+        border-color: #3b82f6;
+        background: #f8fbff;
+    }
+
+    .edit-action {
+        flex: 1;
+    }
+
+    .delete-action {
+        color: #dc2626;
+        border-color: #fecaca;
+        background: #fff5f5;
+    }
+
+    .delete-action:hover {
+        color: #b91c1c;
+        border-color: #f87171;
+        background: #fee2e2;
     }
 
     /* Add Card */

@@ -204,41 +204,46 @@
 
 <?php if (isset($remaining_seconds) && $remaining_seconds !== null): ?>
 <script>
-const remainingSeconds = <?= $remaining_seconds ?>;
-const endTime = <?= $end_time ?>;
+let remainingSeconds = <?= (int) $remaining_seconds ?>;
 const timerDisplay = document.getElementById('timerDisplay');
 const timerDisplayCompact = document.getElementById('timerDisplayCompact');
 const timerBar = document.getElementById('timerBar');
 const timerBarCompact = document.getElementById('timerBarCompact');
 const assessmentForm = document.getElementById('assessmentForm');
+let autoSubmitted = false;
 
 function updateTimer() {
-    const now = Math.floor(Date.now() / 1000);
-    const remaining = Math.max(0, endTime - now);
-    
-    if (remaining <= 0) {
+    if (remainingSeconds <= 0) {
         timerDisplay.textContent = '00:00';
         timerDisplayCompact.textContent = '00:00';
         timerDisplay.classList.add('danger');
         timerDisplayCompact.classList.add('danger');
-        assessmentForm.submit();
+        if (!autoSubmitted) {
+            autoSubmitted = true;
+            assessmentForm.submit();
+        }
         return;
     }
     
-    const minutes = Math.floor(remaining / 60);
-    const seconds = remaining % 60;
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
     const display = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
     
     timerDisplay.textContent = display;
     timerDisplayCompact.textContent = display;
     
-    if (remaining <= 60) {
+    timerDisplay.classList.remove('warning', 'danger');
+    timerDisplayCompact.classList.remove('warning', 'danger');
+
+    if (remainingSeconds <= 60) {
         timerDisplay.classList.add('danger');
         timerDisplayCompact.classList.add('danger');
-    } else if (remaining <= 300) {
+    } else if (remainingSeconds <= 300) {
         timerDisplay.classList.add('warning');
         timerDisplayCompact.classList.add('warning');
     }
+
+    remainingSeconds--;
 }
 
 // Handle scroll to show/hide compact timer

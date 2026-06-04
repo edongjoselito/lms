@@ -6,6 +6,9 @@ class Course extends MY_Controller {
     private $activity_progress_table_exists = null;
     private $current_student_record_loaded = false;
     private $current_student_record = null;
+    private $teacher_year_levels = null;
+    private $school_year_levels = null;
+    private $module_owner_role_slugs = array();
 
     public function __construct()
     {
@@ -33,9 +36,6 @@ class Course extends MY_Controller {
         if (in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'))) {
             return true;
         }
-        if ($subject_id !== null && $this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id)) {
-            return true;
-        }
         return false;
     }
 
@@ -45,6 +45,243 @@ class Course extends MY_Controller {
             return;
         }
         show_error('You do not have permission to manage course content.', 403);
+    }
+
+    private function can_access_subject_content_page($subject)
+    {
+        if (!$subject) {
+            return false;
+        }
+
+        if ($this->is_student_content_view()) {
+            return true;
+        }
+
+        if (in_array($this->original_role_slug, array('super_admin', 'course_creator'))) {
+            return true;
+        }
+
+        if ($this->original_role_slug === 'school_admin') {
+            return (int) $subject->school_id === (int) $this->school_id;
+        }
+
+        if ($this->original_role_slug === 'teacher') {
+            if ((int) $subject->school_id !== (int) $this->school_id) {
+                return false;
+            }
+
+            if ($this->is_teacher_for_subject($subject->id)) {
+                return true;
+            }
+
+            $year_level = $this->get_subject_year_level($subject);
+            if ($year_level === '') {
+                return false;
+            }
+
+            $teacher_year_levels = $this->get_teacher_accessible_year_levels();
+            return isset($teacher_year_levels[$year_level]);
+        }
+
+        return false;
+    }
+
+    private function get_subject_year_level($subject)
+    {
+        if (!$subject) {
+            return '';
+        }
+
+        if (isset($subject->year_level) && $subject->year_level !== null && $subject->year_level !== '') {
+            return trim((string) $subject->year_level);
+        }
+
+        if (isset($subject->program_year_level) && $subject->program_year_level !== null && $subject->program_year_level !== '') {
+            return trim((string) $subject->program_year_level);
+        }
+
+        return '';
+    }
+
+    private function can_manage_module_content($module)
+    {
+        if (!$module) {
+            return false;
+        }
+
+        if (in_array($this->original_role_slug, array('super_admin', 'course_creator'))) {
+            return true;
+        }
+
+        if ($this->original_role_slug !== 'school_admin' || !$this->current_user) {
+            return false;
+        }
+
+        return (int) $module->created_by === (int) $this->current_user->id;
+    }
+
+    private function require_module_owner($module, $message = 'You can only manage content that you created.')
+    {
+        if ($this->can_manage_module_content($module)) {
+            return;
+        }
+
+        show_error($message, 403);
+    }
+
+    private function get_teacher_accessible_year_levels()
+    {
+        if ($this->teacher_year_levels !== null) {
+            return $this->teacher_year_levels;
+        }
+
+        $this->teacher_year_levels = array();
+        if ($this->original_role_slug !== 'teacher' || !$this->current_user) {
+            return $this->teacher_year_levels;
+        }
+
+        $subjects = $this->Academic_model->get_subjects_by_teacher_user($this->current_user->id);
+        foreach ($subjects as $subject) {
+            $year_level = $this->get_subject_year_level($subject);
+
+            if ($year_level !== '') {
+                $this->teacher_year_levels[$year_level] = $year_level;
+            }
+        }
+
+        return $this->teacher_year_levels;
+    }
+
+    private function school_has_subject_year_level($year_level)
+    {
+        $year_level = (string) $year_level;
+        if ($year_level === '' || !$this->school_id) {
+            return false;
+        }
+
+        if ($this->school_year_levels === null) {
+            $this->school_year_levels = array();
+            $rows = $this->db->distinct()
+                ->select('year_level')
+                ->where('school_id', (int) $this->school_id)
+                ->where('status', 1)
+                ->where('year_level IS NOT NULL', null, false)
+                ->get('subjects')
+                ->result();
+
+            foreach ($rows as $row) {
+                if (isset($row->year_level) && $row->year_level !== null && $row->year_level !== '') {
+                    $this->school_year_levels[(string) $row->year_level] = (string) $row->year_level;
+                }
+            }
+        }
+
+        return isset($this->school_year_levels[$year_level]);
+    }
+
+    private function get_module_owner_role_slug($module)
+    {
+        $module_id = $module ? (int) $module->id : 0;
+        if ($module_id < 1) {
+            return '';
+        }
+
+        if (array_key_exists($module_id, $this->module_owner_role_slugs)) {
+            return $this->module_owner_role_slugs[$module_id];
+        }
+
+        $slug = '';
+        if (!empty($module->created_by)) {
+            $owner = $this->db->select('roles.slug')
+                ->from('users')
+                ->join('roles', 'roles.id = users.role_id')
+                ->where('users.id', (int) $module->created_by)
+                ->get()
+                ->row();
+            $slug = $owner ? (string) $owner->slug : '';
+        }
+
+        $this->module_owner_role_slugs[$module_id] = $slug;
+        return $slug;
+    }
+
+    private function can_access_shared_grade_level_lesson($subject, $module)
+    {
+        if (!$subject || !$module) {
+            return false;
+        }
+
+        $year_level = $this->get_subject_year_level($subject);
+        if ($year_level === '' || empty($module->is_published)) {
+            return false;
+        }
+
+        if ($this->get_module_owner_role_slug($module) !== 'school_admin') {
+            return false;
+        }
+
+        if (in_array($this->original_role_slug, array('super_admin', 'course_creator'))) {
+            return true;
+        }
+
+        if ($this->original_role_slug === 'school_admin') {
+            return $this->school_has_subject_year_level($year_level);
+        }
+
+        if ($this->original_role_slug === 'teacher') {
+            $teacher_year_levels = $this->get_teacher_accessible_year_levels();
+            return isset($teacher_year_levels[$year_level]);
+        }
+
+        return false;
+    }
+
+    private function get_shared_grade_level_modules($subject)
+    {
+        $year_level = $this->get_subject_year_level($subject);
+
+        if ($this->is_student_content_view() || !$subject || $year_level === '') {
+            return array();
+        }
+
+        if (!in_array($this->original_role_slug, array('school_admin', 'teacher', 'super_admin', 'course_creator'))) {
+            return array();
+        }
+
+        $rows = $this->Lesson_model->get_shared_grade_level_lessons($subject->id, $year_level, $this->school_id);
+        if (empty($rows)) {
+            return array();
+        }
+
+        $modules = array();
+        foreach ($rows as $row) {
+            $module_id = (int) $row->shared_module_id;
+            if (!isset($modules[$module_id])) {
+                $modules[$module_id] = (object) array(
+                    'id' => $module_id,
+                    'title' => $row->module_title,
+                    'description' => $row->module_description,
+                    'is_published' => 1,
+                    'created_by' => $row->module_created_by,
+                    'can_manage' => false,
+                    'is_shared' => true,
+                    'owner_name' => $row->owner_name,
+                    'source_subject_id' => (int) $row->source_subject_id,
+                    'source_subject_code' => $row->source_subject_code,
+                    'source_subject_description' => $row->source_subject_description,
+                    'source_school_name' => $row->source_school_name,
+                    'lessons' => array(),
+                    'activities' => array(),
+                );
+            }
+
+            $row->item_type = 'lesson';
+            $row->can_manage = false;
+            $row->is_shared = true;
+            $modules[$module_id]->lessons[] = $row;
+        }
+
+        return array_values($modules);
     }
 
     private function require_section_manager($subject_id)
@@ -164,17 +401,24 @@ class Course extends MY_Controller {
 
         $student_content_view = $this->is_student_content_view();
         $filter_unpublished = $this->should_filter_unpublished_content();
+
+        if (!$student_content_view && !$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view this course content.', 403);
+        }
         
 
         $teacher_section_filter = null;
         if ($this->original_role_slug === 'teacher' && $this->current_user) {
             $teacher_section_filter = (int) $this->current_user->id;
         }
-        // Get sections based on program_id or year_level of the subject
+        // Prefer explicit subject-to-section assignments; fall back to program/year-level sections for compatibility.
         $subject_sections = array();
-        if (!empty($subject->program_id)) {
+        if (!$student_content_view) {
+            $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
+        }
+        if (empty($subject_sections) && !empty($subject->program_id)) {
             $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
-        } elseif (!empty($subject->year_level)) {
+        } elseif (empty($subject_sections) && !empty($subject->year_level)) {
             $subject_sections = $this->Academic_model->get_sections_by_year_level($subject->year_level, $this->school_id);
         }
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
@@ -187,6 +431,9 @@ class Course extends MY_Controller {
                 unset($modules[$key]);
                 continue;
             }
+
+            $module->can_manage = !$student_content_view && $this->can_manage_module_content($module);
+            $module->is_shared = false;
 
             $module->lessons = $this->Lesson_model->get_lessons($module->id);
             $module->activities = $this->Lesson_model->get_activities($module->id);
@@ -202,6 +449,8 @@ class Course extends MY_Controller {
 
             foreach ($module->activities as $activity_key => &$activity) {
                 if ($activity->type !== 'quiz') {
+                    $activity->can_manage = $module->can_manage;
+                    $activity->is_shared = false;
                     continue;
                 }
 
@@ -212,12 +461,21 @@ class Course extends MY_Controller {
                 }
 
                 $activity->question_count = $activity->quiz ? $this->Quiz_model->count_questions($activity->quiz->id) : 0;
+                $activity->can_manage = $module->can_manage;
+                $activity->is_shared = false;
             }
+
+            foreach ($module->lessons as &$lesson) {
+                $lesson->can_manage = $module->can_manage;
+                $lesson->is_shared = false;
+            }
+            unset($lesson);
             unset($activity);
             $module->activities = array_values($module->activities);
         }
         unset($module);
         $modules = array_values($modules);
+        $shared_modules = $this->get_shared_grade_level_modules($subject);
         $completed_lesson_ids = array();
         $completed_activity_ids = array();
         $accessible_lesson_ids = array();
@@ -238,6 +496,7 @@ class Course extends MY_Controller {
         $data['title'] = 'Subject Content: ' . $subject->code;
         $data['subject'] = $subject;
         $data['modules'] = $modules;
+        $data['shared_modules'] = $shared_modules;
         $can_edit = $this->can_manage_course_content($subject_id);
         $can_manage_sections = $can_edit || ($this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id));
         $data['edit_mode']          = !$student_content_view && $this->input->get('edit') === '1' && $can_edit;
@@ -818,6 +1077,14 @@ class Course extends MY_Controller {
             show_404();
         }
 
+        $shared_lesson_view = false;
+        if (!$this->is_student_content_view() && !$this->can_access_subject_content_page($subject)) {
+            if (!$lesson->is_published || !$module->is_published || !$this->can_access_shared_grade_level_lesson($subject, $module)) {
+                show_error('You do not have permission to view this lesson.', 403);
+            }
+            $shared_lesson_view = true;
+        }
+
         if (!$this->has_subject_access($subject->id)) {
             $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
             redirect('course/content/' . $subject->id);
@@ -841,10 +1108,20 @@ class Course extends MY_Controller {
         $data['module'] = $module;
         $data['item'] = $lesson;
         $data['item_type'] = 'lesson';
-        $data['navigation'] = $this->get_subject_item_navigation($subject->id, 'lesson', $lesson->id);
+        $data['navigation'] = $shared_lesson_view ? array('previous' => null, 'next' => null) : $this->get_subject_item_navigation($subject->id, 'lesson', $lesson->id);
         $data['lesson_progress'] = $progress;
         $data['progress_percent'] = $progress_percent;
         $data['student_content_view'] = $this->is_student_content_view();
+        $data['can_manage_item'] = !$shared_lesson_view && $this->can_manage_module_content($module);
+        $data['manage_url'] = (!$shared_lesson_view && $this->can_manage_module_content($module))
+            ? site_url('course/content/' . $subject->id . '?edit=1#module-' . $module->id)
+            : '';
+        $back_param = $this->input->get('back', TRUE);
+        if ($back_param) {
+            $data['back_url'] = site_url($back_param);
+        } else {
+            $data['back_url'] = site_url('course/content/' . $subject->id . ((!$this->is_student_content_view() && $this->can_access_subject_content_page($subject) && $this->can_manage_course_content($subject->id)) ? '?edit=1' : ''));
+        }
 
         $this->render('course/item_view', $data);
     }
@@ -917,6 +1194,10 @@ class Course extends MY_Controller {
             show_404();
         }
 
+        if (!$this->is_student_content_view() && !$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view this activity.', 403);
+        }
+
         if (!$this->has_subject_access($subject->id)) {
             $this->session->set_flashdata('error', 'Enter the enrollment key to access this course.');
             redirect('course/content/' . $subject->id);
@@ -934,6 +1215,11 @@ class Course extends MY_Controller {
         $data['item_type'] = 'activity';
         $data['navigation'] = $this->get_subject_item_navigation($subject->id, 'activity', $activity->id);
         $data['student_content_view'] = $this->is_student_content_view();
+        $data['can_manage_item'] = $this->can_manage_module_content($module);
+        $data['manage_url'] = $this->can_manage_module_content($module)
+            ? site_url('course/content/' . $subject->id . '?edit=1#module-' . $module->id)
+            : '';
+        $data['back_url'] = site_url('course/content/' . $subject->id . ((!$this->is_student_content_view() && $this->can_manage_course_content($subject->id)) ? '?edit=1' : ''));
 
         $this->render('course/item_view', $data);
     }
@@ -1069,6 +1355,10 @@ class Course extends MY_Controller {
         if (!$subject) show_404();
         $this->require_section_manager($subject->id);
 
+        if ($this->original_role_slug === 'school_admin' && !$this->can_manage_module_content($module)) {
+            show_error('You do not have permission to view completions for this lesson.', 403);
+        }
+
         $data['title']        = 'Lesson Completions: ' . $lesson->title;
         $data['lesson']       = $lesson;
         $data['module']       = $module;
@@ -1176,7 +1466,7 @@ class Course extends MY_Controller {
     {
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only edit modules that you created.');
         
         if ($this->input->method() === 'post') {
             $data = array(
@@ -1194,7 +1484,7 @@ class Course extends MY_Controller {
     {
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only delete modules that you created.');
         
         $this->Lesson_model->delete_module($module_id);
         $this->session->set_flashdata('success', 'Module deleted successfully.');
@@ -1206,7 +1496,7 @@ class Course extends MY_Controller {
     {
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only add lessons to modules that you created.');
         
         if ($this->input->method() === 'post') {
             $order = $this->Lesson_model->get_next_content_order($module_id);
@@ -1242,7 +1532,7 @@ class Course extends MY_Controller {
         $lesson = $this->Lesson_model->get_lesson($lesson_id);
         if (!$lesson) show_404();
         $module = $this->Lesson_model->get_module($lesson->module_id);
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only edit lessons that you created.');
         
         if ($this->input->method() === 'post') {
             $content_type = $this->normalize_lesson_content_type($this->input->post('content_type', TRUE));
@@ -1280,7 +1570,7 @@ class Course extends MY_Controller {
         $lesson = $this->Lesson_model->get_lesson($lesson_id);
         if (!$lesson) show_404();
         $module = $this->Lesson_model->get_module($lesson->module_id);
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only delete lessons that you created.');
         
         $this->Lesson_model->delete_lesson($lesson_id);
         $this->session->set_flashdata('success', 'Lesson deleted successfully.');
@@ -1313,7 +1603,7 @@ class Course extends MY_Controller {
             return;
         }
 
-        if (!$this->can_manage_course_content($module->subject_id)) {
+        if (!$this->can_manage_module_content($module)) {
             $respond(false, 'You do not have permission to reorder this content.', 403);
             return;
         }
@@ -1353,7 +1643,7 @@ class Course extends MY_Controller {
     {
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only add content to modules that you created.');
         
         if ($this->input->method() === 'post') {
             $type = $this->input->post('type', TRUE);
@@ -1424,7 +1714,7 @@ class Course extends MY_Controller {
         $activity = $this->Lesson_model->get_activity($activity_id);
         if (!$activity) show_404();
         $module = $this->Lesson_model->get_module($activity->module_id);
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only edit content that you created.');
         
         if ($this->input->method() === 'post') {
             $data = array(
@@ -1686,11 +1976,14 @@ class Course extends MY_Controller {
 
         $questions = array();
         $errors = array();
+        $question_number = 0;
         foreach ($xml->question as $index => $node) {
             $type = strtolower((string) $node['type']);
             if ($type === 'category') {
                 continue;
             }
+
+            $question_number++;
 
             $question_text = $this->clean_import_text((string) $node->questiontext->text);
             if ($question_text === '') {
@@ -1698,7 +1991,7 @@ class Course extends MY_Controller {
             }
 
             if ($question_text === '') {
-                $errors[] = 'XML question #' . ($index + 1) . ' was skipped because the question text is empty.';
+                $errors[] = 'XML question #' . $question_number . ' was skipped because the question text is empty.';
                 continue;
             }
 
@@ -1721,7 +2014,7 @@ class Course extends MY_Controller {
                 }
 
                 if (count($choices) < 2) {
-                    $errors[] = 'XML multiple choice question #' . ($index + 1) . ' was skipped because it has fewer than two choices.';
+                    $errors[] = 'XML multiple choice question #' . $question_number . ' was skipped because it has fewer than two choices.';
                     continue;
                 }
 
@@ -1762,7 +2055,7 @@ class Course extends MY_Controller {
                 }
 
                 if (empty($choices)) {
-                    $errors[] = 'XML short answer question #' . ($index + 1) . ' was skipped because it has no correct answer.';
+                    $errors[] = 'XML short answer question #' . $question_number . ' was skipped because it has no correct answer.';
                     continue;
                 }
 
@@ -1780,7 +2073,7 @@ class Course extends MY_Controller {
                     'choices'       => array(),
                 );
             } else {
-                $errors[] = 'XML question #' . ($index + 1) . ' was skipped because type "' . $type . '" is not supported.';
+                $errors[] = 'XML question #' . $question_number . ' was skipped because type "' . $type . '" is not supported.';
             }
         }
 
@@ -1895,6 +2188,32 @@ class Course extends MY_Controller {
         return '';
     }
 
+    private function get_assessment_attempt_remaining_seconds($attempt, $quiz)
+    {
+        if (!$attempt || !$quiz || empty($quiz->time_limit_minutes) || empty($attempt->started_at)) {
+            return null;
+        }
+
+        $start_time = strtotime($attempt->started_at);
+        if ($start_time === false) {
+            return null;
+        }
+
+        $end_time = $start_time + ((int) $quiz->time_limit_minutes * 60);
+        return max(0, $end_time - time());
+    }
+
+    private function finalize_expired_assessment_attempt($attempt, $quiz)
+    {
+        $remaining_seconds = $this->get_assessment_attempt_remaining_seconds($attempt, $quiz);
+        if ($remaining_seconds === null || $remaining_seconds > 0) {
+            return false;
+        }
+
+        $this->Quiz_model->submit_attempt($attempt->id);
+        return true;
+    }
+
     private function normalize_assessment_datetime($value)
     {
         $value = trim((string) $value);
@@ -1910,7 +2229,7 @@ class Course extends MY_Controller {
     {
         $module = $this->Lesson_model->get_module($module_id);
         if (!$module) show_404();
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only add assessments to modules that you created.');
 
         $subject = $this->Academic_model->get_subject($module->subject_id);
         if (!$subject) show_404();
@@ -1994,7 +2313,7 @@ class Course extends MY_Controller {
     {
         $context = $this->get_assessment_context_by_quiz($quiz_id);
         if (!$context) show_404();
-        $this->require_course_manager($context['subject']->id);
+        $this->require_module_owner($context['module'], 'You can only edit assessments that you created.');
 
         if ($this->input->method() === 'post') {
             $title = trim($this->input->post('title', TRUE));
@@ -2045,7 +2364,7 @@ class Course extends MY_Controller {
     {
         $context = $this->get_assessment_context_by_quiz($quiz_id);
         if (!$context) show_404();
-        $this->require_course_manager($context['subject']->id);
+        $this->require_module_owner($context['module'], 'You can only update assessments that you created.');
 
         if ($this->input->method() === 'post') {
             $import = $this->import_assessment_questions_from_upload($quiz_id);
@@ -2062,7 +2381,7 @@ class Course extends MY_Controller {
 
         $context = $this->get_assessment_context_by_quiz($question->quiz_id);
         if (!$context) show_404();
-        $this->require_course_manager($context['subject']->id);
+        $this->require_module_owner($context['module'], 'You can only update assessments that you created.');
 
         $this->Quiz_model->delete_question($question_id);
         $this->Quiz_model->recalculate_total_points($question->quiz_id);
@@ -2102,6 +2421,10 @@ class Course extends MY_Controller {
             $questions_count = $this->Quiz_model->count_questions($quiz->id);
             $attempts = $this->Quiz_model->get_student_attempts($quiz->id, $this->current_user->id);
             $in_progress_attempt = $this->Quiz_model->get_in_progress_attempt($quiz->id, $this->current_user->id);
+            if ($in_progress_attempt && $this->finalize_expired_assessment_attempt($in_progress_attempt, $quiz)) {
+                $attempts = $this->Quiz_model->get_student_attempts($quiz->id, $this->current_user->id);
+                $in_progress_attempt = null;
+            }
             $availability_error = $this->assessment_availability_error($quiz);
             $max_attempts = max(1, (int) $quiz->max_attempts);
             $can_start = $questions_count > 0 && !$availability_error && (!$in_progress_attempt && count($attempts) < $max_attempts);
@@ -2145,7 +2468,7 @@ class Course extends MY_Controller {
         $data['analysis_description'] = $this->Quiz_model->generate_analysis_description($data['analysis'], $lang);
         $data['current_lang'] = $lang;
         $data['student_content_view'] = false;
-        $data['can_edit_assessment'] = $this->can_manage_course_content($subject->id);
+        $data['can_edit_assessment'] = $this->can_manage_module_content($module);
         
         // Check if new columns exist
         $data['has_passing_score'] = $this->db->query("SHOW COLUMNS FROM quizzes LIKE 'passing_score'")->num_rows() > 0;
@@ -2205,6 +2528,10 @@ class Course extends MY_Controller {
         }
 
         $in_progress = $this->Quiz_model->get_in_progress_attempt($quiz->id, $this->current_user->id);
+        if ($in_progress && $this->finalize_expired_assessment_attempt($in_progress, $quiz)) {
+            $this->session->set_flashdata('warning', 'Your previous assessment attempt expired and was submitted automatically.');
+            $in_progress = null;
+        }
         if ($in_progress) {
             redirect('course/assessment_attempt/' . $in_progress->id);
         }
@@ -2246,6 +2573,12 @@ class Course extends MY_Controller {
             redirect('course/content/' . $context['subject']->id);
         }
 
+        if ($this->finalize_expired_assessment_attempt($attempt, $context['quiz'])) {
+            $this->session->set_flashdata('warning', 'Time is up. Your assessment was submitted automatically.');
+            redirect('course/assessment_result/' . $attempt->id);
+            return;
+        }
+
         $questions = $this->Quiz_model->get_questions_with_choices($context['quiz']->id);
         if (!empty($context['quiz']->shuffle_questions)) {
             shuffle($questions);
@@ -2261,16 +2594,11 @@ class Course extends MY_Controller {
         $data['answer_map'] = $this->Quiz_model->get_attempt_answers_map($attempt->id);
         
         // Calculate remaining time
-        if (!empty($context['quiz']->time_limit_minutes) && !empty($attempt->started_at)) {
-            $start_time = strtotime($attempt->started_at);
-            $end_time = $start_time + ($context['quiz']->time_limit_minutes * 60);
-            $current_time = time();
-            $remaining_seconds = max(0, $end_time - $current_time);
+        $remaining_seconds = $this->get_assessment_attempt_remaining_seconds($attempt, $context['quiz']);
+        if ($remaining_seconds !== null) {
             $data['remaining_seconds'] = $remaining_seconds;
-            $data['end_time'] = $end_time;
         } else {
             $data['remaining_seconds'] = null;
-            $data['end_time'] = null;
         }
         
         $this->render('course/assessment_attempt', $data);
@@ -2365,7 +2693,7 @@ class Course extends MY_Controller {
         $activity = $this->Lesson_model->get_activity($activity_id);
         if (!$activity) show_404();
         $module = $this->Lesson_model->get_module($activity->module_id);
-        $this->require_course_manager($module->subject_id);
+        $this->require_module_owner($module, 'You can only delete content that you created.');
         
         $this->Lesson_model->delete_activity($activity_id);
         if ($activity->type === 'quiz') {

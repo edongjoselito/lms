@@ -9,6 +9,7 @@ class Auth extends CI_Controller
         parent::__construct();
         $this->load->model('User_model');
         $this->load->model('Setting_model');
+        $this->load->model('Academic_model');
     }
 
     public function index()
@@ -58,6 +59,13 @@ class Auth extends CI_Controller
             if ($user->school_id) {
                 $school = $this->db->where('id', $user->school_id)->get('schools')->row();
                 $session_data['school_name'] = $school ? $school->name : '';
+
+                $school_year = $this->Academic_model->get_active_school_year($user->school_id);
+
+                if ($school_year) {
+                    $session_data['school_year_id'] = (int) $school_year->id;
+                    $session_data['school_year_name'] = $school_year->year_start . '-' . $school_year->year_end;
+                }
             }
 
             // Set student_id for students

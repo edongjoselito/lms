@@ -1,3 +1,10 @@
+<?php
+$subject_title = trim(
+    !empty($subject->description)
+        ? (string) $subject->description
+        : (!empty($subject->name) ? (string) $subject->name : (string) $subject->code)
+);
+?>
 <div class="enroll-page">
     <div class="enroll-breadcrumb">
         <a href="<?= site_url('student/subjects') ?>" class="breadcrumb-item"><i class="bi bi-arrow-left"></i> Back to Subjects</a>
@@ -8,7 +15,7 @@
             <h1 class="enroll-title">Enroll in Course</h1>
             <div class="subject-info">
                 <div class="subject-code"><?= htmlspecialchars($subject->code) ?></div>
-                <h2 class="subject-name"><?= htmlspecialchars($subject->name) ?></h2>
+                <h2 class="subject-name"><?= htmlspecialchars($subject_title) ?></h2>
                 <?php if (!empty($subject->description)): ?>
                     <p class="subject-description"><?= htmlspecialchars($subject->description) ?></p>
                 <?php endif; ?>

@@ -76,6 +76,50 @@ class Lesson_model extends CI_Model {
                         ->result();
     }
 
+    public function get_shared_grade_level_lessons($current_subject_id, $year_level, $exclude_school_id = null)
+    {
+        if ($year_level === null || $year_level === '') {
+            return array();
+        }
+
+        $this->db->select('lessons.*,
+                           modules.id as shared_module_id,
+                           modules.title as module_title,
+                           modules.description as module_description,
+                           modules.order_num as module_order_num,
+                           modules.created_by as module_created_by,
+                           subjects.id as source_subject_id,
+                           subjects.code as source_subject_code,
+                           subjects.description as source_subject_description,
+                           subjects.school_id as source_school_id,
+                           schools.name as source_school_name,
+                           CONCAT(users.first_name, " ", users.last_name) as owner_name,
+                           roles.slug as owner_role_slug', FALSE);
+        $this->db->from('lessons');
+        $this->db->join('modules', 'modules.id = lessons.module_id');
+        $this->db->join('subjects', 'subjects.id = modules.subject_id');
+        $this->db->join('users', 'users.id = modules.created_by', 'left');
+        $this->db->join('roles', 'roles.id = users.role_id', 'left');
+        $this->db->join('schools', 'schools.id = subjects.school_id', 'left');
+        $this->db->where('subjects.id !=', (int) $current_subject_id);
+        $this->db->where('subjects.status', 1);
+        $this->db->where('subjects.year_level', $year_level);
+        $this->db->where('modules.is_published', 1);
+        $this->db->where('lessons.is_published', 1);
+        $this->db->where('roles.slug', 'school_admin');
+
+        if ($exclude_school_id !== null) {
+            $this->db->where('subjects.school_id !=', (int) $exclude_school_id);
+        }
+
+        return $this->db->order_by('schools.name', 'ASC')
+            ->order_by('subjects.code', 'ASC')
+            ->order_by('modules.order_num', 'ASC')
+            ->order_by('lessons.order_num', 'ASC')
+            ->get()
+            ->result();
+    }
+
     public function get_lessons_by_class($class_program_id)
     {
         return $this->db->select('lessons.*, modules.title as module_title')

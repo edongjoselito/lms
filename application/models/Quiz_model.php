@@ -208,6 +208,7 @@ class Quiz_model extends CI_Model {
             'student_id'     => $student_id,
             'attempt_number' => $attempt_num,
             'status'         => 'in_progress',
+            'started_at'     => date('Y-m-d H:i:s'),
         );
         $this->db->insert('quiz_attempts', $data);
         return $this->db->insert_id();

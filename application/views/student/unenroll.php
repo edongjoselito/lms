@@ -1,3 +1,10 @@
+<?php
+$subject_title = trim(
+    !empty($subject->description)
+        ? (string) $subject->description
+        : (!empty($subject->name) ? (string) $subject->name : (string) $subject->code)
+);
+?>
 <div class="unenroll-page">
     <div class="unenroll-container">
         <div class="unenroll-header">
@@ -5,7 +12,7 @@
                 <i class="bi bi-exclamation-triangle"></i>
             </div>
             <h1>Unenroll from Course</h1>
-            <p class="subject-name"><?= htmlspecialchars($subject->name) ?></p>
+            <p class="subject-name"><?= htmlspecialchars($subject_title) ?></p>
             <p class="subject-code"><?= htmlspecialchars($subject->code) ?></p>
         </div>
         

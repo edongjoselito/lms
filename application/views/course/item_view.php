@@ -40,12 +40,14 @@ $next_item = $navigation['next'] ?? null;
 $can_switch_student_mode = isset($original_role_slug) && in_array($original_role_slug, array('teacher', 'course_creator'));
 $is_completed = !empty($lesson_progress) && $lesson_progress->status === 'completed';
 $is_next_accessible = empty($next_item) || empty($is_student_mode) || !isset($next_item->is_accessible) || $next_item->is_accessible;
+$resolved_back_url = !empty($back_url) ? $back_url : site_url('course/content/' . $subject->id . (empty($is_student_mode) ? '?edit=1' : ''));
+$resolved_manage_url = !empty($manage_url) ? $manage_url : site_url('course/content/' . $subject->id . '?edit=1#module-' . $module->id);
 ?>
 
 <div class="row">
     <div class="col-12">
         <div class="mb-3">
-            <a href="<?= site_url('course/content/' . $subject->id . (empty($is_student_mode) ? '?edit=1' : '')) ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
+            <a href="<?= $resolved_back_url ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Course Content
             </a>
         </div>
@@ -70,8 +72,8 @@ $is_next_accessible = empty($next_item) || empty($is_student_mode) || !isset($ne
                             <?= !empty($is_student_mode) ? 'Exit Student Mode' : 'View as Student' ?>
                         </a>
                     <?php endif; ?>
-                    <?php if (empty($is_student_mode)): ?>
-                        <a href="<?= site_url('course/content/' . $subject->id . '?edit=1#module-' . $module->id) ?>" class="btn btn-sm btn-outline-primary">
+                    <?php if (empty($is_student_mode) && !empty($can_manage_item)): ?>
+                        <a href="<?= $resolved_manage_url ?>" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-pencil me-1"></i> Manage
                         </a>
                     <?php endif; ?>

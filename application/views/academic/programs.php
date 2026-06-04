@@ -109,6 +109,9 @@ if (!empty($programs)) {
                         <input type="text" class="ps-search" id="programSearch" placeholder="Search programs...">
                     </div>
                     <?php endif; ?>
+                    <a href="<?= site_url('academic/teacher_assignment_report') ?>" class="ps-submit-btn ps-submit-btn-inline ps-submit-btn-secondary">
+                        <i class="bi bi-file-earmark-text"></i> Teacher Report
+                    </a>
                     <a href="<?= site_url('academic/create_program') ?>" class="ps-submit-btn ps-submit-btn-inline">
                         <i class="bi bi-plus-lg"></i> Add Program
                     </a>
@@ -171,15 +174,9 @@ if (!empty($programs)) {
                             </div>
 
                             <div class="ps-col-actions">
-                                <?php if ($item->type === 'program'): ?>
-                                    <a href="<?= site_url('academic/program_subjects/' . $item->id) ?>" class="ps-action-btn ps-action-view">
-                                        <i class="bi bi-book-half"></i> Subjects
-                                    </a>
-                                <?php else: ?>
-                                    <a href="<?= site_url('academic/create_section_for_grade/' . $item->id) ?>" class="ps-action-btn ps-action-view">
-                                        <i class="bi bi-people-fill"></i> Add Section
-                                    </a>
-                                <?php endif; ?>
+                                <a href="<?= site_url('academic/program_subjects/' . $item->id) ?>" class="ps-action-btn ps-action-view">
+                                    <i class="bi bi-book-half"></i> Subjects
+                                </a>
                                 <a href="<?= site_url('academic/edit_program/' . $item->id) ?>" class="ps-action-btn ps-action-edit" title="Edit">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
@@ -767,6 +764,18 @@ document.getElementById('programSearch') && document.getElementById('programSear
     margin-top: 0;
     padding: 0.65rem 1rem;
     border-radius: 10px;
+}
+
+.ps-submit-btn-secondary {
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: none;
+}
+
+.ps-submit-btn-secondary:hover {
+    background: #dbeafe;
+    color: #1e40af;
+    box-shadow: none;
 }
 
 .ps-empty-btn {

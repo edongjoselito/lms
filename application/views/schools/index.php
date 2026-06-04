@@ -80,58 +80,7 @@
 
 <!-- Data Section: Two Columns -->
 <div class="row g-4 mb-4">
-    <!-- Left Column: Distribution & Insights -->
-    <div class="col-lg-4">
-        <!-- School Type Distribution Card -->
-        <div class="distribution-card">
-            <div class="card-header">
-                <h5><i class="bi bi-pie-chart me-2"></i>School Distribution</h5>
-            </div>
-            <div class="distribution-content">
-                <div class="distribution-item">
-                    <div class="distribution-info">
-                        <span class="distribution-label">DepEd</span>
-                        <span class="distribution-value"><?= ($school_types['deped'] + $school_types['basic']) ?> schools</span>
-                    </div>
-                    <div class="distribution-bar">
-                        <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round((($school_types['deped'] + $school_types['basic']) / $total_schools) * 100) : 0 ?>%; background: #3b82f6;"></div>
-                    </div>
-                </div>
-                <div class="distribution-item">
-                    <div class="distribution-info">
-                        <span class="distribution-label">CHED</span>
-                        <span class="distribution-value"><?= ($school_types['ched'] + $school_types['college']) ?> schools</span>
-                    </div>
-                    <div class="distribution-bar">
-                        <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round((($school_types['ched'] + $school_types['college']) / $total_schools) * 100) : 0 ?>%; background: #0d9488;"></div>
-                    </div>
-                </div>
-                <div class="distribution-item">
-                    <div class="distribution-info">
-                        <span class="distribution-label">TESDA</span>
-                        <span class="distribution-value"><?= ($school_types['tesda'] + $school_types['tech_voc']) ?> schools</span>
-                    </div>
-                    <div class="distribution-bar">
-                        <div class="distribution-progress" style="width: <?= $total_schools > 0 ? round((($school_types['tesda'] + $school_types['tech_voc']) / $total_schools) * 100) : 0 ?>%; background: #2563eb;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Insights Box -->
-        <div class="insights-box">
-            <div class="insights-icon">
-                <i class="bi bi-lightbulb"></i>
-            </div>
-            <div class="insights-content">
-                <h6>Insight</h6>
-                <p>TESDA enrollment has increased by 23% this quarter. Consider adding more technical vocational courses.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Column: Schools Table -->
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="data-table">
             <div class="table-header">
                 <h5><i class="bi bi-building me-2"></i>All Schools</h5>
@@ -165,7 +114,6 @@
                     <thead>
                         <tr>
                             <th>School</th>
-                            <th>Type</th>
                             <th>Users</th>
                             <th>Students</th>
                             <th>Status</th>
@@ -175,22 +123,10 @@
                     <tbody>
                         <?php if (!empty($schools)): ?>
                             <?php foreach ($schools as $s): ?>
-                                <?php
-                                $type_colors = array('deped' => '#3b82f6', 'basic' => '#3b82f6', 'ched' => '#10b981', 'college' => '#10b981', 'tesda' => '#2563eb', 'tech_voc' => '#2563eb', 'both' => '#f59e0b');
-                                $type_labels = array('deped' => 'DepEd', 'basic' => 'DepEd', 'ched' => 'CHED', 'college' => 'CHED', 'tesda' => 'TESDA', 'tech_voc' => 'TESDA', 'both' => 'Both');
-                                $type = isset($s->type) ? $s->type : 'deped';
-                                $type_color = isset($type_colors[$type]) ? $type_colors[$type] : '#64748b';
-                                $type_label = isset($type_labels[$type]) ? $type_labels[$type] : ucfirst($type);
-                                ?>
                                 <tr>
                                     <td>
                                         <div class="school-name"><?= htmlspecialchars($s->name) ?></div>
                                         <div class="school-id"><?= $s->school_id_number ?: 'N/A' ?> <?= $s->division ? '· ' . $s->division : '' ?></div>
-                                    </td>
-                                    <td>
-                                        <span class="school-type-badge" style="background: <?= $type_color ?>; color: white;">
-                                            <?= $type_label ?>
-                                        </span>
                                     </td>
                                     <td style="font-weight:600;color:#0f172a;"><?= $s->stats->users ?></td>
                                     <td style="font-weight:600;color:#0f172a;"><?= $s->stats->students ?></td>
@@ -207,6 +143,7 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li><a class="dropdown-item" href="<?= site_url('schools/switch_school/' . $s->id) ?>"><i class="bi bi-box-arrow-in-right me-2"></i>Enter School</a></li>
+                                                <li><a class="dropdown-item" href="<?= site_url('schools/view_users/' . $s->id) ?>"><i class="bi bi-people me-2"></i>View Users</a></li>
                                                 <li><a class="dropdown-item" href="<?= site_url('schools/edit/' . $s->id) ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                 <li>
                                                     <hr class="dropdown-divider">
@@ -219,7 +156,7 @@
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="text-center py-5" style="color:#94a3b8;">
+                                <td colspan="5" class="text-center py-5" style="color:#94a3b8;">
                                     <i class="bi bi-building-x" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
                                     No schools yet. Create your first school.
                                 </td>
@@ -358,106 +295,6 @@
         color: #94a3b8;
     }
 
-    /* Distribution Card */
-    .distribution-card {
-        background: #ffffff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 1rem;
-        overflow: hidden;
-    }
-
-    .distribution-card .card-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .distribution-card .card-header h5 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #0f172a;
-        margin: 0;
-    }
-
-    .distribution-content {
-        padding: 1.5rem;
-    }
-
-    .distribution-item {
-        margin-bottom: 1.25rem;
-    }
-
-    .distribution-item:last-child {
-        margin-bottom: 0;
-    }
-
-    .distribution-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-    }
-
-    .distribution-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #475569;
-    }
-
-    .distribution-value {
-        font-size: 0.85rem;
-        color: #94a3b8;
-    }
-
-    .distribution-bar {
-        height: 8px;
-        background: #f1f5f9;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .distribution-progress {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-
-    /* Insights Box */
-    .insights-box {
-        background: linear-gradient(135deg, #eff4ff 0%, #dbeafe 100%);
-        border-radius: 16px;
-        padding: 1.25rem;
-        display: flex;
-        gap: 1rem;
-        border: 1px solid #bfdbfe;
-    }
-
-    .insights-icon {
-        width: 40px;
-        height: 40px;
-        background: #3b82f6;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-    }
-
-    .insights-content h6 {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #1e40af;
-        margin-bottom: 0.25rem;
-    }
-
-    .insights-content p {
-        font-size: 0.8rem;
-        color: #3b82f6;
-        margin: 0;
-        line-height: 1.5;
-    }
-
     /* Data Table */
     .data-table {
         background: #ffffff;
@@ -490,13 +327,6 @@
     .school-id {
         font-size: 0.75rem;
         color: #94a3b8;
-    }
-
-    .school-type-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
     }
 
     .status-indicator {

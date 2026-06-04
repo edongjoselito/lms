@@ -3,6 +3,80 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Student_model extends CI_Model {
 
+    private function get_enrollment_student_ids($student)
+    {
+        $ids = array();
+
+        if (!$student) {
+            return $ids;
+        }
+
+        if (!empty($student->id)) {
+            $ids[] = (int) $student->id;
+        }
+        if (!empty($student->user_id)) {
+            $ids[] = (int) $student->user_id;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    private function get_current_student_level($student)
+    {
+        $level = array(
+            'grade_level_id' => null,
+            'year_level' => null,
+        );
+
+        if (!$student) {
+            return $level;
+        }
+
+        $enrollment_student_ids = $this->get_enrollment_student_ids($student);
+        $enrollment = null;
+
+        if (!empty($enrollment_student_ids)) {
+            $enrollment_query = $this->db->select('e.grade_level_id, e.year_level, sections.year_level as section_year_level, programs.year_level as program_year_level')
+                ->from('enrollments e')
+                ->join('sections', 'sections.id = e.section_id', 'left')
+                ->join('programs', 'programs.id = e.program_id', 'left')
+                ->where_in('e.student_id', $enrollment_student_ids)
+                ->where('e.status', 'enrolled')
+                ->order_by('e.enrollment_date', 'DESC')
+                ->order_by('e.id', 'DESC')
+                ->limit(1);
+
+            if (!empty($student->school_id)) {
+                $enrollment_query->where('e.school_id', (int) $student->school_id);
+            }
+
+            $enrollment = $enrollment_query->get()->row();
+        }
+
+        if ($enrollment) {
+            if (!empty($enrollment->grade_level_id)) {
+                $level['grade_level_id'] = (int) $enrollment->grade_level_id;
+            }
+
+            if (isset($enrollment->year_level) && $enrollment->year_level !== null && $enrollment->year_level !== '') {
+                $level['year_level'] = (string) $enrollment->year_level;
+            } elseif (isset($enrollment->section_year_level) && $enrollment->section_year_level !== null && $enrollment->section_year_level !== '') {
+                $level['year_level'] = (string) $enrollment->section_year_level;
+            } elseif (isset($enrollment->program_year_level) && $enrollment->program_year_level !== null && $enrollment->program_year_level !== '') {
+                $level['year_level'] = (string) $enrollment->program_year_level;
+            }
+        }
+
+        if (empty($level['grade_level_id']) && !empty($student->grade_level_id)) {
+            $level['grade_level_id'] = (int) $student->grade_level_id;
+        }
+        if (($level['year_level'] === null || $level['year_level'] === '') && isset($student->year_level) && $student->year_level !== null && $student->year_level !== '') {
+            $level['year_level'] = (string) $student->year_level;
+        }
+
+        return $level;
+    }
+
     public function get_student_by_user_id($user_id)
     {
         return $this->db->where('user_id', $user_id)->get('students')->row();
@@ -45,33 +119,9 @@ class Student_model extends CI_Model {
             return array();
         }
 
-        // Get student's grade level from enrollments table
-        $enrollment = $this->db->where('student_id', $student->user_id)
-            ->where('status', 'enrolled')
-            ->order_by('enrollment_date', 'DESC')
-            ->limit(1)
-            ->get('enrollments')
-            ->row();
-
-        $grade_level_id = null;
-        $year_level = null;
-
-        if ($enrollment) {
-            if ($enrollment->grade_level_id) {
-                $grade_level_id = $enrollment->grade_level_id;
-            }
-            if ($enrollment->year_level) {
-                $year_level = $enrollment->year_level;
-            }
-        }
-
-        // Fallback to student's grade level if not found in enrollment
-        if (!$grade_level_id && $student->grade_level_id) {
-            $grade_level_id = $student->grade_level_id;
-        }
-        if (!$year_level && $student->year_level) {
-            $year_level = $student->year_level;
-        }
+        $student_level = $this->get_current_student_level($student);
+        $grade_level_id = $student_level['grade_level_id'];
+        $year_level = $student_level['year_level'];
 
         $this->db->select('subjects.*');
         $this->db->from('subjects');
@@ -221,16 +271,21 @@ class Student_model extends CI_Model {
             $subjects[(int) $subject->id] = $subject;
         }
 
-        $section_subjects = $this->db->select('s.*, sections.name as section_name', FALSE)
-                                    ->from('subjects s')
-                                    ->join('class_programs cp', 'cp.subject_id = s.id AND cp.status = 1')
-                                    ->join('sections', 'sections.id = cp.section_id', 'left')
-                                    ->join('enrollments e', 'e.section_id = cp.section_id')
-                                    ->where('e.student_id', $student_id)
-                                    ->where('e.status', 'enrolled')
-                                    ->where('s.status', 1)
-                                    ->get()
-                                    ->result();
+        $enrollment_student_ids = $this->get_enrollment_student_ids($student);
+
+        $section_subjects = array();
+        if (!empty($enrollment_student_ids)) {
+            $section_subjects = $this->db->select('s.*, sections.name as section_name', FALSE)
+                                        ->from('subjects s')
+                                        ->join('class_programs cp', 'cp.subject_id = s.id AND cp.status = 1')
+                                        ->join('sections', 'sections.id = cp.section_id', 'left')
+                                        ->join('enrollments e', 'e.section_id = cp.section_id')
+                                        ->where_in('e.student_id', $enrollment_student_ids)
+                                        ->where('e.status', 'enrolled')
+                                        ->where('s.status', 1)
+                                        ->get()
+                                        ->result();
+        }
 
         foreach ($section_subjects as $subject) {
             $subject_id = (int) $subject->id;
@@ -263,9 +318,14 @@ class Student_model extends CI_Model {
             return true;
         }
 
+        $enrollment_student_ids = $this->get_enrollment_student_ids($student);
+        if (empty($enrollment_student_ids)) {
+            return false;
+        }
+
         return $this->db->from('enrollments e')
                         ->join('class_programs cp', 'cp.section_id = e.section_id AND cp.status = 1')
-                        ->where('e.student_id', $student_id)
+                        ->where_in('e.student_id', $enrollment_student_ids)
                         ->where('e.status', 'enrolled')
                         ->where('cp.subject_id', $subject_id)
                         ->count_all_results() > 0;

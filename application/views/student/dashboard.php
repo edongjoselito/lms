@@ -1,3 +1,24 @@
+<?php
+if (!function_exists('student_dashboard_subject_title')) {
+    function student_dashboard_subject_title($subject)
+    {
+        if (!empty($subject->description)) {
+            return (string) $subject->description;
+        }
+
+        if (!empty($subject->name)) {
+            return (string) $subject->name;
+        }
+
+        if (!empty($subject->code)) {
+            return (string) $subject->code;
+        }
+
+        return 'Course';
+    }
+}
+?>
+
 <div class="student-dashboard">
     <div class="page-header student-hero">
         <div>
@@ -91,17 +112,18 @@
         <h2 class="section-title">Available Courses</h2>
         <div class="courses-grid">
             <?php foreach ($available_subjects as $subject): ?>
+                <?php $subject_title = student_dashboard_subject_title($subject); ?>
                 <div class="course-card course-card-available">
                     <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
                         <?php if (!empty($subject->cover_photo)): ?>
-                            <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject->name) ?>">
+                            <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject_title) ?>">
                         <?php else: ?>
                             <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="course-body">
                         <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>
-                        <h3 class="course-name"><?= htmlspecialchars($subject->name) ?></h3>
+                        <h3 class="course-name"><?= htmlspecialchars($subject_title) ?></h3>
                         <?php if ($subject->requires_key): ?>
                             <a href="<?= site_url('student/enroll/' . $subject->id) ?>" class="btn-enroll">
                                 <i class="bi bi-key-fill"></i> Enroll with Key
