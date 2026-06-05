@@ -17,7 +17,7 @@ $student_csrf_hash = $this->security->get_csrf_hash();
 $lesson_pdf_url = $is_pdf_lesson ? (string) $lesson->file_path : '';
 $completion_pill_text = $completion_gate_type === 'pdf' ? 'Scroll PDF to complete' : 'Watch video to complete';
 $completion_note_title = $completion_gate_type === 'pdf'
-    ? 'Scroll to the last page to complete this lesson'
+    ? 'Please read the lesson carefully and make sure you fully understand the content.'
     : 'Finish the video to complete this lesson';
 $completion_note_text = $completion_gate_type === 'pdf'
     ? 'Your progress and the next content will unlock only after you reach the end of the PDF.'
@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            updatePdfViewerStatus('Scroll to the last page to complete this lesson.', 'ready');
+            updatePdfViewerStatus('Please read the lesson carefully and make sure you fully understand the content.', 'ready');
             var lastPage = pdfPages.lastElementChild;
             if (!lastPage) {
                 return;

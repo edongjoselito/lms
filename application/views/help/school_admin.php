@@ -1,0 +1,376 @@
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<div class="ps-page">
+    <a href="<?= site_url('help') ?>" class="ps-back">
+        <i class="bi bi-arrow-left-short"></i>
+        Back to Help
+    </a>
+
+    <div class="ps-hero">
+        <div class="ps-hero-bg"></div>
+        <div class="ps-hero-content">
+            <div class="ps-hero-left">
+                <div class="ps-hero-avatar">SA</div>
+                <div class="ps-hero-info">
+                    <div class="ps-hero-meta">
+                        <span class="ps-tag ps-tag-degree">Support</span>
+                        <span class="ps-tag ps-tag-code">School Admin</span>
+                    </div>
+                    <h1 class="ps-hero-title">School Administrator Guide</h1>
+                    <p class="ps-hero-desc">Complete guide for managing your school's LMS platform, users, and academic structure.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ps-layout ps-layout-full">
+        <div class="ps-card">
+            <div class="ps-card-head">
+                <div class="ps-card-title">
+                    <i class="bi bi-shield-lock-fill"></i>
+                    <span>Administrator Guide</span>
+                </div>
+            </div>
+
+            <div class="ps-card-body">
+                <div class="help-content">
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-1-circle-fill"></i> Getting Started</h3>
+                        <ul>
+                            <li><strong>Dashboard Overview:</strong> Upon login, you'll see your school dashboard with key statistics including total students, teachers, subjects, and sections.</li>
+                            <li><strong>School Management:</strong> Access school settings from the sidebar to manage school information, academic years, and enrollment keys.</li>
+                            <li><strong>User Management:</strong> Navigate to Users to create and manage teacher, student, and registrar accounts.</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-2-circle-fill"></i> Managing Academic Structure</h3>
+                        <ul>
+                            <li><strong>Programs & Grade Levels:</strong> Go to Academic → Programs to create grade levels (e.g., Grade 7, Grade 8) and program tracks.</li>
+                            <li><strong>Sections:</strong> Create sections under each grade level and assign advisers (teachers) to manage them.</li>
+                            <li><strong>Subjects:</strong> Add subjects to programs with codes, descriptions, and assign teachers as subject instructors.</li>
+                            <li><strong>Learning Competencies:</strong> Define learning objectives for each subject to guide lesson planning and assessment.</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-3-circle-fill"></i> Course Content Management</h3>
+                        <ul>
+                            <li><strong>Accessing Subject Content:</strong> Click on any subject from Academic → Program Subjects to view and manage course materials.</li>
+                            <li><strong>Creating Modules:</strong> Add modules to organize lessons by topic or unit. Modules can be published or hidden.</li>
+                            <li><strong>Adding Lessons:</strong> Within each module, create lessons with various content types:
+                                <ul>
+                                    <li><em>Text:</em> Rich text content with formatting</li>
+                                    <li><em>Video:</em> Embed YouTube or external video links</li>
+                                    <li><em>File:</em> Upload PDFs, documents, or other resources</li>
+                                    <li><em>Link:</em> External website links</li>
+                                </ul>
+                            </li>
+                            <li><strong>Lesson Plans (ILAW):</strong> Add detailed lesson plans using the ILAW template (Objectives, Subject Matter, Materials, Procedures, Evaluation, Assignment, Remarks).</li>
+                            <li><strong>Lesson Notes:</strong> Create and share notes for lessons with other authorized users.</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-4-circle-fill"></i> Assessment & Quizzes</h3>
+                        <ul>
+                            <li><strong>Creating Quizzes:</strong> Add quiz activities to modules. Quizzes can be published or hidden from students.</li>
+                            <li><strong>Import Questions:</strong> Import quiz questions from Moodle XML or GIFT format files. Supported question types:
+                                <ul>
+                                    <li>Multiple Choice</li>
+                                    <li>True/False</li>
+                                    <li>Identification (Short Answer)</li>
+                                    <li>Fill-in-the-Blanks (Cloze)</li>
+                                    <li>Essay</li>
+                                </ul>
+                            </li>
+                            <li><strong>Managing Questions:</strong> Edit, reorder, or delete questions within a quiz. Set point values for each question.</li>
+                            <li><strong>Quiz Settings:</strong> Configure time limits, passing scores, and attempt restrictions.</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-5-circle-fill"></i> Student Management</h3>
+                        <ul>
+                            <li><strong>Enrollment:</strong> Enroll students into sections through the Student → Enroll feature.</li>
+                            <li><strong>Subject Enrollment:</strong> Students are automatically enrolled in subjects based on their section assignments.</li>
+                            <li><strong>Tracking Progress:</strong> Monitor student progress through Section Progress reports showing lesson completion and quiz scores.</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-subsection">
+                        <h3><i class="bi bi-6-circle-fill"></i> Teacher Management</h3>
+                        <ul>
+                            <li><strong>Assigning Teachers:</strong> Assign teachers to subjects as instructors and to sections as advisers.</li>
+                            <li><strong>Teacher Access:</strong> Teachers can access their assigned subjects to manage course content and view student progress.</li>
+                            <li><strong>Year Level Access:</strong> Configure which year levels/grade levels each teacher can access based on their specialization.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.ps-page {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 1.25rem 0;
+    max-width: 100%;
+}
+
+.ps-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: #2563eb;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.ps-back:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+    text-decoration: none;
+}
+
+.ps-hero {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 4px 24px rgba(220,38,38,0.16);
+}
+
+.ps-hero-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 52%, #dc2626 100%);
+}
+
+.ps-hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ps-hero-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 2rem 2.25rem;
+    flex-wrap: wrap;
+}
+
+.ps-hero-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.ps-hero-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+}
+
+.ps-hero-info {
+    min-width: 0;
+}
+
+.ps-hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.ps-tag {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.ps-tag-degree {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.ps-tag-code {
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+.ps-hero-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.ps-hero-desc {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.72);
+    margin: 0;
+    line-height: 1.5;
+    max-width: 560px;
+}
+
+.ps-layout {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.ps-layout-full {
+    grid-template-columns: 1fr;
+}
+
+.ps-card {
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+
+.ps-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafbff;
+    flex-wrap: wrap;
+}
+
+.ps-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.ps-card-title i {
+    color: #dc2626;
+    font-size: 1rem;
+}
+
+.ps-card-body {
+    padding: 1.5rem;
+}
+
+.help-content {
+    padding-left: 0;
+}
+
+.help-subsection {
+    margin-bottom: 1.5rem;
+}
+
+.help-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.help-subsection h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #334155;
+    margin: 0 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.help-subsection h3 i {
+    color: #dc2626;
+    font-size: 1.1rem;
+}
+
+.help-subsection ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
+.help-subsection li {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.help-subsection li strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.help-subsection li em {
+    color: #64748b;
+    font-style: italic;
+}
+
+.help-subsection ul ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.25rem;
+}
+
+.help-subsection ul ul li {
+    font-size: 0.85rem;
+    list-style-type: circle;
+}
+
+@media (max-width: 768px) {
+    .ps-hero-content {
+        padding: 1.5rem;
+    }
+
+    .ps-hero-left {
+        align-items: flex-start;
+    }
+
+    .ps-hero-avatar {
+        width: 58px;
+        height: 58px;
+        font-size: 1.15rem;
+    }
+
+    .ps-card-body {
+        padding: 1rem;
+    }
+}
+</style>

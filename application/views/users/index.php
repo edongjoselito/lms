@@ -91,7 +91,6 @@ if (!empty($users)) {
                 <div class="ps-table-head ps-user-table-head">
                     <div class="ps-th ps-th-num">#</div>
                     <div class="ps-th ps-th-user">User</div>
-                    <div class="ps-th ps-th-school">School</div>
                     <div class="ps-th ps-th-role">Role</div>
                     <div class="ps-th ps-th-status">Status</div>
                     <div class="ps-th ps-th-created">Created</div>
@@ -102,12 +101,11 @@ if (!empty($users)) {
                         <?php
                         $full_name = trim($user->first_name . ' ' . $user->last_name);
                         $initials = strtoupper(substr((string) $user->first_name, 0, 1) . substr((string) $user->last_name, 0, 1));
-                        $school_name = isset($user->school_name) && $user->school_name ? trim((string) $user->school_name) : '';
                         $role_name = isset($user->role_name) ? trim((string) $user->role_name) : '';
                         $role_slug = isset($user->role_slug) ? trim((string) $user->role_slug) : '';
                         $status_label = !empty($user->status) ? 'Active' : 'Inactive';
                         $created_label = !empty($user->created_at) ? date('M d, Y', strtotime($user->created_at)) : '-';
-                        $search_text = strtolower(trim($full_name . ' ' . $user->email . ' ' . $school_name . ' ' . $role_name . ' ' . $status_label));
+                        $search_text = strtolower(trim($full_name . ' ' . $user->email . ' ' . $role_name . ' ' . $status_label));
                         ?>
                         <div class="ps-subject-item ps-user-item" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES, 'UTF-8') ?>">
                             <div class="ps-col-num">
@@ -122,17 +120,6 @@ if (!empty($users)) {
                                         <div class="ps-user-email"><?= htmlspecialchars($user->email) ?></div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="ps-col-school">
-                                <?php if ($school_name !== ''): ?>
-                                    <span class="ps-detail-badge">
-                                        <i class="bi bi-building"></i>
-                                        <?= htmlspecialchars($school_name) ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="ps-muted-empty">—</span>
-                                <?php endif; ?>
                             </div>
 
                             <div class="ps-col-role">
@@ -494,7 +481,7 @@ document.getElementById('userSearch') && document.getElementById('userSearch').a
 
 .ps-user-table-head {
     display: grid;
-    grid-template-columns: 52px minmax(220px, 1.4fr) minmax(140px, 1fr) minmax(110px, 0.7fr) minmax(100px, 0.6fr) minmax(110px, 0.7fr) auto;
+    grid-template-columns: 52px minmax(220px, 1.4fr) minmax(110px, 0.7fr) minmax(100px, 0.6fr) minmax(110px, 0.7fr) auto;
     padding: 0.55rem 1.5rem;
     background: #f8faff;
     border-bottom: 1px solid #eaecf0;
@@ -522,7 +509,7 @@ document.getElementById('userSearch') && document.getElementById('userSearch').a
 .ps-user-item {
     position: relative;
     display: grid;
-    grid-template-columns: 52px minmax(220px, 1.4fr) minmax(140px, 1fr) minmax(110px, 0.7fr) minmax(100px, 0.6fr) minmax(110px, 0.7fr) auto;
+    grid-template-columns: 52px minmax(220px, 1.4fr) minmax(110px, 0.7fr) minmax(100px, 0.6fr) minmax(110px, 0.7fr) auto;
     align-items: center;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #f1f5f9;
@@ -563,7 +550,6 @@ document.getElementById('userSearch') && document.getElementById('userSearch').a
 }
 
 .ps-col-user,
-.ps-col-school,
 .ps-col-role,
 .ps-col-status,
 .ps-col-created {
@@ -895,7 +881,6 @@ document.getElementById('userSearch') && document.getElementById('userSearch').a
         gap: 0.65rem 0;
     }
 
-    .ps-col-school,
     .ps-col-role,
     .ps-col-status,
     .ps-col-created {
@@ -960,7 +945,6 @@ document.getElementById('userSearch') && document.getElementById('userSearch').a
     }
 
     .ps-col-user,
-    .ps-col-school,
     .ps-col-role,
     .ps-col-status,
     .ps-col-created,

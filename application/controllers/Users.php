@@ -39,10 +39,10 @@ class Users extends Admin_Controller
     {
         $data['title'] = 'Add New User';
         $data['user'] = null;
-        // Filter roles to show teacher, school_admin, student, registrar, and course_creator
+        // Filter roles to show teacher, school_admin, student, and registrar
         $all_roles = $this->User_model->get_roles();
         $data['roles'] = array_filter($all_roles, function ($role) {
-            return in_array($role->slug, array('teacher', 'school_admin', 'student', 'registrar', 'course_creator'));
+            return in_array($role->slug, array('teacher', 'school_admin', 'student', 'registrar'));
         });
 
         if ($this->input->method() === 'post') {
@@ -88,7 +88,11 @@ class Users extends Admin_Controller
     {
         $data['title'] = 'Edit User';
         $data['user'] = $this->User_model->get($id);
-        $data['roles'] = $this->User_model->get_roles();
+        // Filter roles to show teacher, school_admin, student, and registrar
+        $all_roles = $this->User_model->get_roles();
+        $data['roles'] = array_filter($all_roles, function ($role) {
+            return in_array($role->slug, array('teacher', 'school_admin', 'student', 'registrar'));
+        });
 
         if (!$data['user']) {
             show_404();

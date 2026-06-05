@@ -7,12 +7,26 @@ class User_model extends CI_Model
 
     public function authenticate($email, $password)
     {
+        // First try to find user by email
         $user = $this->db->select('users.*, roles.slug as role_slug, roles.name as role_name')
             ->join('roles', 'roles.id = users.role_id')
             ->where('users.email', $email)
             ->where('users.status', 1)
             ->get('users')
             ->row();
+
+        // If not found by email, try to find student by student_id
+        if (!$user) {
+            $student = $this->db->where('student_id', $email)->where('status', 'active')->get('students')->row();
+            if ($student) {
+                $user = $this->db->select('users.*, roles.slug as role_slug, roles.name as role_name')
+                    ->join('roles', 'roles.id = users.role_id')
+                    ->where('users.id', $student->user_id)
+                    ->where('users.status', 1)
+                    ->get('users')
+                    ->row();
+            }
+        }
 
         if ($user && password_verify($password, $user->password)) {
             return $user;

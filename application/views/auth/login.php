@@ -1241,7 +1241,7 @@
 
                     <?= form_open('auth/login', array('autocomplete' => 'off')) ?>
                         <div class="field-group">
-                            <label class="field-label" for="email">Username</label>
+                            <label class="field-label" for="email">Email or Student Number</label>
                             <div class="input-wrap">
                                 <span class="input-icon"><i class="bi bi-person-fill"></i></span>
                                 <input type="text" class="form-control" id="email" name="email" autocomplete="username" required autofocus>
