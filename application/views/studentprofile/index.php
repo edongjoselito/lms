@@ -4,6 +4,7 @@
 $profile_count = !empty($profiles) ? count($profiles) : 0;
 $active_count = 0;
 $search_label = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
+$enrolled_user_ids = isset($enrolled_user_ids) && is_array($enrolled_user_ids) ? array_map('intval', array_column($enrolled_user_ids, 'student_id')) : array();
 
 if (!empty($profiles)) {
     foreach ($profiles as $profile_item) {
@@ -99,6 +100,7 @@ if (!empty($profiles)) {
                         $student_initials = strtoupper(substr((string) $p->first_name, 0, 1) . substr((string) $p->last_name, 0, 1));
                         $profile_email = isset($p->profile_email) && trim((string) $p->profile_email) !== '' ? trim((string) $p->profile_email) : '';
                         $birth_date = !empty($p->birth_date) ? date('M d, Y', strtotime($p->birth_date)) : '-';
+                        $is_currently_enrolled = !empty($p->user_id) && in_array((int) $p->user_id, $enrolled_user_ids, true);
                         ?>
                         <div class="ps-subject-item ps-student-item">
                             <div class="ps-col-num">
@@ -142,9 +144,11 @@ if (!empty($profiles)) {
                             </div>
 
                             <div class="ps-col-actions">
-                                <a href="<?= site_url('studentprofile/enroll/' . $p->id) ?>" class="ps-action-btn ps-action-view" title="Enroll">
-                                    <i class="bi bi-person-plus-fill"></i> Enroll
-                                </a>
+                                <?php if (!$is_currently_enrolled): ?>
+                                    <a href="<?= site_url('studentprofile/enroll/' . $p->id) ?>" class="ps-action-btn ps-action-view" title="Enroll">
+                                        <i class="bi bi-person-plus-fill"></i> Enroll
+                                    </a>
+                                <?php endif; ?>
                                 <a href="<?= site_url('studentprofile/edit/' . $p->id) ?>" class="ps-action-btn ps-action-edit" title="Edit">
                                     <i class="bi bi-pencil-fill"></i> Edit
                                 </a>

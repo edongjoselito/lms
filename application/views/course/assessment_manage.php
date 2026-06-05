@@ -168,7 +168,6 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                     <div class="col-md-6">
                         <label class="form-label am-label">Question File</label>
                         <input type="file" class="form-control am-input" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml">
-                        <div class="am-help-text">Upload a GIFT, TXT, or XML file.</div>
                     </div>
                     <div class="col-12">
                         <label class="form-label am-label">Paste Question Content</label>

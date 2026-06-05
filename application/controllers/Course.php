@@ -123,6 +123,23 @@ class Course extends MY_Controller {
         return (int) $module->created_by === (int) $this->current_user->id;
     }
 
+    private function can_view_hidden_content($module)
+    {
+        if (!$module) {
+            return false;
+        }
+
+        if (in_array($this->original_role_slug, array('super_admin', 'course_creator'))) {
+            return true;
+        }
+
+        if (!$this->current_user) {
+            return false;
+        }
+
+        return (int) $module->created_by === (int) $this->current_user->id;
+    }
+
     private function require_module_owner($module, $message = 'You can only manage content that you created.')
     {
         if ($this->can_manage_module_content($module)) {
@@ -492,7 +509,16 @@ class Course extends MY_Controller {
             $module->lessons = $this->Lesson_model->get_lessons($module->id);
             $module->activities = $this->Lesson_model->get_activities($module->id);
 
+            $can_view_hidden = $this->can_view_hidden_content($module);
+
             if ($filter_unpublished) {
+                $module->lessons = array_values(array_filter($module->lessons, function($lesson) {
+                    return !empty($lesson->is_published);
+                }));
+                $module->activities = array_values(array_filter($module->activities, function($activity) {
+                    return !empty($activity->is_published);
+                }));
+            } elseif (!$can_view_hidden) {
                 $module->lessons = array_values(array_filter($module->lessons, function($lesson) {
                     return !empty($lesson->is_published);
                 }));

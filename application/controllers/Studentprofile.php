@@ -15,6 +15,13 @@ class Studentprofile extends Admin_Controller
         $data['title'] = 'Student Profiles';
         $search = $this->input->get('search', TRUE);
         $data['profiles'] = $this->Studentprofile_model->get_all($this->school_id, $search);
+        $data['enrolled_user_ids'] = $this->db->select('student_id')
+            ->from('enrollments')
+            ->where('school_id', $this->school_id)
+            ->where('status', 'enrolled')
+            ->group_by('student_id')
+            ->get()
+            ->result_array();
         $this->render('studentprofile/index', $data);
     }
 
