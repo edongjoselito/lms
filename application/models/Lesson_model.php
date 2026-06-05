@@ -4,6 +4,56 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 #[\AllowDynamicProperties]
 class Lesson_model extends CI_Model {
 
+    private $lesson_taught_statuses_table_exists = null;
+
+    private function ensure_learning_competency_column()
+    {
+        if (!$this->db->field_exists('learning_competency_id', 'lessons')) {
+            $this->db->query("ALTER TABLE `lessons` ADD COLUMN `learning_competency_id` int(11) UNSIGNED DEFAULT NULL AFTER `module_id`, ADD KEY `idx_lesson_learning_competency` (`learning_competency_id`)");
+        }
+    }
+
+    private function ensure_taught_at_column()
+    {
+        if (!$this->db->field_exists('taught_at', 'lessons')) {
+            $this->db->query("ALTER TABLE `lessons` ADD COLUMN `taught_at` datetime DEFAULT NULL AFTER `is_published`");
+        }
+    }
+
+    private function ensure_lesson_taught_statuses_table()
+    {
+        if ($this->lesson_taught_statuses_table_exists === true) {
+            return;
+        }
+
+        if ($this->db->table_exists('lesson_taught_statuses')) {
+            $this->lesson_taught_statuses_table_exists = true;
+            return;
+        }
+
+        $this->db->query("CREATE TABLE IF NOT EXISTS `lesson_taught_statuses` (
+            `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+            `lesson_id` int(11) UNSIGNED NOT NULL,
+            `user_id` int(11) UNSIGNED NOT NULL,
+            `taught_at` datetime NOT NULL,
+            `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_lesson_user_taught` (`lesson_id`,`user_id`),
+            KEY `idx_lesson_taught_user` (`user_id`),
+            CONSTRAINT `fk_lesson_taught_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `lessons`(`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_lesson_taught_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $this->lesson_taught_statuses_table_exists = true;
+    }
+
+    private function ensure_lesson_schema()
+    {
+        $this->ensure_learning_competency_column();
+        $this->ensure_taught_at_column();
+        $this->ensure_lesson_taught_statuses_table();
+    }
+
     // ---- Modules ----
     public function get_modules($class_program_id)
     {
@@ -70,6 +120,7 @@ class Lesson_model extends CI_Model {
     // ---- Lessons ----
     public function get_lessons($module_id)
     {
+        $this->ensure_lesson_schema();
         return $this->db->where('module_id', $module_id)
                         ->order_by('order_num', 'ASC')
                         ->get('lessons')
@@ -78,6 +129,8 @@ class Lesson_model extends CI_Model {
 
     public function get_shared_grade_level_lessons($current_subject_id, $year_level, $exclude_school_id = null)
     {
+        $this->ensure_lesson_schema();
+
         if ($year_level === null || $year_level === '') {
             return array();
         }
@@ -122,6 +175,7 @@ class Lesson_model extends CI_Model {
 
     public function get_lessons_by_class($class_program_id)
     {
+        $this->ensure_lesson_schema();
         return $this->db->select('lessons.*, modules.title as module_title')
                         ->join('modules', 'modules.id = lessons.module_id')
                         ->where('modules.class_program_id', $class_program_id)
@@ -133,6 +187,7 @@ class Lesson_model extends CI_Model {
 
     public function get_lesson($id)
     {
+        $this->ensure_lesson_schema();
         return $this->db->select('lessons.*, modules.title as module_title, modules.class_program_id')
                         ->join('modules', 'modules.id = lessons.module_id')
                         ->where('lessons.id', $id)
@@ -142,13 +197,145 @@ class Lesson_model extends CI_Model {
 
     public function create_lesson($data)
     {
+        $this->ensure_lesson_schema();
         $this->db->insert('lessons', $data);
         return $this->db->insert_id();
     }
 
     public function update_lesson($id, $data)
     {
+        $this->ensure_lesson_schema();
         return $this->db->where('id', $id)->update('lessons', $data);
+    }
+
+    public function get_lesson_taught_status($lesson_id, $user_id)
+    {
+        $this->ensure_lesson_schema();
+        $lesson_id = (int) $lesson_id;
+        $user_id = (int) $user_id;
+
+        if ($lesson_id < 1 || $user_id < 1) {
+            return null;
+        }
+
+        return $this->db->where('lesson_id', $lesson_id)
+            ->where('user_id', $user_id)
+            ->get('lesson_taught_statuses')
+            ->row();
+    }
+
+    public function get_lesson_taught_map($lesson_ids, $user_id)
+    {
+        $this->ensure_lesson_schema();
+        $user_id = (int) $user_id;
+        $lesson_ids = array_values(array_unique(array_filter(array_map('intval', (array) $lesson_ids))));
+
+        if ($user_id < 1 || empty($lesson_ids)) {
+            return array();
+        }
+
+        $rows = $this->db->select('lesson_id, taught_at')
+            ->where('user_id', $user_id)
+            ->where_in('lesson_id', $lesson_ids)
+            ->get('lesson_taught_statuses')
+            ->result();
+
+        $map = array();
+        foreach ($rows as $row) {
+            $map[(int) $row->lesson_id] = (string) $row->taught_at;
+        }
+
+        return $map;
+    }
+
+    private function save_lesson_taught_status($lesson_id, $user_id, $taught_at)
+    {
+        $this->ensure_lesson_schema();
+        $lesson_id = (int) $lesson_id;
+        $user_id = (int) $user_id;
+
+        if ($lesson_id < 1 || $user_id < 1 || empty($taught_at)) {
+            return false;
+        }
+
+        $existing = $this->get_lesson_taught_status($lesson_id, $user_id);
+        $data = array(
+            'taught_at' => $taught_at,
+        );
+
+        if ($existing) {
+            return $this->db->where('id', (int) $existing->id)
+                ->update('lesson_taught_statuses', $data);
+        }
+
+        $data['lesson_id'] = $lesson_id;
+        $data['user_id'] = $user_id;
+        return $this->db->insert('lesson_taught_statuses', $data);
+    }
+
+    public function mark_lesson_taught($lesson_id, $user_id, $taught_at = null)
+    {
+        $taught_at = $taught_at ? (string) $taught_at : date('Y-m-d H:i:s');
+        return $this->save_lesson_taught_status($lesson_id, $user_id, $taught_at);
+    }
+
+    public function clear_lesson_taught($lesson_id, $user_id)
+    {
+        $this->ensure_lesson_schema();
+        return $this->db->where('lesson_id', (int) $lesson_id)
+            ->where('user_id', (int) $user_id)
+            ->delete('lesson_taught_statuses');
+    }
+
+    public function update_lesson_taught_date($lesson_id, $user_id, $taught_at)
+    {
+        $this->ensure_lesson_schema();
+        $existing = $this->get_lesson_taught_status($lesson_id, $user_id);
+        if (!$existing) {
+            return false;
+        }
+
+        return $this->db->where('id', (int) $existing->id)->update('lesson_taught_statuses', array(
+            'taught_at' => $taught_at,
+        ));
+    }
+
+    public function get_subject_learning_competency_progress($subject_id, $user_id = null)
+    {
+        $this->ensure_lesson_schema();
+
+        $user_id = (int) $user_id;
+        $this->db->from('lessons');
+        $this->db->join('modules', 'modules.id = lessons.module_id');
+
+        if ($user_id > 0) {
+            $this->db->select('lessons.learning_competency_id, COUNT(lessons.id) AS total_lessons, SUM(CASE WHEN lts.taught_at IS NOT NULL THEN 1 ELSE 0 END) AS taught_lessons, MAX(lts.taught_at) AS latest_taught_at', false);
+            $this->db->join('lesson_taught_statuses lts', 'lts.lesson_id = lessons.id AND lts.user_id = ' . $user_id, 'left');
+        } else {
+            $this->db->select('lessons.learning_competency_id, COUNT(lessons.id) AS total_lessons, SUM(CASE WHEN lessons.taught_at IS NOT NULL THEN 1 ELSE 0 END) AS taught_lessons, MAX(lessons.taught_at) AS latest_taught_at', false);
+        }
+
+        $rows = $this->db->where('modules.subject_id', (int) $subject_id)
+            ->where('lessons.learning_competency_id IS NOT NULL', null, false)
+            ->group_by('lessons.learning_competency_id')
+            ->get()
+            ->result();
+
+        $progress = array();
+        foreach ($rows as $row) {
+            $competency_id = (int) $row->learning_competency_id;
+            if ($competency_id < 1) {
+                continue;
+            }
+
+            $progress[$competency_id] = array(
+                'total_lessons' => (int) $row->total_lessons,
+                'taught_lessons' => (int) $row->taught_lessons,
+                'latest_taught_at' => !empty($row->latest_taught_at) ? (string) $row->latest_taught_at : null,
+            );
+        }
+
+        return $progress;
     }
 
     public function delete_lesson($id)
@@ -464,6 +651,45 @@ class Lesson_model extends CI_Model {
         return true;
     }
 
+    public function reorder_subject_modules($subject_id, $module_ids)
+    {
+        $existing_ids = array_map('intval', array_map(function ($row) {
+            return $row->id;
+        }, $this->db->select('id')->where('subject_id', $subject_id)->get('modules')->result()));
+
+        if (count($existing_ids) !== count($module_ids)) {
+            return false;
+        }
+
+        $existing_lookup = array_fill_keys($existing_ids, true);
+        $seen = array();
+
+        $this->db->trans_begin();
+
+        foreach ($module_ids as $index => $module_id) {
+            $module_id = (int) $module_id;
+
+            if ($module_id < 1 || isset($seen[$module_id]) || !isset($existing_lookup[$module_id])) {
+                $this->db->trans_rollback();
+                return false;
+            }
+
+            $this->db->where('id', $module_id)
+                ->where('subject_id', $subject_id)
+                ->update('modules', array('order_num' => $index + 1));
+
+            $seen[$module_id] = true;
+        }
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return true;
+    }
+
     // ---- Lesson Completions (Sequential Access) ----
     public function mark_lesson_completed($student_id, $lesson_id)
     {
@@ -493,13 +719,26 @@ class Lesson_model extends CI_Model {
                         ->count_all_results('lesson_completions') > 0;
     }
 
-    public function get_lesson_completions($lesson_id)
+    public function get_lesson_completions($lesson_id, $student_ids = null)
     {
-        return $this->db->select('lesson_completions.completed_at, users.id as user_id, CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE)
-            ->from('lesson_completions')
-            ->join('students', 'students.id = lesson_completions.student_id')
-            ->join('users', 'users.id = students.user_id')
-            ->where('lesson_completions.lesson_id', $lesson_id)
+        if (is_array($student_ids)) {
+            $student_ids = array_values(array_unique(array_map('intval', array_filter($student_ids))));
+            if (empty($student_ids)) {
+                return array();
+            }
+        }
+
+        $this->db->select('lesson_completions.completed_at, users.id as user_id, CONCAT(users.first_name, " ", users.last_name) as name, users.email', FALSE);
+        $this->db->from('lesson_completions');
+        $this->db->join('students', 'students.id = lesson_completions.student_id');
+        $this->db->join('users', 'users.id = students.user_id');
+        $this->db->where('lesson_completions.lesson_id', $lesson_id);
+
+        if (is_array($student_ids)) {
+            $this->db->where_in('lesson_completions.student_id', $student_ids);
+        }
+
+        return $this->db
             ->order_by('lesson_completions.completed_at', 'DESC')
             ->get()
             ->result();

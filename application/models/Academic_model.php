@@ -875,6 +875,69 @@ class Academic_model extends CI_Model
             ->result();
     }
 
+    public function get_subject_completion_student_ids($subject_id, $school_id = null, $teacher_user_id = null)
+    {
+        $this->ensure_class_program_enrollment_key_column();
+
+        $build_section_query = function () use ($subject_id, $school_id) {
+            $this->db->distinct();
+            $this->db->select('class_programs.section_id');
+            $this->db->from('class_programs');
+            $this->db->join('sections', 'sections.id = class_programs.section_id');
+            $this->db->where('class_programs.subject_id', (int) $subject_id);
+            $this->db->where('class_programs.status', 1);
+
+            if (!empty($school_id)) {
+                $this->db->where('sections.school_id', (int) $school_id);
+            }
+
+            return $this->db;
+        };
+
+        $section_ids = array();
+        if (!empty($teacher_user_id)) {
+            $teacher = $this->get_teacher_by_user($teacher_user_id);
+            if ($teacher) {
+                $teacher_rows = $build_section_query()
+                    ->where('class_programs.teacher_id', (int) $teacher->id)
+                    ->get()
+                    ->result();
+
+                foreach ($teacher_rows as $row) {
+                    $section_ids[] = (int) $row->section_id;
+                }
+            }
+        }
+
+        if (empty($section_ids)) {
+            $rows = $build_section_query()->get()->result();
+            foreach ($rows as $row) {
+                $section_ids[] = (int) $row->section_id;
+            }
+        }
+
+        $section_ids = array_values(array_unique(array_filter($section_ids)));
+        if (empty($section_ids)) {
+            return array();
+        }
+
+        $this->db->distinct();
+        $student_rows = $this->db->select('students.id')
+            ->from('enrollments')
+            ->join('students', 'students.user_id = enrollments.student_id')
+            ->where_in('enrollments.section_id', $section_ids)
+            ->group_start()
+                ->where('enrollments.status', 'enrolled')
+                ->or_where('enrollments.status', 1)
+            ->group_end()
+            ->get()
+            ->result();
+
+        return array_values(array_unique(array_map(function ($row) {
+            return (int) $row->id;
+        }, $student_rows)));
+    }
+
     public function get_sections_by_program($program_id, $school_id = null)
     {
         $select_fields = 'sections.*,
@@ -1572,5 +1635,78 @@ class Academic_model extends CI_Model
             ->order_by('users.first_name', 'ASC')
             ->get()
             ->result();
+    }
+
+    // ---- Learning Competencies ----
+    public function ensure_learning_competencies_table()
+    {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'learning_competencies'")->num_rows();
+        if ($checkTable == 0) {
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS `learning_competencies` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `subject_id` int(11) NOT NULL,
+                  `school_id` int(11) DEFAULT NULL,
+                  `code` varchar(50) DEFAULT NULL,
+                  `description` text NOT NULL,
+                  `quarter` int(11) DEFAULT NULL,
+                  `sort_order` int(11) DEFAULT 0,
+                  `created_by` int(11) UNSIGNED DEFAULT NULL,
+                  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `subject_id` (`subject_id`),
+                  KEY `school_id` (`school_id`),
+                  KEY `created_by` (`created_by`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+        }
+
+        if (!$this->db->field_exists('created_by', 'learning_competencies')) {
+            $this->db->query("ALTER TABLE `learning_competencies` ADD COLUMN `created_by` int(11) UNSIGNED DEFAULT NULL AFTER `sort_order`");
+            $this->db->query("ALTER TABLE `learning_competencies` ADD KEY `created_by` (`created_by`)");
+        }
+    }
+
+    public function get_learning_competencies($subject_id)
+    {
+        $this->ensure_learning_competencies_table();
+        return $this->db->select('learning_competencies.*')
+            ->select('CONCAT(TRIM(COALESCE(users.first_name, "")), " ", TRIM(COALESCE(users.last_name, ""))) AS creator_name', false)
+            ->from('learning_competencies')
+            ->join('users', 'users.id = learning_competencies.created_by', 'left')
+            ->where('learning_competencies.subject_id', $subject_id)
+            ->order_by('quarter', 'ASC')
+            ->order_by('sort_order', 'ASC')
+            ->order_by('learning_competencies.id', 'ASC')
+            ->get()
+            ->result();
+    }
+
+    public function get_learning_competency($id)
+    {
+        $this->ensure_learning_competencies_table();
+        return $this->db->where('id', $id)->get('learning_competencies')->row();
+    }
+
+    public function create_learning_competency($data)
+    {
+        $this->ensure_learning_competencies_table();
+        $this->db->insert('learning_competencies', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_learning_competency($id, $data)
+    {
+        $this->ensure_learning_competencies_table();
+        $this->db->where('id', $id)->update('learning_competencies', $data);
+        return $this->db->affected_rows() > 0;
+    }
+
+    public function delete_learning_competency($id)
+    {
+        $this->ensure_learning_competencies_table();
+        $this->db->where('id', $id)->delete('learning_competencies');
+        return $this->db->affected_rows() > 0;
     }
 }

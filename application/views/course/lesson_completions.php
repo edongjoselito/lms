@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-12">
         <div class="mb-3">
-            <a href="<?= site_url('course/content/' . $subject->id) ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
+            <a href="<?= !empty($back_url) ? $back_url : site_url('course/content/' . $subject->id) ?>" style="color:#6366f1;text-decoration:none;font-size:0.9rem;font-weight:500;">
                 <i class="bi bi-arrow-left me-1"></i> Back to Course Content
             </a>
         </div>

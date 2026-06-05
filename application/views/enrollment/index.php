@@ -56,7 +56,7 @@
                     <p style="color:#94a3b8;max-width:400px;margin:0 auto;">No students have been enrolled yet. Go to Student Profiles to enroll students.</p>
                 </div>
             <?php else: ?>
-                <div class="table-responsive" style="overflow:visible;">
+                <div class="table-responsive">
                     <table class="table table-hover" style="margin:0;">
                         <thead>
                             <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
@@ -120,6 +120,18 @@
                     </table>
                 </div>
             <?php endif; ?>
+
+<style>
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table {
+        min-width: 800px;
+    }
+}
+</style>
         </div>
     </div>
 </div>

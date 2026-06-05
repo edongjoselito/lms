@@ -44,11 +44,50 @@ if (!function_exists('course_lesson_notes_content')) {
         return $content;
     }
 }
+
+if (!function_exists('course_learning_competency_option_label')) {
+    function course_learning_competency_option_label($competency)
+    {
+        $code = isset($competency->code) ? trim((string) $competency->code) : '';
+        $description = isset($competency->description) ? trim((string) $competency->description) : '';
+
+        if ($code !== '' && $description !== '') {
+            return $code . ' - ' . $description;
+        }
+
+        return $code !== '' ? $code : $description;
+    }
+}
+
+if (!function_exists('course_format_taught_date')) {
+    function course_format_taught_date($date_time)
+    {
+        $timestamp = strtotime((string) $date_time);
+        return $timestamp ? date('M j, Y', $timestamp) : '';
+    }
+}
+
+if (!function_exists('course_lesson_completions_url')) {
+    function course_lesson_completions_url($lesson_id, $subject_id, $back_path = '')
+    {
+        $query = array(
+            'subject_id' => (int) $subject_id,
+        );
+
+        $back_path = trim((string) $back_path);
+        if ($back_path !== '') {
+            $query['back'] = $back_path;
+        }
+
+        return site_url('course/lesson_completions/' . (int) $lesson_id) . '?' . http_build_query($query);
+    }
+}
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
 $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
 $course_modules = isset($modules) && is_array($modules) ? $modules : array();
 $shared_modules = isset($shared_modules) && is_array($shared_modules) ? $shared_modules : array();
+$course_subject_learning_competencies = isset($subject_learning_competencies) && is_array($subject_learning_competencies) ? $subject_learning_competencies : array();
 $course_module_count = count($course_modules);
 $course_lesson_count = 0;
 $course_activity_count = 0;
@@ -75,7 +114,10 @@ $course_original_role_slug = isset($original_role_slug) ? (string) $original_rol
 $course_back_label = 'Back to Subjects';
 $course_csrf_token_name = $this->security->get_csrf_token_name();
 $course_csrf_hash = $this->security->get_csrf_hash();
+$course_taught_date_update_base_url = site_url('course/update_lesson_taught_date');
 $course_return_path = 'course/content/' . (int) $subject->id;
+$course_content_return_query = isset($_SERVER['QUERY_STRING']) ? trim((string) $_SERVER['QUERY_STRING']) : '';
+$course_can_reorder_modules = !empty($can_reorder_modules);
 
 if ($course_back_param === 'course/teacher_subjects') {
     $course_back_label = 'Back to My Subjects';
@@ -97,6 +139,8 @@ if ($edit_mode) {
 if ($course_back_param !== '') {
     $course_return_path .= (strpos($course_return_path, '?') === false ? '?' : '&') . 'back=' . urlencode($course_back_param);
 }
+
+$course_learning_competencies_url = site_url('course/learning_competencies/' . (int) $subject->id) . '?back=' . urlencode($course_return_path);
 ?>
 
 <div class="cc-wrap">
@@ -219,6 +263,10 @@ if ($course_back_param !== '') {
                         </svg>
                         View
                     </a>
+                    <a href="<?= $course_learning_competencies_url ?>" class="cc-btn cc-btn--ghost">
+                        <i class="bi bi-list-check"></i>
+                        Learning Competencies
+                    </a>
                     <button class="cc-btn cc-btn--primary" data-bs-toggle="modal" data-bs-target="#addModuleModal">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -226,6 +274,10 @@ if ($course_back_param !== '') {
                         Add Module
                     </button>
                 <?php elseif (empty($is_student_mode) && !empty($can_edit)): ?>
+                    <a href="<?= $course_learning_competencies_url ?>" class="cc-btn cc-btn--ghost">
+                        <i class="bi bi-list-check"></i>
+                        Learning Competencies
+                    </a>
                     <?php $back_param = $course_back_param; ?>
                     <a href="<?= site_url('course/content/' . $subject->id . '?edit=1' . ($back_param ? '&back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--primary">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -233,6 +285,11 @@ if ($course_back_param !== '') {
                             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" />
                         </svg>
                         Edit Content
+                    </a>
+                <?php else: ?>
+                    <a href="<?= $course_learning_competencies_url ?>" class="cc-btn cc-btn--ghost">
+                        <i class="bi bi-list-check"></i>
+                        Learning Competencies
                     </a>
                 <?php endif; ?>
             </div>
@@ -284,6 +341,7 @@ if ($course_back_param !== '') {
                     <?php endif; ?>
                 </div>
             <?php else: ?>
+                <div class="<?= $course_can_reorder_modules ? 'cc-module-sortable-list' : 'cc-module-list' ?>"<?= $course_can_reorder_modules ? ' data-reorder-url="' . htmlspecialchars(site_url('course/reorder_subject_modules/' . $subject->id), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
                 <?php foreach ($modules as $module_index => $module): ?>
                     <?php
                     $module_lessons_count = !empty($module->lessons) && is_array($module->lessons) ? count($module->lessons) : 0;
@@ -291,12 +349,18 @@ if ($course_back_param !== '') {
                     $module_item_count = $module_lessons_count + $module_activities_count;
                     $can_manage_module = !empty($module->can_manage);
                     ?>
+                    <div class="<?= $course_can_reorder_modules ? 'cc-module-sortable-entry' : '' ?>"<?= $course_can_reorder_modules ? ' data-module-id="' . (int) $module->id . '"' : '' ?>>
                     <!-- Module Card -->
                     <div class="cc-module-card" id="module-<?= $module->id ?>">
                         <!-- Module Header -->
                         <div class="cc-module-header">
                             <div class="cc-module-title-wrap">
-                                <span class="cc-module-number"><?= $module_index + 1 ?></span>
+                                <?php if ($course_can_reorder_modules): ?>
+                                    <button type="button" class="cc-drag-handle cc-module-drag-handle" draggable="true" aria-label="Drag module to reorder" title="Drag module to reorder">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </button>
+                                <?php endif; ?>
+                                <span class="cc-module-number"><span class="cc-module-number-label"><?= $module_index + 1 ?></span></span>
                                 <div class="cc-module-title-group">
                                     <h5 class="cc-module-title"><?= htmlspecialchars($module->title) ?></h5>
                                     <?php if (!$module->is_published): ?>
@@ -417,6 +481,16 @@ if ($course_back_param !== '') {
                                         $is_completed_lesson = $is_lesson_item && in_array((int) $item->id, $completed_lesson_ids ?? array());
                                         $is_completed_activity = !$is_lesson_item && in_array((int) $item->id, $completed_activity_ids ?? array());
                                         $is_accessible_lesson = !$is_lesson_item || empty($is_student_mode) || in_array((int) $item->id, $accessible_lesson_ids ?? array());
+                                        $can_mark_lesson_taught = $is_lesson_item && empty($item->is_shared) && !empty($can_manage_sections) && !$student_content_view;
+                                        $lesson_taught_date = $is_lesson_item && empty($item->is_shared) && !empty($item->taught_at)
+                                            ? course_format_taught_date($item->taught_at)
+                                            : '';
+                                        $lesson_taught_input_value = $is_lesson_item && empty($item->is_shared) && !empty($item->taught_at)
+                                            ? date('Y-m-d', strtotime($item->taught_at))
+                                            : date('Y-m-d');
+                                        $item_completion_url = $is_lesson_item
+                                            ? course_lesson_completions_url($item->id, $subject->id, $course_return_path)
+                                            : '';
                                         $item_url = site_url('course/' . ($is_lesson_item ? 'lesson' : ($is_quiz_item ? 'assessment' : 'activity')) . '/' . $item->id);
                                         $can_manage_item = !empty($item->can_manage);
                                         ?>
@@ -455,6 +529,9 @@ if ($course_back_param !== '') {
                                                                     <span class="ms-1 badge bg-success"><i class="bi bi-check2 me-1"></i>Completed</span>
                                                                 <?php elseif (!$is_accessible_lesson): ?>
                                                                     <span class="ms-1 badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Locked</span>
+                                                                <?php endif; ?>
+                                                                <?php if ($lesson_taught_date !== ''): ?>
+                                                                    <span class="ms-1 badge bg-light text-dark border"><i class="bi bi-calendar-event me-1"></i>Taught by you on <?= htmlspecialchars($lesson_taught_date, ENT_QUOTES, 'UTF-8') ?></span>
                                                                 <?php endif; ?>
                                                                 <?php if ($item->duration_minutes): ?>
                                                                     <span class="ms-1"><i class="bi bi-clock"></i> <?= $item->duration_minutes ?> min</span>
@@ -509,8 +586,27 @@ if ($course_back_param !== '') {
                                                     <ul class="dropdown-menu dropdown-menu-end">
                                                         <li><a class="dropdown-item" href="<?= $item_url ?>"><i class="bi bi-eye me-2"></i>View</a></li>
                                                         <?php if ($item->item_type === 'lesson'): ?>
+                                                            <?php if ($can_mark_lesson_taught): ?>
+                                                                <li>
+                                                                    <?= form_open($lesson_taught_date !== '' ? 'course/clear_lesson_taught/' . $item->id : 'course/mark_lesson_taught/' . $item->id, array('class' => 'mb-0')) ?>
+                                                                        <input type="hidden" name="return_query" value="<?= htmlspecialchars($course_content_return_query, ENT_QUOTES, 'UTF-8') ?>">
+                                                                        <button type="submit" class="dropdown-item"<?= $lesson_taught_date !== '' ? ' onclick="return confirm(\'Clear your taught status for this lesson?\')"' : '' ?>>
+                                                                            <i class="bi <?= $lesson_taught_date !== '' ? 'bi-arrow-counterclockwise' : 'bi-calendar2-check' ?> me-2"></i><?= $lesson_taught_date !== '' ? 'Clear My Taught Status' : 'Mark as Taught' ?>
+                                                                        </button>
+                                                                    </form>
+                                                                </li>
+                                                                <?php if ($lesson_taught_date !== ''): ?>
+                                                                    <li>
+                                                                        <button type="button" class="dropdown-item js-edit-taught-date" data-lesson-id="<?= (int) $item->id ?>" data-lesson-title="<?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?>" data-taught-date="<?= htmlspecialchars($lesson_taught_input_value, ENT_QUOTES, 'UTF-8') ?>">
+                                                                            <i class="bi bi-calendar-date me-2"></i>Edit Taught Date
+                                                                        </button>
+                                                                    </li>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($can_manage_sections)): ?>
+                                                                <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
+                                                            <?php endif; ?>
                                                             <?php if ($can_manage_item): ?>
-                                                                <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                                 <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                                 <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                                             <?php endif; ?>
@@ -535,7 +631,24 @@ if ($course_back_param !== '') {
                                                     <ul class="dropdown-menu dropdown-menu-end">
                                                         <li><a class="dropdown-item" href="<?= $item_url ?>"><i class="bi bi-eye me-2"></i>View</a></li>
                                                         <?php if ($item->item_type === 'lesson'): ?>
-                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_completions/' . $item->id) ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
+                                                            <?php if ($can_mark_lesson_taught): ?>
+                                                                <li>
+                                                                    <?= form_open($lesson_taught_date !== '' ? 'course/clear_lesson_taught/' . $item->id : 'course/mark_lesson_taught/' . $item->id, array('class' => 'mb-0')) ?>
+                                                                        <input type="hidden" name="return_query" value="<?= htmlspecialchars($course_content_return_query, ENT_QUOTES, 'UTF-8') ?>">
+                                                                        <button type="submit" class="dropdown-item"<?= $lesson_taught_date !== '' ? ' onclick="return confirm(\'Clear your taught status for this lesson?\')"' : '' ?>>
+                                                                            <i class="bi <?= $lesson_taught_date !== '' ? 'bi-arrow-counterclockwise' : 'bi-calendar2-check' ?> me-2"></i><?= $lesson_taught_date !== '' ? 'Clear My Taught Status' : 'Mark as Taught' ?>
+                                                                        </button>
+                                                                    </form>
+                                                                </li>
+                                                                <?php if ($lesson_taught_date !== ''): ?>
+                                                                    <li>
+                                                                        <button type="button" class="dropdown-item js-edit-taught-date" data-lesson-id="<?= (int) $item->id ?>" data-lesson-title="<?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?>" data-taught-date="<?= htmlspecialchars($lesson_taught_input_value, ENT_QUOTES, 'UTF-8') ?>">
+                                                                            <i class="bi bi-calendar-date me-2"></i>Edit Taught Date
+                                                                        </button>
+                                                                    </li>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
+                                                            <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                         <?php elseif ($is_quiz_item): ?>
                                                             <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-people me-2"></i>View Attempts</a></li>
                                                         <?php endif; ?>
@@ -563,11 +676,11 @@ if ($course_back_param !== '') {
                                                         <a href="#editLesson<?= $item->id ?>" class="btn-close" data-bs-toggle="collapse" role="button" aria-label="Close"></a>
                                                     </div>
                                                     <div class="row g-3">
-                                                        <div class="col-md-6">
+                                                        <div class="col-md-4">
                                                             <label class="form-label">Title</label>
                                                             <input type="text" class="form-control" name="title" value="<?= htmlspecialchars($item->title ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
                                                         </div>
-                                                        <div class="col-md-6">
+                                                        <div class="col-md-4">
                                                             <label class="form-label">Content Type</label>
                                                             <select class="form-select lesson-content-type" name="content_type">
                                                                 <option value="text" <?= $item->content_type == 'text' ? 'selected' : '' ?>>Text/HTML</option>
@@ -611,6 +724,20 @@ if ($course_back_param !== '') {
                                                                 </div>
                                                                 <div class="form-text">Enter the full URL of the external resource.</div>
                                                             </div>
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label">Learning Competency</label>
+                                                            <select class="form-select" name="learning_competency_id">
+                                                                <option value="">Select learning competency</option>
+                                                                <?php foreach ($course_subject_learning_competencies as $course_learning_competency): ?>
+                                                                    <option value="<?= (int) $course_learning_competency->id ?>" <?= !empty($item->learning_competency_id) && (int) $item->learning_competency_id === (int) $course_learning_competency->id ? 'selected' : '' ?>>
+                                                                        <?= htmlspecialchars(course_learning_competency_option_label($course_learning_competency), ENT_QUOTES, 'UTF-8') ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                            <?php if (empty($course_subject_learning_competencies)): ?>
+                                                                <div class="form-text">No learning competencies added for this subject yet.</div>
+                                                            <?php endif; ?>
                                                         </div>
                                                         <div class="col-12">
                                                             <label class="form-label lesson-content-label">Content</label>
@@ -692,11 +819,11 @@ if ($course_back_param !== '') {
                                             <a href="#addLesson<?= $module->id ?>" class="btn-close" data-bs-toggle="collapse" role="button" aria-label="Close"></a>
                                         </div>
                                         <div class="row g-3">
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label">Title</label>
                                                 <input type="text" class="form-control" name="title" required>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="form-label">Content Type</label>
                                                 <select class="form-select lesson-content-type" name="content_type">
                                                     <option value="text">Text/HTML</option>
@@ -733,6 +860,20 @@ if ($course_back_param !== '') {
                                                     </div>
                                                     <div class="form-text">Enter the full URL of the external resource.</div>
                                                 </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Learning Competency</label>
+                                                <select class="form-select" name="learning_competency_id">
+                                                    <option value="">Select learning competency</option>
+                                                    <?php foreach ($course_subject_learning_competencies as $course_learning_competency): ?>
+                                                        <option value="<?= (int) $course_learning_competency->id ?>">
+                                                            <?= htmlspecialchars(course_learning_competency_option_label($course_learning_competency), ENT_QUOTES, 'UTF-8') ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <?php if (empty($course_subject_learning_competencies)): ?>
+                                                    <div class="form-text">No learning competencies added for this subject yet.</div>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label lesson-content-label">Content</label>
@@ -897,7 +1038,9 @@ if ($course_back_param !== '') {
                             </div>
                         <?php endif; ?>
                     </div>
+                    </div>
                 <?php endforeach; ?>
+                </div>
 
                 <?php if (!empty($shared_modules)): ?>
                     <div class="cc-shared-library">
@@ -946,17 +1089,25 @@ if ($course_back_param !== '') {
                                             );
                                             $shared_lesson_icon = $shared_lesson_icons[$shared_lesson_type] ?? $shared_lesson_icons['text'];
                                             $shared_lesson_url = site_url('course/lesson/' . $shared_lesson->id . '?back=' . urlencode($course_return_path));
+                                            $shared_completion_url = course_lesson_completions_url($shared_lesson->id, $subject->id, $course_return_path);
                                             ?>
-                                            <a href="<?= $shared_lesson_url ?>" class="list-group-item cc-shared-lesson-link">
-                                                <span class="cc-shared-lesson-icon" style="background:<?= $shared_lesson_icon['color'] ?>;color:<?= $shared_lesson_icon['icon_color'] ?>;">
-                                                    <i class="bi <?= $shared_lesson_icon['icon'] ?>"></i>
-                                                </span>
-                                                <span class="cc-shared-lesson-body">
-                                                    <strong><?= htmlspecialchars($shared_lesson->title ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
-                                                    <small><?= htmlspecialchars($shared_lesson_icon['label'], ENT_QUOTES, 'UTF-8') ?></small>
-                                                </span>
-                                                <i class="bi bi-arrow-right-short cc-shared-lesson-arrow"></i>
-                                            </a>
+                                            <div class="cc-shared-lesson-row">
+                                                <a href="<?= $shared_lesson_url ?>" class="list-group-item cc-shared-lesson-link">
+                                                    <span class="cc-shared-lesson-icon" style="background:<?= $shared_lesson_icon['color'] ?>;color:<?= $shared_lesson_icon['icon_color'] ?>;">
+                                                        <i class="bi <?= $shared_lesson_icon['icon'] ?>"></i>
+                                                    </span>
+                                                    <span class="cc-shared-lesson-body">
+                                                        <strong><?= htmlspecialchars($shared_lesson->title ?? '', ENT_QUOTES, 'UTF-8') ?></strong>
+                                                        <small><?= htmlspecialchars($shared_lesson_icon['label'], ENT_QUOTES, 'UTF-8') ?></small>
+                                                    </span>
+                                                    <i class="bi bi-arrow-right-short cc-shared-lesson-arrow"></i>
+                                                </a>
+                                                <?php if (!empty($can_manage_sections)): ?>
+                                                    <a href="<?= $shared_completion_url ?>" class="cc-shared-lesson-action">
+                                                        <i class="bi bi-check2-circle me-1"></i>View Completions
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php endforeach; ?>
                                     </div>
                                 </div>
@@ -1050,6 +1201,33 @@ if ($course_back_param !== '') {
         </div>
     </div>
 </div>
+
+<?php if (empty($student_content_view) && !empty($can_manage_sections)): ?>
+    <div class="modal fade" id="taughtDateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <?= form_open('', ['class' => 'modal-content', 'id' => 'taughtDateForm']) ?>
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title mb-1">Edit Taught Date</h5>
+                        <p class="text-muted small mb-0" id="taughtDateLessonLabel"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="return_query" value="<?= htmlspecialchars($course_content_return_query, ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="mb-0">
+                        <label class="form-label">Date Taught</label>
+                        <input type="date" class="form-control" name="taught_date" id="taughtDateInput" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Date</button>
+                </div>
+            <?= form_close() ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <!-- Add Module Modal -->
 <?php if ($edit_mode): ?>
@@ -1870,20 +2048,46 @@ if ($course_back_param !== '') {
         color: #475569;
     }
 
+    .cc-shared-lesson-row {
+        display: flex;
+        align-items: stretch;
+        border-top: 1px solid #e2e8f0;
+    }
+
     .cc-shared-lesson-link {
         display: flex;
         align-items: center;
         gap: 0.85rem;
         border: 0;
-        border-top: 1px solid #e2e8f0;
         background: #ffffff;
         text-decoration: none;
         color: inherit;
+        flex: 1;
     }
 
     .cc-shared-lesson-link:hover {
         background: #f8fafc;
         color: inherit;
+        text-decoration: none;
+    }
+
+    .cc-shared-lesson-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1rem;
+        border-left: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #2563eb;
+        font-size: 0.76rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .cc-shared-lesson-action:hover {
+        background: #eff6ff;
+        color: #1d4ed8;
         text-decoration: none;
     }
 
@@ -2967,6 +3171,32 @@ if ($course_back_param !== '') {
         overflow: visible;
     }
 
+    .cc-module-sortable-entry {
+        display: block;
+    }
+
+    .cc-module-sortable-entry--dragging {
+        opacity: 0.82;
+    }
+
+    .cc-module-sortable-entry--dragging .cc-module-card {
+        border-color: #93c5fd !important;
+        box-shadow: 0 18px 36px rgba(37, 99, 235, 0.18);
+        transform: rotate(0.5deg);
+    }
+
+    .cc-module-sortable-entry--drop-target .cc-module-card {
+        border-top: 2px solid #2563eb !important;
+    }
+
+    .cc-module-sortable-list--saving {
+        opacity: 0.88;
+    }
+
+    .cc-module-drag-handle {
+        margin-right: 0.1rem;
+    }
+
     .cc-sortable-entry {
         display: block;
     }
@@ -3309,6 +3539,33 @@ if ($course_back_param !== '') {
             formData.append(courseCsrfTokenName, courseCsrfHash);
         }
 
+        var taughtDateModalElement = document.getElementById('taughtDateModal');
+        if (taughtDateModalElement) {
+            var taughtDateForm = document.getElementById('taughtDateForm');
+            var taughtDateInput = document.getElementById('taughtDateInput');
+            var taughtDateLessonLabel = document.getElementById('taughtDateLessonLabel');
+            var taughtDateModal = new bootstrap.Modal(taughtDateModalElement);
+
+            document.querySelectorAll('.js-edit-taught-date').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var lessonId = button.getAttribute('data-lesson-id') || '';
+                    var lessonTitle = button.getAttribute('data-lesson-title') || '';
+                    var taughtDate = button.getAttribute('data-taught-date') || '';
+
+                    taughtDateForm.action = <?= json_encode(rtrim($course_taught_date_update_base_url, '/')) ?> + '/' + lessonId;
+                    taughtDateInput.value = taughtDate;
+                    taughtDateLessonLabel.textContent = lessonTitle;
+                    taughtDateModal.show();
+                });
+            });
+
+            taughtDateModalElement.addEventListener('hidden.bs.modal', function() {
+                taughtDateForm.action = '';
+                taughtDateInput.value = '';
+                taughtDateLessonLabel.textContent = '';
+            });
+        }
+
         function collectModuleOrder(container) {
             return Array.prototype.map.call(container.querySelectorAll('.cc-sortable-entry'), function(entry) {
                 return {
@@ -3489,6 +3746,195 @@ if ($course_back_param !== '') {
         }
 
         document.querySelectorAll('.cc-sortable-list').forEach(setupModuleSortable);
+
+        function collectSubjectModuleOrder(container) {
+            return Array.prototype.map.call(container.querySelectorAll('.cc-module-sortable-entry'), function(entry) {
+                return parseInt(entry.getAttribute('data-module-id'), 10);
+            });
+        }
+
+        function refreshSubjectModuleNumbers(container) {
+            Array.prototype.forEach.call(container.querySelectorAll('.cc-module-number-label'), function(label, index) {
+                label.textContent = index + 1;
+            });
+        }
+
+        function restoreSubjectModuleOrder(container, previousOrder) {
+            if (!Array.isArray(previousOrder)) {
+                return;
+            }
+
+            previousOrder.forEach(function(moduleId) {
+                var entry = container.querySelector('.cc-module-sortable-entry[data-module-id="' + moduleId + '"]');
+                if (entry) {
+                    container.appendChild(entry);
+                }
+            });
+
+            refreshSubjectModuleNumbers(container);
+        }
+
+        function getSubjectModuleDragAfterEntry(container, y, draggingEntry) {
+            var draggableEntries = Array.prototype.filter.call(container.querySelectorAll('.cc-module-sortable-entry'), function(entry) {
+                return entry !== draggingEntry;
+            });
+
+            var closest = {
+                offset: Number.NEGATIVE_INFINITY,
+                element: null
+            };
+
+            draggableEntries.forEach(function(entry) {
+                var rect = entry.getBoundingClientRect();
+                var offset = y - rect.top - (rect.height / 2);
+                if (offset < 0 && offset > closest.offset) {
+                    closest = {
+                        offset: offset,
+                        element: entry
+                    };
+                }
+            });
+
+            return closest.element;
+        }
+
+        function persistSubjectModuleOrder(container, previousOrder) {
+            if (!container || container.dataset.reordering === '1') {
+                return;
+            }
+
+            var currentOrder = collectSubjectModuleOrder(container);
+            if (JSON.stringify(currentOrder) === JSON.stringify(previousOrder)) {
+                return;
+            }
+
+            container.dataset.reordering = '1';
+            container.classList.add('cc-module-sortable-list--saving');
+
+            var formData = new FormData();
+            appendCourseCsrfToken(formData);
+            currentOrder.forEach(function(moduleId, index) {
+                formData.append('module_ids[' + index + ']', moduleId);
+            });
+
+            fetch(container.getAttribute('data-reorder-url'), {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                cache: 'no-store'
+            }).then(function(response) {
+                return response.json().catch(function() {
+                    return {
+                        success: false,
+                        message: 'Unable to save the new module order.'
+                    };
+                }).then(function(data) {
+                    return {
+                        ok: response.ok,
+                        data: data
+                    };
+                });
+            }).then(function(result) {
+                refreshCourseCsrfToken(result.data.csrf_token_name, result.data.csrf_hash);
+
+                if (!result.ok || !result.data.success) {
+                    throw new Error(result.data.message || 'Unable to save the new module order.');
+                }
+
+                refreshSubjectModuleNumbers(container);
+            }).catch(function(error) {
+                restoreSubjectModuleOrder(container, previousOrder);
+                if (window.toast && typeof window.toast.error === 'function') {
+                    window.toast.error(error.message || 'Unable to save the new module order.');
+                }
+            }).finally(function() {
+                delete container.dataset.reordering;
+                container.classList.remove('cc-module-sortable-list--saving');
+            });
+        }
+
+        function setupSubjectModuleSortable(container) {
+            if (!container || container.querySelectorAll('.cc-module-sortable-entry').length < 2) {
+                return;
+            }
+
+            var draggedEntry = null;
+            var previousOrder = null;
+
+            container.querySelectorAll('.cc-module-drag-handle').forEach(function(handle) {
+                handle.addEventListener('dragstart', function(event) {
+                    if (container.dataset.reordering === '1') {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    draggedEntry = handle.closest('.cc-module-sortable-entry');
+                    previousOrder = collectSubjectModuleOrder(container);
+
+                    if (!draggedEntry) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    draggedEntry.classList.add('cc-module-sortable-entry--dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', draggedEntry.getAttribute('data-module-id'));
+                });
+
+                handle.addEventListener('dragend', function() {
+                    if (draggedEntry) {
+                        draggedEntry.classList.remove('cc-module-sortable-entry--dragging');
+                    }
+
+                    container.querySelectorAll('.cc-module-sortable-entry--drop-target').forEach(function(entry) {
+                        entry.classList.remove('cc-module-sortable-entry--drop-target');
+                    });
+
+                    if (draggedEntry && previousOrder) {
+                        persistSubjectModuleOrder(container, previousOrder);
+                    }
+
+                    draggedEntry = null;
+                    previousOrder = null;
+                });
+            });
+
+            container.addEventListener('dragover', function(event) {
+                if (!draggedEntry || draggedEntry.parentNode !== container) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                var afterEntry = getSubjectModuleDragAfterEntry(container, event.clientY, draggedEntry);
+                container.querySelectorAll('.cc-module-sortable-entry--drop-target').forEach(function(entry) {
+                    entry.classList.remove('cc-module-sortable-entry--drop-target');
+                });
+
+                if (afterEntry) {
+                    afterEntry.classList.add('cc-module-sortable-entry--drop-target');
+                    container.insertBefore(draggedEntry, afterEntry);
+                } else {
+                    container.appendChild(draggedEntry);
+                }
+
+                refreshSubjectModuleNumbers(container);
+            });
+
+            container.addEventListener('drop', function(event) {
+                if (!draggedEntry || draggedEntry.parentNode !== container) {
+                    return;
+                }
+
+                event.preventDefault();
+                container.querySelectorAll('.cc-module-sortable-entry--drop-target').forEach(function(entry) {
+                    entry.classList.remove('cc-module-sortable-entry--drop-target');
+                });
+                refreshSubjectModuleNumbers(container);
+            });
+        }
+
+        document.querySelectorAll('.cc-module-sortable-list').forEach(setupSubjectModuleSortable);
 
         function getVideoPreviewMarkup(url) {
             url = String(url || '').trim();

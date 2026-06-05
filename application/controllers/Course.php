@@ -132,6 +132,20 @@ class Course extends MY_Controller {
         show_error($message, 403);
     }
 
+    private function can_reorder_subject_modules($subject_id)
+    {
+        if (!$this->can_manage_course_content($subject_id)) {
+            return false;
+        }
+
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject || !$this->can_access_subject_content_page($subject)) {
+            return false;
+        }
+
+        return true;
+    }
+
     private function get_teacher_accessible_year_levels()
     {
         if ($this->teacher_year_levels !== null) {
@@ -516,6 +530,9 @@ class Course extends MY_Controller {
         unset($module);
         $modules = array_values($modules);
         $shared_modules = $this->get_shared_grade_level_modules($subject);
+        $current_user_id = $this->current_user ? (int) $this->current_user->id : 0;
+        $this->apply_user_lesson_taught_statuses($modules, $current_user_id);
+        $this->apply_user_lesson_taught_statuses($shared_modules, $current_user_id);
         $completed_lesson_ids = array();
         $completed_activity_ids = array();
         $accessible_lesson_ids = array();
@@ -538,9 +555,11 @@ class Course extends MY_Controller {
         $data['modules'] = $modules;
         $data['shared_modules'] = $shared_modules;
         $can_edit = $this->can_manage_course_content($subject_id);
+        $can_reorder_modules = !$student_content_view && $can_edit && count($modules) > 1;
         $can_manage_sections = $can_edit || ($this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id));
         $data['edit_mode']          = !$student_content_view && $this->input->get('edit') === '1' && $can_edit;
         $data['can_edit']           = $can_edit;
+        $data['can_reorder_modules'] = $can_reorder_modules;
         $data['can_manage_sections'] = !$student_content_view && $can_manage_sections;
         $data['completed_lesson_ids'] = $completed_lesson_ids;
         $data['completed_activity_ids'] = $completed_activity_ids;
@@ -551,6 +570,7 @@ class Course extends MY_Controller {
         $data['available_sections'] = $this->Academic_model->get_sections(array('school_id' => $this->school_id));
         $data['requires_enrollment_key'] = $requires_enrollment_key;
         $data['has_subject_access'] = $has_subject_access;
+        $data['subject_learning_competencies'] = $this->Academic_model->get_learning_competencies($subject_id);
 
         $back_param = $this->input->get('back', TRUE);
         if ($back_param) {
@@ -568,6 +588,349 @@ class Course extends MY_Controller {
         }
 
         $this->render('course/content', $data);
+    }
+
+    private function get_learning_competency_subject($subject_id)
+    {
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject) {
+            show_404();
+        }
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view learning competencies for this subject.', 403);
+        }
+
+        return $subject;
+    }
+
+    private function can_create_learning_competency()
+    {
+        return !$this->is_student_content_view() && $this->current_user;
+    }
+
+    private function can_manage_learning_competency($competency)
+    {
+        if (!$this->can_create_learning_competency() || !$competency || !$this->current_user) {
+            return false;
+        }
+
+        return !empty($competency->created_by) && (int) $competency->created_by === (int) $this->current_user->id;
+    }
+
+    private function require_learning_competency_owner($competency)
+    {
+        if ($this->can_manage_learning_competency($competency)) {
+            return;
+        }
+
+        show_error('You can only manage learning competencies that you added.', 403);
+    }
+
+    private function get_learning_competencies_redirect($subject_id)
+    {
+        $redirect = 'course/learning_competencies/' . (int) $subject_id;
+        $back_param = (string) $this->input->get('back', TRUE);
+
+        if ($back_param !== '') {
+            $redirect .= '?back=' . urlencode($back_param);
+        }
+
+        return $redirect;
+    }
+
+    private function resolve_subject_learning_competency_id($subject_id)
+    {
+        $competency_id = (int) $this->input->post('learning_competency_id');
+        if ($competency_id <= 0) {
+            return null;
+        }
+
+        $competency = $this->Academic_model->get_learning_competency($competency_id);
+        if (!$competency || (int) $competency->subject_id !== (int) $subject_id) {
+            return false;
+        }
+
+        return $competency_id;
+    }
+
+    private function get_course_content_redirect($subject_id, $return_query = '')
+    {
+        $redirect_url = site_url('course/content/' . (int) $subject_id);
+        $query = array();
+        $parsed_query = array();
+        $return_query = ltrim((string) $return_query, '?');
+
+        if ($return_query !== '') {
+            parse_str($return_query, $parsed_query);
+        }
+
+        if (!empty($parsed_query['edit']) && $this->can_manage_course_content($subject_id)) {
+            $query['edit'] = '1';
+        }
+
+        if (!empty($parsed_query['back']) && is_string($parsed_query['back'])) {
+            $back_param = trim($parsed_query['back']);
+            if ($back_param !== '' && strpos($back_param, '://') === false && strpos($back_param, "\n") === false && strpos($back_param, "\r") === false) {
+                $query['back'] = $back_param;
+            }
+        }
+
+        if (!empty($query)) {
+            $redirect_url .= '?' . http_build_query($query);
+        }
+
+        return $redirect_url;
+    }
+
+    private function apply_user_lesson_taught_statuses(&$modules, $user_id)
+    {
+        if (!is_array($modules)) {
+            return;
+        }
+
+        $lesson_ids = array();
+        foreach ($modules as $module) {
+            if (empty($module->lessons) || !is_array($module->lessons)) {
+                continue;
+            }
+
+            foreach ($module->lessons as $lesson) {
+                $lesson_ids[] = (int) $lesson->id;
+            }
+        }
+
+        $taught_map = $this->Lesson_model->get_lesson_taught_map($lesson_ids, $user_id);
+
+        foreach ($modules as &$module) {
+            if (empty($module->lessons) || !is_array($module->lessons)) {
+                continue;
+            }
+
+            foreach ($module->lessons as &$lesson) {
+                $lesson->taught_at = isset($taught_map[(int) $lesson->id])
+                    ? $taught_map[(int) $lesson->id]
+                    : null;
+            }
+            unset($lesson);
+        }
+        unset($module);
+    }
+
+    private function resolve_lesson_taught_datetime($date_value, $existing_datetime = null)
+    {
+        $date_value = trim((string) $date_value);
+        if ($date_value === '') {
+            return false;
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $date_value);
+        if (!$date || $date->format('Y-m-d') !== $date_value) {
+            return false;
+        }
+
+        $time_value = date('H:i:s');
+        if (!empty($existing_datetime)) {
+            $existing_timestamp = strtotime((string) $existing_datetime);
+            if ($existing_timestamp) {
+                $time_value = date('H:i:s', $existing_timestamp);
+            }
+        }
+
+        return $date->format('Y-m-d') . ' ' . $time_value;
+    }
+
+    public function learning_competencies($subject_id)
+    {
+        $subject = $this->get_learning_competency_subject($subject_id);
+        $competencies = $this->Academic_model->get_learning_competencies($subject_id);
+        $competency_progress = $this->Lesson_model->get_subject_learning_competency_progress($subject_id, $this->current_user ? (int) $this->current_user->id : 0);
+        $completed_competency_count = 0;
+        $tracked_competency_count = 0;
+
+        foreach ($competencies as $competency) {
+            $competency->can_manage = $this->can_manage_learning_competency($competency);
+            $progress = isset($competency_progress[(int) $competency->id]) ? $competency_progress[(int) $competency->id] : array(
+                'total_lessons' => 0,
+                'taught_lessons' => 0,
+                'latest_taught_at' => null,
+            );
+
+            $competency->total_lessons = (int) $progress['total_lessons'];
+            $competency->taught_lessons = (int) $progress['taught_lessons'];
+            $competency->latest_taught_at = $progress['latest_taught_at'];
+            $competency->latest_taught_at_label = !empty($competency->latest_taught_at)
+                ? date('M j, Y', strtotime($competency->latest_taught_at))
+                : '';
+            $competency->completion_percent = $competency->total_lessons > 0
+                ? (int) round(($competency->taught_lessons / $competency->total_lessons) * 100)
+                : 0;
+
+            if ($competency->total_lessons <= 0) {
+                $competency->checklist_state = 'unlinked';
+                $competency->checklist_icon = 'bi-link-45deg';
+                $competency->checklist_label = 'No linked lessons yet';
+                $competency->checklist_detail = 'Assign this competency to at least one lesson to track it here.';
+            } elseif ($competency->taught_lessons >= $competency->total_lessons) {
+                $competency->checklist_state = 'complete';
+                $competency->checklist_icon = 'bi-check-lg';
+                $competency->checklist_label = 'Completed';
+                $competency->checklist_detail = 'All linked lessons are already marked as taught by you.';
+                $completed_competency_count++;
+                $tracked_competency_count++;
+            } elseif ($competency->taught_lessons > 0) {
+                $competency->checklist_state = 'in_progress';
+                $competency->checklist_icon = 'bi-dash-lg';
+                $competency->checklist_label = 'In Progress';
+                $competency->checklist_detail = $competency->taught_lessons . ' of ' . $competency->total_lessons . ' linked lessons are marked as taught by you.';
+                $tracked_competency_count++;
+            } else {
+                $competency->checklist_state = 'pending';
+                $competency->checklist_icon = '';
+                $competency->checklist_label = 'Not Started';
+                $competency->checklist_detail = 'None of the ' . $competency->total_lessons . ' linked lessons are marked as taught by you yet.';
+                $tracked_competency_count++;
+            }
+        }
+        unset($competency);
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . (int) $subject_id);
+        $back_label = 'Back to Course';
+
+        if ($back_param === 'course/teacher_subjects') {
+            $back_label = 'Back to My Subjects';
+        } elseif (strpos($back_param, 'academic/program_subjects/') === 0) {
+            $back_label = 'Back to Program Subjects';
+        } elseif ($back_param === 'student') {
+            $back_label = 'Back to Student';
+        }
+
+        $query_suffix = $back_param !== '' ? '?back=' . urlencode($back_param) : '';
+
+        $data['title'] = 'Learning Competencies - ' . $subject->code;
+        $data['subject'] = $subject;
+        $data['competencies'] = $competencies;
+        $data['completed_competency_count'] = $completed_competency_count;
+        $data['tracked_competency_count'] = $tracked_competency_count;
+        $data['competency_completion_percent'] = !empty($competencies)
+            ? (int) round(($completed_competency_count / count($competencies)) * 100)
+            : 0;
+        $data['back_url'] = $back_url;
+        $data['back_label'] = $back_label;
+        $data['can_create_learning_competency'] = $this->can_create_learning_competency();
+        $data['create_url'] = site_url('course/create_learning_competency/' . (int) $subject_id) . $query_suffix;
+        $data['update_base_url'] = site_url('course/update_learning_competency/' . (int) $subject_id);
+        $data['delete_base_url'] = site_url('course/delete_learning_competency/' . (int) $subject_id);
+        $data['route_query_suffix'] = $query_suffix;
+        $this->render('academic/learning_competencies', $data);
+    }
+
+    public function create_learning_competency($subject_id)
+    {
+        $subject = $this->get_learning_competency_subject($subject_id);
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_learning_competencies_redirect($subject_id));
+        }
+
+        if (!$this->can_create_learning_competency()) {
+            show_error('You do not have permission to add learning competencies.', 403);
+        }
+
+        $this->form_validation->set_rules('description', 'Description', 'required|trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($this->get_learning_competencies_redirect($subject_id));
+            return;
+        }
+
+        $quarter = $this->input->post('quarter', TRUE);
+        $quarter = ctype_digit((string) $quarter) ? (int) $quarter : null;
+        if ($quarter !== null && ($quarter < 1 || $quarter > 4)) {
+            $quarter = null;
+        }
+
+        $sort_order = $this->input->post('sort_order', TRUE);
+        $sort_order = is_numeric($sort_order) ? (int) $sort_order : 0;
+
+        $data = array(
+            'subject_id'   => (int) $subject_id,
+            'school_id'    => !empty($subject->school_id) ? (int) $subject->school_id : (int) $this->school_id,
+            'code'         => trim((string) $this->input->post('code', TRUE)),
+            'description'  => trim((string) $this->input->post('description', TRUE)),
+            'quarter'      => $quarter,
+            'sort_order'   => $sort_order,
+            'created_by'   => (int) $this->current_user->id,
+        );
+
+        if ($data['code'] === '') {
+            $data['code'] = null;
+        }
+
+        $this->Academic_model->create_learning_competency($data);
+        $this->session->set_flashdata('success', 'Learning competency added successfully.');
+        redirect($this->get_learning_competencies_redirect($subject_id));
+    }
+
+    public function update_learning_competency($subject_id, $id)
+    {
+        $this->get_learning_competency_subject($subject_id);
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_learning_competencies_redirect($subject_id));
+        }
+
+        $competency = $this->Academic_model->get_learning_competency($id);
+        if (!$competency || (int) $competency->subject_id !== (int) $subject_id) {
+            show_404();
+        }
+
+        $this->require_learning_competency_owner($competency);
+        $this->form_validation->set_rules('description', 'Description', 'required|trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($this->get_learning_competencies_redirect($subject_id));
+            return;
+        }
+
+        $quarter = $this->input->post('quarter', TRUE);
+        $quarter = ctype_digit((string) $quarter) ? (int) $quarter : null;
+        if ($quarter !== null && ($quarter < 1 || $quarter > 4)) {
+            $quarter = null;
+        }
+
+        $sort_order = $this->input->post('sort_order', TRUE);
+        $sort_order = is_numeric($sort_order) ? (int) $sort_order : 0;
+
+        $data = array(
+            'code'        => trim((string) $this->input->post('code', TRUE)),
+            'description' => trim((string) $this->input->post('description', TRUE)),
+            'quarter'     => $quarter,
+            'sort_order'  => $sort_order,
+        );
+
+        if ($data['code'] === '') {
+            $data['code'] = null;
+        }
+
+        $this->Academic_model->update_learning_competency($id, $data);
+        $this->session->set_flashdata('success', 'Learning competency updated successfully.');
+        redirect($this->get_learning_competencies_redirect($subject_id));
+    }
+
+    public function delete_learning_competency($subject_id, $id)
+    {
+        $this->get_learning_competency_subject($subject_id);
+        $competency = $this->Academic_model->get_learning_competency($id);
+        if (!$competency || (int) $competency->subject_id !== (int) $subject_id) {
+            show_404();
+        }
+
+        $this->require_learning_competency_owner($competency);
+        $this->Academic_model->delete_learning_competency($id);
+        $this->session->set_flashdata('success', 'Learning competency deleted successfully.');
+        redirect($this->get_learning_competencies_redirect($subject_id));
     }
 
     private function get_subject_item_navigation($subject_id, $current_type, $current_id)
@@ -1348,6 +1711,22 @@ class Course extends MY_Controller {
         redirect('course/content/' . $subject_id . '?edit=1');
     }
 
+    private function get_completion_student_ids_for_subject($subject_id)
+    {
+        if ((int) $subject_id < 1 || $this->original_role_slug === 'super_admin') {
+            return null;
+        }
+
+        $teacher_user_id = null;
+        if ($this->original_role_slug === 'teacher' && $this->current_user) {
+            $teacher_user_id = (int) $this->current_user->id;
+        }
+
+        $school_id = !empty($this->school_id) ? (int) $this->school_id : null;
+
+        return $this->Academic_model->get_subject_completion_student_ids($subject_id, $school_id, $teacher_user_id);
+    }
+
     public function section_students($section_id)
     {
         $section = $this->Academic_model->get_subject_section($section_id);
@@ -1397,17 +1776,32 @@ class Course extends MY_Controller {
 
         $subject = $this->Academic_model->get_subject($module->subject_id);
         if (!$subject) show_404();
-        $this->require_section_manager($subject->id);
 
-        if ($this->original_role_slug === 'school_admin' && !$this->can_manage_module_content($module)) {
-            show_error('You do not have permission to view completions for this lesson.', 403);
+        $view_subject = $subject;
+        $context_subject_id = (int) $this->input->get('subject_id');
+        if ($context_subject_id > 0 && $context_subject_id !== (int) $subject->id) {
+            $view_subject = $this->Academic_model->get_subject($context_subject_id);
+            if (!$view_subject) {
+                show_404();
+            }
+
+            if ($this->is_student_content_view() || !$this->can_access_subject_content_page($view_subject) || empty($lesson->is_published) || empty($module->is_published) || !$this->can_access_shared_grade_level_lesson($subject, $module)) {
+                show_error('You do not have permission to view completions for this lesson.', 403);
+            }
         }
+
+        $this->require_section_manager($view_subject->id);
+
+        $completion_student_ids = $this->get_completion_student_ids_for_subject($view_subject->id);
+        $back_param = (string) $this->input->get('back', TRUE);
 
         $data['title']        = 'Lesson Completions: ' . $lesson->title;
         $data['lesson']       = $lesson;
         $data['module']       = $module;
-        $data['subject']      = $subject;
-        $data['completions']  = $this->Lesson_model->get_lesson_completions($lesson_id);
+        $data['subject']      = $view_subject;
+        $data['source_subject'] = $subject;
+        $data['back_url']     = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . $view_subject->id);
+        $data['completions']  = $this->Lesson_model->get_lesson_completions($lesson_id, $completion_student_ids);
 
         $this->render('course/lesson_completions', $data);
     }
@@ -1535,6 +1929,62 @@ class Course extends MY_Controller {
         redirect('course/content/' . $module->subject_id . '?edit=1');
     }
 
+    public function reorder_subject_modules($subject_id)
+    {
+        $this->output->set_content_type('application/json');
+
+        $respond = function ($success, $message, $status_code = 200) {
+            $this->output
+                ->set_status_header($status_code)
+                ->set_output(json_encode(array(
+                    'success' => (bool) $success,
+                    'message' => (string) $message,
+                    'csrf_token_name' => $this->security->get_csrf_token_name(),
+                    'csrf_hash' => $this->security->get_csrf_hash(),
+                )));
+        };
+
+        if ($this->input->method() !== 'post') {
+            $respond(false, 'Invalid request method.', 405);
+            return;
+        }
+
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$subject) {
+            $respond(false, 'Subject not found.', 404);
+            return;
+        }
+
+        if (!$this->can_reorder_subject_modules($subject_id)) {
+            $respond(false, 'You do not have permission to reorder these modules.', 403);
+            return;
+        }
+
+        $module_ids = $this->input->post('module_ids');
+        if (!is_array($module_ids) || empty($module_ids)) {
+            $respond(false, 'No module order was provided.', 422);
+            return;
+        }
+
+        $normalized_module_ids = array();
+        foreach ($module_ids as $module_id) {
+            $module_id = (int) $module_id;
+            if ($module_id < 1) {
+                $respond(false, 'Invalid module order payload.', 422);
+                return;
+            }
+
+            $normalized_module_ids[] = $module_id;
+        }
+
+        if (!$this->Lesson_model->reorder_subject_modules($subject_id, $normalized_module_ids)) {
+            $respond(false, 'Unable to save the new module order.', 500);
+            return;
+        }
+
+        $respond(true, 'Module order updated successfully.');
+    }
+
     // ---- Lesson Management ----
     public function create_lesson($module_id)
     {
@@ -1556,14 +2006,21 @@ class Course extends MY_Controller {
                 $file_path = $upload_result['path'];
             }
 
+            $learning_competency_id = $this->resolve_subject_learning_competency_id($module->subject_id);
+            if ($learning_competency_id === false) {
+                $this->session->set_flashdata('error', 'Please select a valid learning competency for this subject.');
+                redirect('course/content/' . $module->subject_id . '?edit=1');
+            }
+
             $data = array(
-                'module_id'       => $module_id,
-                'title'           => $this->input->post('title', TRUE),
-                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
-                'content_type'    => $content_type,
-                'file_path'       => $file_path,
-                'order_num'       => $order,
-                'is_published'    => $this->input->post('is_published') ? 1 : 0,
+                'module_id'               => $module_id,
+                'learning_competency_id'  => $learning_competency_id,
+                'title'                   => $this->input->post('title', TRUE),
+                'content'                 => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
+                'content_type'            => $content_type,
+                'file_path'               => $file_path,
+                'order_num'               => $order,
+                'is_published'            => $this->input->post('is_published') ? 1 : 0,
             );
             $this->Lesson_model->create_lesson($data);
             $this->session->set_flashdata('success', 'Lesson created successfully.');
@@ -1596,17 +2053,115 @@ class Course extends MY_Controller {
                 }
             }
 
+            $learning_competency_id = $this->resolve_subject_learning_competency_id($module->subject_id);
+            if ($learning_competency_id === false) {
+                $this->session->set_flashdata('error', 'Please select a valid learning competency for this subject.');
+                redirect('course/content/' . $module->subject_id . '?edit=1');
+            }
+
             $data = array(
-                'title'           => $this->input->post('title', TRUE),
-                'content'         => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
-                'content_type'    => $content_type,
-                'file_path'       => $file_path,
-                'is_published'    => $this->input->post('is_published') ? 1 : 0,
+                'learning_competency_id'  => $learning_competency_id,
+                'title'                   => $this->input->post('title', TRUE),
+                'content'                 => $this->build_lesson_content($content_type, $this->input->post('content'), $this->input->post('video_url', TRUE), $file_path, $this->input->post('link_url', TRUE)),
+                'content_type'            => $content_type,
+                'file_path'               => $file_path,
+                'is_published'            => $this->input->post('is_published') ? 1 : 0,
             );
             $this->Lesson_model->update_lesson($lesson_id, $data);
             $this->session->set_flashdata('success', 'Lesson updated successfully.');
         }
         redirect('course/content/' . $module->subject_id . '?edit=1');
+    }
+
+    public function mark_lesson_taught($lesson_id)
+    {
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_course_content_redirect($subject->id, $this->input->get('return_query', TRUE)));
+        }
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to mark this lesson as taught.', 403);
+        }
+
+        $this->require_section_manager($subject->id);
+        $this->Lesson_model->mark_lesson_taught($lesson_id, (int) $this->current_user->id);
+        $this->session->set_flashdata('success', 'Lesson marked as taught.');
+
+        redirect($this->get_course_content_redirect($subject->id, $this->input->post('return_query', TRUE)));
+    }
+
+    public function clear_lesson_taught($lesson_id)
+    {
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_course_content_redirect($subject->id, $this->input->get('return_query', TRUE)));
+        }
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to update this lesson status.', 403);
+        }
+
+        $this->require_section_manager($subject->id);
+        $this->Lesson_model->clear_lesson_taught($lesson_id, (int) $this->current_user->id);
+        $this->session->set_flashdata('success', 'Lesson taught status cleared.');
+
+        redirect($this->get_course_content_redirect($subject->id, $this->input->post('return_query', TRUE)));
+    }
+
+    public function update_lesson_taught_date($lesson_id)
+    {
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_course_content_redirect($subject->id, $this->input->get('return_query', TRUE)));
+        }
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to update this lesson status.', 403);
+        }
+
+        $this->require_section_manager($subject->id);
+
+        $taught_status = $this->Lesson_model->get_lesson_taught_status($lesson_id, (int) $this->current_user->id);
+        if (!$taught_status) {
+            $this->session->set_flashdata('error', 'Please mark the lesson as taught first.');
+            redirect($this->get_course_content_redirect($subject->id, $this->input->post('return_query', TRUE)));
+        }
+
+        $taught_at = $this->resolve_lesson_taught_datetime($this->input->post('taught_date', TRUE), $taught_status->taught_at);
+        if ($taught_at === false) {
+            $this->session->set_flashdata('error', 'Please select a valid taught date.');
+            redirect($this->get_course_content_redirect($subject->id, $this->input->post('return_query', TRUE)));
+        }
+
+        $this->Lesson_model->update_lesson_taught_date($lesson_id, (int) $this->current_user->id, $taught_at);
+        $this->session->set_flashdata('success', 'Lesson taught date updated.');
+
+        redirect($this->get_course_content_redirect($subject->id, $this->input->post('return_query', TRUE)));
     }
 
     public function delete_lesson($lesson_id)

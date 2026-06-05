@@ -122,6 +122,9 @@
                                 <a href="<?= site_url('course/content/' . $s->id . '?back=' . urlencode('academic/program_subjects/' . $program->id)) ?>" class="ps-action-btn ps-action-view">
                                     <i class="bi bi-eye-fill"></i> View
                                 </a>
+                                <a href="<?= site_url('course/learning_competencies/' . $s->id) . '?back=' . urlencode('academic/program_subjects/' . $program->id) ?>" class="ps-action-btn ps-action-lc" title="Learning Competencies">
+                                    <i class="bi bi-list-check"></i> LC
+                                </a>
                                 <?php if ($can_manage_teachers && !empty($teachers)): ?>
                                     <div class="dropdown">
                                         <button type="button" class="ps-action-btn ps-action-teacher" data-bs-toggle="dropdown" data-bs-boundary="viewport" title="Assign Teachers">
@@ -641,6 +644,8 @@ $(document).ready(function() {
 }
 .ps-action-view { background: #dbeafe; color: #1d4ed8; }
 .ps-action-view:hover { background: #bfdbfe; color: #1e40af; text-decoration: none; transform: translateY(-1px); }
+.ps-action-lc { background: #d1fae5; color: #059669; }
+.ps-action-lc:hover { background: #a7f3d0; color: #047857; text-decoration: none; transform: translateY(-1px); }
 .ps-action-edit { background: #fef9c3; color: #a16207; }
 .ps-action-edit:hover { background: #fef08a; color: #854d0e; text-decoration: none; transform: translateY(-1px); }
 .ps-action-del { background: #fee2e2; color: #dc2626; }

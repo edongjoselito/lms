@@ -555,6 +555,87 @@ class Academic extends MY_Controller {
         redirect('academic/program_subjects/' . $program_id);
     }
 
+    // ---- Learning Competencies CRUD ----
+    public function learning_competencies($program_id, $subject_id)
+    {
+        $this->require_login();
+        $program = $this->Academic_model->get_program($program_id);
+        $subject = $this->Academic_model->get_subject($subject_id);
+        if (!$program || !$subject) show_404();
+
+        $competencies = $this->Academic_model->get_learning_competencies($subject_id);
+
+        $data['title'] = 'Learning Competencies - ' . htmlspecialchars($subject->code);
+        $data['program'] = $program;
+        $data['subject'] = $subject;
+        $data['competencies'] = $competencies;
+        $this->render('academic/learning_competencies', $data);
+    }
+
+    public function create_learning_competency($program_id, $subject_id)
+    {
+        $this->require_login();
+        if ($this->input->method() !== 'post') {
+            redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+        }
+
+        $this->form_validation->set_rules('description', 'Description', 'required');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+            return;
+        }
+
+        $data = array(
+            'subject_id' => $subject_id,
+            'school_id' => $this->school_id,
+            'code' => $this->input->post('code', TRUE),
+            'description' => $this->input->post('description', TRUE),
+            'quarter' => $this->input->post('quarter') ? (int)$this->input->post('quarter') : NULL,
+            'sort_order' => $this->input->post('sort_order') ? (int)$this->input->post('sort_order') : 0,
+        );
+
+        $this->Academic_model->create_learning_competency($data);
+        $this->session->set_flashdata('success', 'Learning competency added successfully.');
+        redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+    }
+
+    public function update_learning_competency($program_id, $subject_id, $id)
+    {
+        $this->require_login();
+        if ($this->input->method() !== 'post') {
+            redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+        }
+
+        $this->form_validation->set_rules('description', 'Description', 'required');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+            return;
+        }
+
+        $data = array(
+            'code' => $this->input->post('code', TRUE),
+            'description' => $this->input->post('description', TRUE),
+            'quarter' => $this->input->post('quarter') ? (int)$this->input->post('quarter') : NULL,
+            'sort_order' => $this->input->post('sort_order') ? (int)$this->input->post('sort_order') : 0,
+        );
+
+        $this->Academic_model->update_learning_competency($id, $data);
+        $this->session->set_flashdata('success', 'Learning competency updated successfully.');
+        redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+    }
+
+    public function delete_learning_competency($program_id, $subject_id, $id)
+    {
+        $this->require_login();
+        $this->Academic_model->delete_learning_competency($id);
+        $this->session->set_flashdata('success', 'Learning competency deleted successfully.');
+        redirect('academic/learning_competencies/' . $program_id . '/' . $subject_id);
+    }
+
     public function create_program_subject($program_id)
     {
         $this->require_super_admin_academic_setup();

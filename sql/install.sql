@@ -652,6 +652,7 @@ CREATE TABLE IF NOT EXISTS `modules` (
 CREATE TABLE IF NOT EXISTS `lessons` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `module_id` int(11) UNSIGNED NOT NULL,
+  `learning_competency_id` int(11) UNSIGNED DEFAULT NULL,
   `title` varchar(255) NOT NULL,
   `content` longtext DEFAULT NULL,
   `content_type` enum('text','page','file','video','link') NOT NULL DEFAULT 'text',
@@ -660,10 +661,25 @@ CREATE TABLE IF NOT EXISTS `lessons` (
   `duration_minutes` int(11) DEFAULT NULL,
   `order_num` int(11) DEFAULT 1,
   `is_published` tinyint(1) NOT NULL DEFAULT 0,
+  `taught_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_lesson_module` (`module_id`),
+  KEY `idx_lesson_learning_competency` (`learning_competency_id`),
   CONSTRAINT `fk_lesson_module` FOREIGN KEY (`module_id`) REFERENCES `modules`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `lesson_taught_statuses` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `lesson_id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(11) UNSIGNED NOT NULL,
+  `taught_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_lesson_user_taught` (`lesson_id`,`user_id`),
+  KEY `idx_lesson_taught_user` (`user_id`),
+  CONSTRAINT `fk_lesson_taught_lesson` FOREIGN KEY (`lesson_id`) REFERENCES `lessons`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_lesson_taught_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `lesson_progress` (
