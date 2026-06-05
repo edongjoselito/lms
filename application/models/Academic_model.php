@@ -1336,12 +1336,6 @@ class Academic_model extends CI_Model
         return true;
     }
 
-    public function update_subject_cover_photo($subject_id, $cover_photo)
-    {
-        $this->db->where('id', $subject_id)->update('subjects', array('cover_photo' => $cover_photo));
-        return true;
-    }
-
     public function get_student_enrolled_subjects($student_id)
     {
         $student = $this->db->where('id', $student_id)->get('students')->row();

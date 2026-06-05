@@ -68,12 +68,8 @@ if (!function_exists('student_dashboard_subject_title')) {
                 <?php foreach ($enrolled_subjects as $subject): ?>
                     <?php $system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general'); ?>
                     <div class="course-card">
-                        <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
-                            <?php if (!empty($subject->cover_photo)): ?>
-                                <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars(isset($subject->name) ? $subject->name : $subject->code) ?>">
-                            <?php else: ?>
-                                <span><?= htmlspecialchars(isset($subject->code) ? $subject->code : 'Course') ?></span>
-                            <?php endif; ?>
+                        <div class="course-cover course-cover-fallback">
+                            <span><?= htmlspecialchars(isset($subject->code) ? $subject->code : 'Course') ?></span>
                         </div>
                         <div class="course-body">
                             <div class="course-code"><?= htmlspecialchars(isset($subject->code) ? $subject->code : '') ?></div>
@@ -114,12 +110,8 @@ if (!function_exists('student_dashboard_subject_title')) {
             <?php foreach ($available_subjects as $subject): ?>
                 <?php $subject_title = student_dashboard_subject_title($subject); ?>
                 <div class="course-card course-card-available">
-                    <div class="course-cover <?= empty($subject->cover_photo) ? 'course-cover-fallback' : '' ?>">
-                        <?php if (!empty($subject->cover_photo)): ?>
-                            <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject_title) ?>">
-                        <?php else: ?>
-                            <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
-                        <?php endif; ?>
+                    <div class="course-cover course-cover-fallback">
+                        <span><?= htmlspecialchars($subject->code ?: 'Course') ?></span>
                     </div>
                     <div class="course-body">
                         <div class="course-code"><?= htmlspecialchars($subject->code) ?></div>

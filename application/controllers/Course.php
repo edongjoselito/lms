@@ -1825,61 +1825,6 @@ class Course extends MY_Controller {
         redirect('course/content/' . $subject_id . '?edit=1');
     }
 
-    public function upload_cover_photo($subject_id)
-    {
-        $this->require_course_manager($subject_id);
-        $subject = $this->Academic_model->get_subject($subject_id);
-        if (!$subject) show_404();
-
-        if (!empty($_FILES['cover_photo']['name'])) {
-            $upload_path = FCPATH . 'uploads/covers/';
-            if (!is_dir($upload_path)) {
-                mkdir($upload_path, 0755, true);
-            }
-
-            $config['upload_path'] = $upload_path;
-            $config['allowed_types'] = 'gif|jpg|jpeg|png|webp';
-            $config['max_size'] = 5120;
-            $config['encrypt_name'] = true;
-            $config['file_name'] = 'cover_' . $subject_id . '_' . time();
-
-            $this->load->library('upload', $config);
-
-            if ($this->upload->do_upload('cover_photo')) {
-                $upload_data = $this->upload->data();
-                
-                if (!empty($subject->cover_photo) && file_exists($upload_path . $subject->cover_photo)) {
-                    unlink($upload_path . $subject->cover_photo);
-                }
-
-                $this->Academic_model->update_subject_cover_photo($subject_id, $upload_data['file_name']);
-                $this->session->set_flashdata('success', 'Cover photo uploaded successfully.');
-            } else {
-                $this->session->set_flashdata('error', $this->upload->display_errors('', ''));
-            }
-        }
-
-        redirect('course/content/' . $subject_id . '?edit=1');
-    }
-
-    public function remove_cover_photo($subject_id)
-    {
-        $this->require_course_manager($subject_id);
-        $subject = $this->Academic_model->get_subject($subject_id);
-        if (!$subject) show_404();
-
-        if (!empty($subject->cover_photo)) {
-            $upload_path = FCPATH . 'uploads/covers/';
-            if (file_exists($upload_path . $subject->cover_photo)) {
-                unlink($upload_path . $subject->cover_photo);
-            }
-            $this->Academic_model->update_subject_cover_photo($subject_id, null);
-            $this->session->set_flashdata('success', 'Cover photo removed successfully.');
-        }
-
-        redirect('course/content/' . $subject_id . '?edit=1');
-    }
-
     // ---- Module Management ----
     public function create_module($subject_id)
     {
@@ -2237,6 +2182,403 @@ class Course extends MY_Controller {
         $respond(true, 'Content order updated successfully.');
     }
 
+    private function get_lesson_note_scope_school_id($subject)
+    {
+        if (!empty($this->school_id)) {
+            return (int) $this->school_id;
+        }
+
+        if ($subject && !empty($subject->school_id)) {
+            return (int) $subject->school_id;
+        }
+
+        return null;
+    }
+
+    private function can_create_lesson_note()
+    {
+        return !$this->is_student_content_view() && $this->current_user;
+    }
+
+    private function can_manage_lesson_note($note)
+    {
+        if (!$this->can_create_lesson_note() || !$note || !$this->current_user) {
+            return false;
+        }
+
+        return !empty($note->created_by) && (int) $note->created_by === (int) $this->current_user->id;
+    }
+
+    private function require_lesson_note_owner($note)
+    {
+        if ($this->can_manage_lesson_note($note)) {
+            return;
+        }
+
+        show_error('You can only manage notes that you added.', 403);
+    }
+
+    private function get_lesson_notes_redirect($lesson_id, $back_param = '')
+    {
+        $redirect = 'course/lesson_notes/' . (int) $lesson_id;
+        $back_param = trim((string) $back_param);
+
+        if ($back_param !== '') {
+            $redirect .= '?back=' . urlencode($back_param);
+        }
+
+        return $redirect;
+    }
+
+    public function lesson_notes($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to view lesson notes.', 403);
+        }
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view lesson notes for this subject.', 403);
+        }
+
+        $notes_school_id = $this->get_lesson_note_scope_school_id($subject);
+        $notes = $this->Lesson_model->get_lesson_notes($lesson_id, $notes_school_id);
+
+        foreach ($notes as $note) {
+            $note->can_manage = $this->can_manage_lesson_note($note);
+            $note->creator_name = trim((string) ($note->creator_name ?? ''));
+            $note->created_at_label = !empty($note->created_at) ? date('M j, Y g:i A', strtotime($note->created_at)) : '';
+            $note->updated_at_label = !empty($note->updated_at) ? date('M j, Y g:i A', strtotime($note->updated_at)) : '';
+            $note->is_updated = !empty($note->created_at) && !empty($note->updated_at) && strtotime($note->updated_at) > strtotime($note->created_at);
+        }
+        unset($note);
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . $subject->id);
+        $back_label = 'Back to Course';
+
+        if ($back_param === 'course/teacher_subjects') {
+            $back_label = 'Back to My Subjects';
+        } elseif (strpos($back_param, 'academic/program_subjects/') === 0) {
+            $back_label = 'Back to Program Subjects';
+        }
+
+        $query_suffix = $back_param !== '' ? '?back=' . urlencode($back_param) : '';
+
+        $data['title'] = 'Lesson Notes - ' . $lesson->title;
+        $data['lesson'] = $lesson;
+        $data['module'] = $module;
+        $data['subject'] = $subject;
+        $data['notes'] = $notes;
+        $data['can_create_note'] = $this->can_create_lesson_note();
+        $data['back_url'] = $back_url;
+        $data['back_label'] = $back_label;
+        $data['create_url'] = site_url('course/create_lesson_note/' . $lesson_id) . $query_suffix;
+        $data['update_base_url'] = site_url('course/update_lesson_note/' . $lesson_id);
+        $data['delete_base_url'] = site_url('course/delete_lesson_note/' . $lesson_id);
+        $data['route_query_suffix'] = $query_suffix;
+        $this->render('course/lesson_notes', $data);
+    }
+
+    public function create_lesson_note($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_create_lesson_note() || !$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to add lesson notes.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+        }
+
+        $this->form_validation->set_rules('note_text', 'Note', 'required|trim');
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+            return;
+        }
+
+        $this->Lesson_model->create_lesson_note(array(
+            'lesson_id' => (int) $lesson_id,
+            'school_id' => $this->get_lesson_note_scope_school_id($subject),
+            'note_text' => trim((string) $this->input->post('note_text', TRUE)),
+            'created_by' => (int) $this->current_user->id,
+        ));
+
+        $this->session->set_flashdata('success', 'Lesson note added successfully.');
+        redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+    }
+
+    public function update_lesson_note($lesson_id, $note_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_create_lesson_note() || !$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to edit lesson notes.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $note = $this->Lesson_model->get_lesson_note($note_id, $this->get_lesson_note_scope_school_id($subject));
+        if (!$note || (int) $note->lesson_id !== (int) $lesson_id) {
+            show_404();
+        }
+
+        $this->require_lesson_note_owner($note);
+
+        if ($this->input->method() !== 'post') {
+            redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+        }
+
+        $this->form_validation->set_rules('note_text', 'Note', 'required|trim');
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+            return;
+        }
+
+        $this->Lesson_model->update_lesson_note($note_id, array(
+            'note_text' => trim((string) $this->input->post('note_text', TRUE)),
+        ), $this->get_lesson_note_scope_school_id($subject));
+
+        $this->session->set_flashdata('success', 'Lesson note updated successfully.');
+        redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+    }
+
+    public function delete_lesson_note($lesson_id, $note_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_create_lesson_note() || !$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to delete lesson notes.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $note = $this->Lesson_model->get_lesson_note($note_id, $this->get_lesson_note_scope_school_id($subject));
+        if (!$note || (int) $note->lesson_id !== (int) $lesson_id) {
+            show_404();
+        }
+
+        $this->require_lesson_note_owner($note);
+        $this->Lesson_model->delete_lesson_note($note_id, $this->get_lesson_note_scope_school_id($subject));
+        $this->session->set_flashdata('success', 'Lesson note deleted successfully.');
+        redirect($this->get_lesson_notes_redirect($lesson_id, $back_param));
+    }
+
+    // ---- Lesson Plan (ILAW Template) ----
+    public function lesson_plan($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view lesson plans for this subject.', 403);
+        }
+
+        $lesson_plan = $this->Lesson_model->get_lesson_plan($lesson_id);
+        $can_edit = !$this->is_student_content_view() && $this->current_user;
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . $subject->id);
+        $back_label = 'Back to Course';
+
+        if ($back_param === 'course/teacher_subjects') {
+            $back_label = 'Back to My Subjects';
+        } elseif (strpos($back_param, 'academic/program_subjects/') === 0) {
+            $back_label = 'Back to Program Subjects';
+        }
+
+        $query_suffix = $back_param !== '' ? '?back=' . urlencode($back_param) : '';
+
+        $data['title'] = 'Lesson Plan - ' . htmlspecialchars($lesson->title);
+        $data['lesson'] = $lesson;
+        $data['module'] = $module;
+        $data['subject'] = $subject;
+        $data['lesson_plan'] = $lesson_plan;
+        $data['can_edit'] = $can_edit;
+        $data['back_url'] = $back_url;
+        $data['back_label'] = $back_label;
+        $data['create_url'] = site_url('course/create_lesson_plan/' . $lesson_id) . $query_suffix;
+        $data['update_url'] = site_url('course/update_lesson_plan/' . $lesson_id);
+        $data['delete_url'] = site_url('course/delete_lesson_plan/' . $lesson_id) . $query_suffix;
+        $this->render('course/lesson_plan', $data);
+    }
+
+    public function create_lesson_plan($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to add lesson plans.', 403);
+        }
+
+        if ($this->input->method() !== 'post') {
+            redirect('course/lesson_plan/' . $lesson_id);
+        }
+
+        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
+        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
+        $this->form_validation->set_rules('materials', 'Materials', 'trim');
+        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
+        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
+        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
+        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect('course/lesson_plan/' . $lesson_id);
+            return;
+        }
+
+        $data = array(
+            'lesson_id' => $lesson_id,
+            'school_id' => !empty($subject->school_id) ? (int) $subject->school_id : (int) $this->school_id,
+            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
+            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
+            'materials' => trim((string) $this->input->post('materials', TRUE)),
+            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
+            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
+            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
+            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
+            'created_by' => (int) $this->current_user->id,
+        );
+
+        $this->Lesson_model->create_lesson_plan($data);
+        $this->session->set_flashdata('success', 'Lesson plan created successfully.');
+        redirect('course/lesson_plan/' . $lesson_id);
+    }
+
+    public function update_lesson_plan($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to edit lesson plans.', 403);
+        }
+
+        $lesson_plan = $this->Lesson_model->get_lesson_plan($lesson_id);
+        if (!$lesson_plan) {
+            $this->session->set_flashdata('error', 'Lesson plan not found.');
+            redirect('course/lesson_plan/' . $lesson_id);
+        }
+
+        if ($this->input->method() !== 'post') {
+            redirect('course/lesson_plan/' . $lesson_id);
+        }
+
+        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
+        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
+        $this->form_validation->set_rules('materials', 'Materials', 'trim');
+        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
+        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
+        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
+        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect('course/lesson_plan/' . $lesson_id);
+            return;
+        }
+
+        $data = array(
+            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
+            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
+            'materials' => trim((string) $this->input->post('materials', TRUE)),
+            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
+            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
+            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
+            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
+        );
+
+        $this->Lesson_model->update_lesson_plan($lesson_plan->id, $data);
+        $this->session->set_flashdata('success', 'Lesson plan updated successfully.');
+        redirect('course/lesson_plan/' . $lesson_id);
+    }
+
+    public function delete_lesson_plan($lesson_id)
+    {
+        $this->require_login();
+        $lesson = $this->Lesson_model->get_lesson($lesson_id);
+        if (!$lesson) show_404();
+
+        $module = $this->Lesson_model->get_module($lesson->module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to delete lesson plans.', 403);
+        }
+
+        $lesson_plan = $this->Lesson_model->get_lesson_plan($lesson_id);
+        if (!$lesson_plan) {
+            $this->session->set_flashdata('error', 'Lesson plan not found.');
+            redirect('course/lesson_plan/' . $lesson_id);
+        }
+
+        $this->Lesson_model->delete_lesson_plan($lesson_plan->id);
+        $this->session->set_flashdata('success', 'Lesson plan deleted successfully.');
+        redirect('course/lesson_plan/' . $lesson_id);
+    }
+
     // ---- Activity Management ----
     public function create_activity($module_id)
     {
@@ -2409,6 +2751,30 @@ class Course extends MY_Controller {
         return preg_replace('/\s+/', ' ', $value);
     }
 
+    private function extract_moodle_xml_text($node)
+    {
+        if (!$node) {
+            return '';
+        }
+
+        $candidates = array();
+
+        if (isset($node->text)) {
+            $candidates[] = (string) $node->text;
+        }
+
+        $candidates[] = (string) $node;
+
+        foreach ($candidates as $candidate) {
+            $cleaned = $this->clean_import_text($candidate);
+            if ($cleaned !== '') {
+                return $cleaned;
+            }
+        }
+
+        return '';
+    }
+
     private function parse_gift_answer_tokens($answer_text)
     {
         $tokens = array();
@@ -2570,7 +2936,7 @@ class Course extends MY_Controller {
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($content, 'SimpleXMLElement', LIBXML_NONET | LIBXML_NOCDATA);
         if (!$xml) {
-            return array('questions' => array(), 'errors' => array('Invalid Moodle XML file.'));
+            return array('questions' => array(), 'errors' => array('Invalid XML file.'));
         }
 
         $questions = array();
@@ -2584,9 +2950,9 @@ class Course extends MY_Controller {
 
             $question_number++;
 
-            $question_text = $this->clean_import_text((string) $node->questiontext->text);
+            $question_text = $this->extract_moodle_xml_text($node->questiontext);
             if ($question_text === '') {
-                $question_text = $this->clean_import_text((string) $node->name->text);
+                $question_text = $this->extract_moodle_xml_text($node->name);
             }
 
             if ($question_text === '') {
@@ -2602,7 +2968,7 @@ class Course extends MY_Controller {
             if ($type === 'multichoice') {
                 $choices = array();
                 foreach ($node->answer as $answer) {
-                    $choice_text = $this->clean_import_text((string) $answer->text);
+                    $choice_text = $this->extract_moodle_xml_text($answer);
                     if ($choice_text === '') {
                         continue;
                     }
@@ -2627,7 +2993,7 @@ class Course extends MY_Controller {
                 $correct_true = true;
                 foreach ($node->answer as $answer) {
                     if (((float) $answer['fraction']) > 0) {
-                        $correct_true = strtolower($this->clean_import_text((string) $answer->text)) === 'true';
+                        $correct_true = strtolower($this->extract_moodle_xml_text($answer)) === 'true';
                         break;
                     }
                 }
@@ -2647,7 +3013,7 @@ class Course extends MY_Controller {
                     if (((float) $answer['fraction']) <= 0) {
                         continue;
                     }
-                    $answer_text = $this->clean_import_text((string) $answer->text);
+                    $answer_text = $this->extract_moodle_xml_text($answer);
                     if ($answer_text !== '') {
                         $choices[] = array('text' => $answer_text, 'is_correct' => 1);
                     }
@@ -2661,6 +3027,48 @@ class Course extends MY_Controller {
                 $questions[] = array(
                     'question_type' => 'identification',
                     'question_text' => $question_text,
+                    'points'        => $points,
+                    'choices'       => $choices,
+                );
+            } elseif ($type === 'cloze') {
+                $cloze_text = $this->extract_moodle_xml_text($node->questiontext);
+                if ($cloze_text === '') {
+                    $cloze_text = $question_text;
+                }
+
+                $choices = array();
+                $pattern = '/\{(\d+):(?:SHORTANSWER|NUMERICAL|MULTICHOICE):([^\}]+)\}/i';
+                preg_match_all($pattern, $cloze_text, $matches, PREG_SET_ORDER);
+
+                if (empty($matches)) {
+                    $errors[] = 'XML cloze question #' . $question_number . ' was skipped because no valid blanks were found.';
+                    continue;
+                }
+
+                foreach ($matches as $match) {
+                    $answers = explode('~', $match[2]);
+                    foreach ($answers as $answer) {
+                        $answer = trim($answer);
+                        if ($answer === '') {
+                            continue;
+                        }
+                        $answer = preg_replace('/^%?\d+%?/', '', $answer);
+                        if ($answer !== '' && !in_array($answer, array_column($choices, 'text'))) {
+                            $choices[] = array('text' => $answer, 'is_correct' => 1);
+                        }
+                    }
+                }
+
+                if (empty($choices)) {
+                    $errors[] = 'XML cloze question #' . $question_number . ' was skipped because no valid answers were found.';
+                    continue;
+                }
+
+                $cleaned_text = preg_replace($pattern, '_____', $cloze_text);
+
+                $questions[] = array(
+                    'question_type' => 'identification',
+                    'question_text' => $cleaned_text,
                     'points'        => $points,
                     'choices'       => $choices,
                 );
@@ -2706,13 +3114,13 @@ class Course extends MY_Controller {
         return $this->db->trans_status() ? count($questions) : 0;
     }
 
-    private function import_assessment_questions_from_upload($quiz_id)
+    private function import_assessment_questions_from_upload($quiz_id, $require_source = false)
     {
         $content = '';
         $format = strtolower($this->input->post('import_format', TRUE));
         
         // Check for pasted content first
-        $pasted_content = $this->input->post('question_content', TRUE);
+        $pasted_content = $this->input->post('question_content', FALSE);
         if (!empty($pasted_content) && trim($pasted_content) !== '') {
             $content = $pasted_content;
         } 
@@ -2738,6 +3146,9 @@ class Course extends MY_Controller {
                 $format = $extension === 'xml' ? 'xml' : 'gift';
             }
         } else {
+            if ($require_source) {
+                return array('success' => false, 'count' => 0, 'message' => 'Upload a question file or paste GIFT/XML content.');
+            }
             return array('success' => true, 'count' => 0, 'message' => '');
         }
 
@@ -2966,7 +3377,7 @@ class Course extends MY_Controller {
         $this->require_module_owner($context['module'], 'You can only update assessments that you created.');
 
         if ($this->input->method() === 'post') {
-            $import = $this->import_assessment_questions_from_upload($quiz_id);
+            $import = $this->import_assessment_questions_from_upload($quiz_id, true);
             $this->session->set_flashdata($import['success'] ? 'success' : 'error', $import['message']);
         }
 

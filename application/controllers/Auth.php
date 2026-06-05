@@ -7,6 +7,8 @@ class Auth extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        date_default_timezone_set('Asia/Manila');
+        $this->db->simple_query("SET time_zone = '+08:00'");
         $this->load->model('User_model');
         $this->load->model('Setting_model');
         $this->load->model('Academic_model');

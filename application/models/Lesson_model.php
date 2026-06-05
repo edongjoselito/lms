@@ -773,11 +773,162 @@ class Lesson_model extends CI_Model {
     public function can_access_lesson($student_id, $lesson_id, $module_id)
     {
         $previous_lesson = $this->get_previous_lesson($lesson_id, $module_id);
-        
+
         if (!$previous_lesson) {
             return true;
         }
 
         return $this->is_lesson_completed($student_id, $previous_lesson->id);
+    }
+
+    // ---- Lesson Plans (ILAW Template) ----
+    private function ensure_lesson_plans_table()
+    {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'lesson_plans'")->num_rows();
+        if ($checkTable == 0) {
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS `lesson_plans` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `lesson_id` int(11) NOT NULL,
+                  `school_id` int(11) DEFAULT NULL,
+                  `objectives` text,
+                  `subject_matter` text,
+                  `materials` text,
+                  `procedures` text,
+                  `evaluation` text,
+                  `assignment` text,
+                  `remarks` text,
+                  `created_by` int(11) UNSIGNED DEFAULT NULL,
+                  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `lesson_id` (`lesson_id`),
+                  KEY `school_id` (`school_id`),
+                  KEY `created_by` (`created_by`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+        }
+    }
+
+    public function get_lesson_plan($lesson_id)
+    {
+        $this->ensure_lesson_plans_table();
+        return $this->db->where('lesson_id', $lesson_id)->get('lesson_plans')->row();
+    }
+
+    public function get_lesson_plan_by_id($id)
+    {
+        $this->ensure_lesson_plans_table();
+        return $this->db->where('id', $id)->get('lesson_plans')->row();
+    }
+
+    public function create_lesson_plan($data)
+    {
+        $this->ensure_lesson_plans_table();
+        $this->db->insert('lesson_plans', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_lesson_plan($id, $data)
+    {
+        $this->ensure_lesson_plans_table();
+        $this->db->where('id', $id)->update('lesson_plans', $data);
+        return $this->db->affected_rows() > 0;
+    }
+
+    public function delete_lesson_plan($id)
+    {
+        $this->ensure_lesson_plans_table();
+        $this->db->where('id', $id)->delete('lesson_plans');
+        return $this->db->affected_rows() > 0;
+    }
+
+    // ---- Lesson Notes ----
+    private function ensure_lesson_notes_table()
+    {
+        $checkTable = $this->db->query("SHOW TABLES LIKE 'lesson_notes'")->num_rows();
+        if ($checkTable == 0) {
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS `lesson_notes` (
+                  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+                  `lesson_id` int(11) UNSIGNED NOT NULL,
+                  `school_id` int(11) UNSIGNED DEFAULT NULL,
+                  `note_text` text NOT NULL,
+                  `created_by` int(11) UNSIGNED DEFAULT NULL,
+                  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `lesson_id` (`lesson_id`),
+                  KEY `school_id` (`school_id`),
+                  KEY `created_by` (`created_by`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+        }
+    }
+
+    public function get_lesson_notes($lesson_id, $school_id = null)
+    {
+        $this->ensure_lesson_notes_table();
+        $this->db->select('lesson_notes.*, CONCAT(TRIM(COALESCE(users.first_name, "")), " ", TRIM(COALESCE(users.last_name, ""))) AS creator_name', false);
+        $this->db->from('lesson_notes');
+        $this->db->join('users', 'users.id = lesson_notes.created_by', 'left');
+        $this->db->where('lesson_notes.lesson_id', (int) $lesson_id);
+
+        if ($school_id !== null) {
+            $this->db->where('lesson_notes.school_id', (int) $school_id);
+        }
+
+        return $this->db->order_by('lesson_notes.updated_at', 'DESC')
+            ->order_by('lesson_notes.id', 'DESC')
+            ->get()
+            ->result();
+    }
+
+    public function get_lesson_note($id, $school_id = null)
+    {
+        $this->ensure_lesson_notes_table();
+        $this->db->select('lesson_notes.*, CONCAT(TRIM(COALESCE(users.first_name, "")), " ", TRIM(COALESCE(users.last_name, ""))) AS creator_name', false);
+        $this->db->from('lesson_notes');
+        $this->db->join('users', 'users.id = lesson_notes.created_by', 'left');
+        $this->db->where('lesson_notes.id', (int) $id);
+
+        if ($school_id !== null) {
+            $this->db->where('lesson_notes.school_id', (int) $school_id);
+        }
+
+        return $this->db->get()->row();
+    }
+
+    public function create_lesson_note($data)
+    {
+        $this->ensure_lesson_notes_table();
+        $this->db->insert('lesson_notes', $data);
+        return $this->db->insert_id();
+    }
+
+    public function update_lesson_note($id, $data, $school_id = null)
+    {
+        $this->ensure_lesson_notes_table();
+        $this->db->where('id', (int) $id);
+
+        if ($school_id !== null) {
+            $this->db->where('school_id', (int) $school_id);
+        }
+
+        $this->db->update('lesson_notes', $data);
+        return $this->db->affected_rows() > 0;
+    }
+
+    public function delete_lesson_note($id, $school_id = null)
+    {
+        $this->ensure_lesson_notes_table();
+        $this->db->where('id', (int) $id);
+
+        if ($school_id !== null) {
+            $this->db->where('school_id', (int) $school_id);
+        }
+
+        $this->db->delete('lesson_notes');
+        return $this->db->affected_rows() > 0;
     }
 }

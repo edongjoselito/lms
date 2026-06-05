@@ -6,6 +6,8 @@ class Migrate extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
+        date_default_timezone_set('Asia/Manila');
+        $this->db->simple_query("SET time_zone = '+08:00'");
     }
 
     public function subjects_school_id()

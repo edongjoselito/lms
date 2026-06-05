@@ -162,12 +162,17 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                         <label class="form-label am-label">Format</label>
                         <select class="form-select am-input" name="import_format">
                             <option value="gift">GIFT</option>
-                            <option value="xml">Moodle XML</option>
+                            <option value="xml">XML</option>
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label am-label">Question File</label>
-                        <input type="file" class="form-control am-input" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml" required>
+                        <input type="file" class="form-control am-input" name="question_file" accept=".gift,.txt,.xml,text/plain,text/xml,application/xml">
+                        <div class="am-help-text">Upload a GIFT, TXT, or XML file.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label am-label">Paste Question Content</label>
+                        <textarea class="form-control am-input" name="question_content" rows="10" style="font-family: monospace; font-size: 0.9rem;" placeholder="Paste your GIFT or XML content here..."></textarea>
                     </div>
                     <div class="col-md-3">
                         <button type="submit" class="am-btn am-btn-primary am-btn-block">
@@ -175,7 +180,7 @@ $assessment_status_label = $quiz->is_published ? 'Published' : 'Hidden';
                         </button>
                     </div>
                 </div>
-                <div class="am-help-text">Supported: multiple choice, true/false, identification, essay.</div>
+                <div class="am-help-text">Supported: multiple choice, true/false, identification, essay. Use either file upload or pasted content.</div>
             </div>
         </form>
         <?php endif; ?>

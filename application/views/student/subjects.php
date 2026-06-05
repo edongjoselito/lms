@@ -139,15 +139,10 @@ $filter_label = !empty($filter_type) ? strtoupper((string) $filter_type) : '';
                         $search_text = strtolower(trim($subject_code . ' ' . $subject_name . ' ' . $subject_description . ' ' . $subject_grade_label . ' ' . $subject_system_label));
                         ?>
                         <div class="ss-subject-card" data-search="<?= htmlspecialchars($search_text, ENT_QUOTES, 'UTF-8') ?>">
-                            <div class="ss-cover <?= empty($subject->cover_photo) ? 'ss-cover--fallback' : '' ?>">
-                                <?php if (!empty($subject->cover_photo)): ?>
-                                    <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="<?= htmlspecialchars($subject_name) ?>">
-                                <?php else: ?>
-                                    <div class="ss-cover-fallback">
-                                        <span><?= htmlspecialchars($subject_cover_label) ?></span>
-                                    </div>
-                                <?php endif; ?>
-
+                            <div class="ss-cover ss-cover--fallback">
+                                <div class="ss-cover-fallback">
+                                    <span><?= htmlspecialchars($subject_cover_label) ?></span>
+                                </div>
                                 <div class="ss-cover-top">
                                     <span class="ss-system-pill"><?= htmlspecialchars($subject_system_label) ?></span>
                                     <?php if ($is_enrolled): ?>

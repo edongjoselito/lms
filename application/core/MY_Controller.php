@@ -15,6 +15,7 @@ class MY_Controller extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
+        $this->apply_manila_timezone();
 
         if ($this->session->userdata('logged_in')) {
             $this->current_user = (object) array(
@@ -59,6 +60,15 @@ class MY_Controller extends CI_Controller {
                 // Update last activity time
                 $this->session->set_userdata('last_activity', $now);
             }
+        }
+    }
+
+    protected function apply_manila_timezone()
+    {
+        date_default_timezone_set('Asia/Manila');
+
+        if (isset($this->db) && $this->db) {
+            $this->db->simple_query("SET time_zone = '+08:00'");
         }
     }
 

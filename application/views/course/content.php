@@ -202,13 +202,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                     </div>
                 </div>
             </div>
-            <div class="cc-cover-wrap <?= empty($subject->cover_photo) ? 'cc-cover-wrap--empty' : '' ?>">
-                <?php if (!empty($subject->cover_photo)): ?>
-                    <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Course Cover" class="cc-cover-img">
-                <?php else: ?>
-                    <img src="<?= base_url('assets/images/default.jpg') ?>" alt="Default Course Cover" class="cc-cover-img">
-                <?php endif; ?>
-            </div>
         </div>
 
         <!-- Actions Bar -->
@@ -247,14 +240,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                     </a>
                 <?php endif; ?>
                 <?php if ($edit_mode): ?>
-                    <button class="cc-btn cc-btn--ghost" data-bs-toggle="modal" data-bs-target="#coverPhotoModal">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2" />
-                            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" />
-                        </svg>
-                        Cover
-                    </button>
                     <?php $back_param = $course_back_param; ?>
                     <a href="<?= site_url('course/content/' . $subject->id . ($back_param ? '?back=' . urlencode($back_param) : '')) ?>" class="cc-btn cc-btn--ghost">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -606,6 +591,8 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                             <?php if (!empty($can_manage_sections)): ?>
                                                                 <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                             <?php endif; ?>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_notes/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-journal-text me-2"></i>Lesson Notes</a></li>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_plan/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
                                                             <?php if ($can_manage_item): ?>
                                                                 <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                                 <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
@@ -649,6 +636,8 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                                 <?php endif; ?>
                                                             <?php endif; ?>
                                                             <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_notes/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-journal-text me-2"></i>Lesson Notes</a></li>
+                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_plan/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
                                                         <?php elseif ($is_quiz_item): ?>
                                                             <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-people me-2"></i>View Attempts</a></li>
                                                         <?php endif; ?>
@@ -898,7 +887,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                             <div>
                                                 <h6 class="mb-1"><i class="bi bi-ui-checks me-2"></i>Add Assessment</h6>
-                                                <p class="text-muted mb-0 small">Upload a GIFT or Moodle XML question bank for "<?= htmlspecialchars($module->title, ENT_QUOTES, 'UTF-8') ?>".</p>
+                                                <p class="text-muted mb-0 small">Upload a GIFT or XML question bank for "<?= htmlspecialchars($module->title, ENT_QUOTES, 'UTF-8') ?>".</p>
                                             </div>
                                             <a href="#addAssessment<?= $module->id ?>" class="btn-close" data-bs-toggle="collapse" role="button" aria-label="Close"></a>
                                         </div>
@@ -1019,7 +1008,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                 <div class="quiz-paste-box mt-3">
                                                     <label class="form-label fw-bold">Paste Quiz Content</label>
                                                     <textarea class="form-control" name="question_content" rows="8" style="font-family: monospace; font-size: 0.9rem;" placeholder="Paste your GIFT or XML quiz content here..."></textarea>
-                                                    <div class="form-text">Paste GIFT or Moodle XML format content directly. Supported: multiple choice, true/false, identification, and essay questions.</div>
+                                                    <div class="form-text">Paste GIFT or XML format content directly. Supported: multiple choice, true/false, identification, and essay questions.</div>
                                                 </div>
                                             </div>
                                             <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -1261,42 +1250,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
     </div>
 <?php endif; ?>
 
-<?php if ($edit_mode): ?>
-    <div class="modal fade" id="coverPhotoModal" tabindex="-1">
-        <div class="modal-dialog">
-            <?= form_open_multipart('course/upload_cover_photo/' . $subject->id, ['class' => 'modal-content']) ?>
-                <div class="modal-header">
-                    <h5 class="modal-title">Course Cover Photo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <?php if (!empty($subject->cover_photo)): ?>
-                        <div class="mb-3">
-                            <label class="form-label">Current Cover Photo</label>
-                            <img src="<?= base_url('uploads/covers/' . $subject->cover_photo) ?>" alt="Current Cover" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;">
-                            <div class="mt-2">
-                                <a href="<?= site_url('course/remove_cover_photo/' . $subject->id) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this cover photo?');">
-                                    <i class="bi bi-trash me-1"></i> Remove Cover Photo
-                                </a>
-                            </div>
-                        </div>
-                        <hr>
-                    <?php endif; ?>
-                    <div class="mb-3">
-                        <label class="form-label">Upload Cover Photo</label>
-                        <input type="file" class="form-control" name="cover_photo" accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp" required>
-                        <div class="form-text">Supported formats: JPG, PNG, GIF, or WebP. Maximum size: 5 MB.</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Upload Cover Photo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-<?php endif; ?>
-
 <style>
     /* ── Apple-Level Design System ──────────────────────────────────── */
     .cc-wrap {
@@ -1352,18 +1305,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
 
     .cc-hero-main {
         padding: 1.5rem 2rem;
-    }
-
-    .cc-cover-wrap {
-        margin: -1.5rem -2rem 1rem;
-        height: 140px;
-        overflow: hidden;
-    }
-
-    .cc-cover-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
     }
 
     .cc-hero-content {
@@ -2889,59 +2830,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         padding: 2rem 2.25rem 1.5rem;
     }
 
-    .cc-cover-wrap {
-        position: relative;
-        z-index: 1;
-        flex: 0 0 220px;
-        width: 220px;
-        height: 152px;
-        min-height: 152px;
-        margin: 0;
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        border-radius: 18px;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.12);
-        box-shadow: 0 20px 40px rgba(8, 26, 61, 0.22);
-        backdrop-filter: blur(10px);
-    }
-
-    .cc-cover-img {
-        width: 100%;
-        height: 100%;
-        min-height: 152px;
-        object-fit: contain;
-        object-position: center;
-        background: rgba(255, 255, 255, 0.08);
-        display: block;
-    }
-
-    .cc-cover-wrap--empty {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
-    }
-
-    .cc-cover-fallback {
-        width: min(150px, 58%);
-        aspect-ratio: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(105, 108, 255, 0.18);
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.78);
-        color: #566a7f;
-        font-size: clamp(1.3rem, 3vw, 2rem);
-        font-weight: 700;
-        text-align: center;
-        box-shadow: 0 12px 28px rgba(67, 89, 113, 0.08);
-    }
-
-    .cc-cover-fallback span {
-        max-width: 90%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
     .cc-hero-content {
         position: relative;
         z-index: 1;
@@ -3414,17 +3302,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
             flex-direction: column;
             align-items: stretch;
             padding: 1.5rem;
-        }
-
-        .cc-cover-wrap {
-            width: 100%;
-            min-height: 180px;
-            height: 180px;
-        }
-
-        .cc-cover-img {
-            min-height: 180px;
-            max-height: 240px;
         }
 
         .cc-sidebar-panel {
