@@ -1181,8 +1181,15 @@ class Academic extends MY_Controller {
             redirect($this->input->server('HTTP_REFERER'));
         }
 
+        // Verify staff_id exists in staff table
+        $staff = $this->db->where('IDNumber', $staff_id)->get('staff')->row();
+        if (!$staff) {
+            $this->session->set_flashdata('error', 'Invalid staff ID. Teacher may not have a staff record.');
+            redirect($this->input->server('HTTP_REFERER'));
+        }
+
         // Check if assignment already exists
-        $this->Academic_model->ensure_section_teachers_table();
+        $this->Academic_model->ensure_section_teachers_table_public();
         $existing = $this->db->where('section_id', $section_id)
             ->where('subject_id', $subject_id)
             ->where('staff_id', $staff_id)
@@ -1202,6 +1209,52 @@ class Academic extends MY_Controller {
         ));
 
         $this->session->set_flashdata('success', 'Teacher assigned successfully.');
+        redirect($this->input->server('HTTP_REFERER'));
+    }
+
+    public function get_section_teachers_ajax()
+    {
+        $this->require_login();
+        $section_id = $this->input->get('section_id');
+        $subject_id = $this->input->get('subject_id');
+
+        if (!$section_id || !$subject_id) {
+            echo json_encode(array());
+            return;
+        }
+
+        $this->Academic_model->ensure_section_teachers_table_public();
+        $teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+            ->from('section_teachers')
+            ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
+            ->join('users', 'users.id = staff.user_id')
+            ->where('section_teachers.section_id', $section_id)
+            ->where('section_teachers.subject_id', $subject_id)
+            ->get()
+            ->result();
+
+        echo json_encode($teachers);
+    }
+
+    public function remove_section_teacher()
+    {
+        $this->require_login();
+        $section_id = $this->input->post('section_id');
+        $subject_id = $this->input->post('subject_id');
+        $staff_id = $this->input->post('staff_id');
+
+        if (!$section_id || !$subject_id || !$staff_id) {
+            $this->session->set_flashdata('error', 'Missing required parameters.');
+            redirect($this->input->server('HTTP_REFERER'));
+        }
+
+        $this->Academic_model->ensure_section_teachers_table_public();
+        $this->db->where('section_id', $section_id)
+            ->where('subject_id', $subject_id)
+            ->where('staff_id', $staff_id)
+            ->delete('section_teachers');
+
+        $this->session->set_flashdata('success', 'Teacher removed successfully.');
         redirect($this->input->server('HTTP_REFERER'));
     }
 

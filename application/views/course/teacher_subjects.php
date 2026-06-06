@@ -111,9 +111,6 @@ $grade_level_count = count($grade_level_set);
                                 <a href="<?= site_url('course/content/' . $s->id . '?back=' . $back_param) ?>" class="ps-action-btn ps-action-view">
                                     <i class="bi bi-eye-fill"></i> Open
                                 </a>
-                                <a href="<?= site_url('course/content/' . $s->id . '?edit=1&back=' . $back_param) ?>" class="ps-action-btn ps-action-edit">
-                                    <i class="bi bi-pencil-fill"></i> Edit
-                                </a>
                             </div>
                         </div>
                     <?php endforeach; ?>

@@ -1212,10 +1212,19 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                     }
                                     ?>
                                     <div class="cc-section-row">
-                                        <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
-                                            <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
-                                            <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
-                                        </a>
+                                        <div class="cc-section-info">
+                                            <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
+                                                <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
+                                            </a>
+                                            <?php if (!empty($section->assigned_teachers)): ?>
+                                                <div class="cc-assigned-teachers">
+                                                    <?php foreach ($section->assigned_teachers as $teacher): ?>
+                                                        <span class="cc-teacher-badge"><?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                         <button type="button" class="cc-assign-teacher-btn" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')" title="Assign Teacher">
                                             <i class="bi bi-person-plus"></i>
                                         </button>
@@ -1262,7 +1271,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
 <?php if (empty($student_content_view) && !empty($can_manage_sections)): ?>
     <div class="modal fade" id="assignTeacherModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <?= form_open('academic/assign_section_teacher', ['class' => 'modal-content', 'id' => 'assignTeacherForm']) ?>
+            <div class="modal-content">
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title mb-1">Assign Teacher to Section</h5>
@@ -1273,25 +1282,37 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                 <div class="modal-body">
                     <input type="hidden" name="section_id" id="assignSectionId">
                     <input type="hidden" name="subject_id" id="assignSubjectId">
+                    
                     <div class="mb-3">
-                        <label class="form-label">Select Teacher</label>
+                        <label class="form-label">Assigned Teachers</label>
+                        <div id="assignedTeachersList" class="assigned-teachers-list">
+                            <p class="text-muted small">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Add New Teacher</label>
                         <select class="form-select" name="staff_id" id="assignTeacherSelect" required>
                             <option value="">-- Select Teacher --</option>
                             <?php if (isset($teachers)): ?>
                                 <?php foreach ($teachers as $teacher): ?>
-                                    <option value="<?= isset($teacher->IDNumber) ? $teacher->IDNumber : (isset($teacher->id) ? $teacher->id : '') ?>">
-                                        <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?>
-                                    </option>
+                                    <?php if (!empty($teacher->IDNumber)): ?>
+                                        <option value="<?= $teacher->IDNumber ?>">
+                                            <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?>
+                                        </option>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Assign Teacher</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="assignTeacherBtn">Assign Teacher</button>
                 </div>
-            <?= form_close() ?>
+            </div>
         </div>
     </div>
 <?php endif; ?>
@@ -1975,9 +1996,75 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         border-bottom: none;
     }
 
+    .cc-section-info {
+        flex: 1;
+        min-width: 0;
+    }
+
     .cc-section-name {
         font-size: 0.8125rem;
         color: #1e293b;
+    }
+
+    .cc-assigned-teachers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+    }
+
+    .cc-teacher-badge {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .assigned-teachers-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-height: 40px;
+        padding: 0.5rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .assigned-teacher-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .assigned-teacher-item .remove-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border: none;
+        background: rgba(30, 64, 175, 0.2);
+        color: #1e40af;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        line-height: 1;
+        transition: all 0.2s;
+    }
+
+    .assigned-teacher-item .remove-btn:hover {
+        background: rgba(30, 64, 175, 0.4);
     }
 
     .cc-assign-teacher-btn {
@@ -4519,6 +4606,9 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         document.getElementById('assignTeacherSectionLabel').textContent = sectionName + ' - Subject ID: ' + subjectId;
         document.getElementById('assignTeacherSelect').value = '';
 
+        // Load assigned teachers
+        loadAssignedTeachers(sectionId, subjectId);
+
         var modalElement = document.getElementById('assignTeacherModal');
         if (typeof bootstrap !== 'undefined') {
             var modal = new bootstrap.Modal(modalElement);
@@ -4527,6 +4617,97 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
             alert('Error: Bootstrap is not loaded');
         }
     }
+
+    function loadAssignedTeachers(sectionId, subjectId) {
+        var listElement = document.getElementById('assignedTeachersList');
+        listElement.innerHTML = '<p class="text-muted small">Loading...</p>';
+
+        fetch('<?= site_url('academic/get_section_teachers_ajax') ?>?section_id=' + sectionId + '&subject_id=' + subjectId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    listElement.innerHTML = '<p class="text-muted small">No teachers assigned yet.</p>';
+                } else {
+                    listElement.innerHTML = '';
+                    data.forEach(teacher => {
+                        var item = document.createElement('div');
+                        item.className = 'assigned-teacher-item';
+                        item.innerHTML = teacher.last_name + ', ' + teacher.first_name +
+                            '<button type="button" class="remove-btn" onclick="removeTeacher(\'' + sectionId + '\', \'' + subjectId + '\', \'' + teacher.IDNumber + '\')">&times;</button>';
+                        listElement.appendChild(item);
+                    });
+                }
+            })
+            .catch(error => {
+                listElement.innerHTML = '<p class="text-danger small">Error loading teachers.</p>';
+                console.error('Error:', error);
+            });
+    }
+
+    function removeTeacher(sectionId, subjectId, staffId) {
+        if (!confirm('Are you sure you want to remove this teacher?')) {
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('section_id', sectionId);
+        formData.append('subject_id', subjectId);
+        formData.append('staff_id', staffId);
+
+        fetch('<?= site_url('academic/remove_section_teacher') ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                loadAssignedTeachers(sectionId, subjectId);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error removing teacher.');
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var assignBtn = document.getElementById('assignTeacherBtn');
+        if (assignBtn) {
+            assignBtn.addEventListener('click', function() {
+                var sectionId = document.getElementById('assignSectionId').value;
+                var subjectId = document.getElementById('assignSubjectId').value;
+                var staffId = document.getElementById('assignTeacherSelect').value;
+
+                if (!staffId) {
+                    alert('Please select a teacher.');
+                    return;
+                }
+
+                var formData = new FormData();
+                formData.append('section_id', sectionId);
+                formData.append('subject_id', subjectId);
+                formData.append('staff_id', staffId);
+
+                fetch('<?= site_url('academic/assign_section_teacher') ?>', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        document.getElementById('assignTeacherSelect').value = '';
+                        loadAssignedTeachers(sectionId, subjectId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error assigning teacher.');
+                });
+            });
+        }
+    });
 
     // Handle dropdown → collapse items via custom data-collapse-target attribute
     // (avoids Bootstrap's double-toggle conflict with data-bs-toggle="collapse" inside dropdowns)

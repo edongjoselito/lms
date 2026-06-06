@@ -385,7 +385,7 @@ class Course extends MY_Controller {
         }
 
         // Check if staff is directly assigned to this subject in any section
-        $this->Academic_model->ensure_section_teachers_table();
+        $this->Academic_model->ensure_section_teachers_table_public();
         $row = $this->db->select('section_teachers.id')
             ->where('section_teachers.staff_id', $staff->IDNumber)
             ->where('section_teachers.subject_id', (int)$subject_id)
@@ -503,6 +503,20 @@ class Course extends MY_Controller {
         $subject_sections = array();
         if (!$student_content_view) {
             $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
+
+            // Get assigned teachers for each section
+            $this->Academic_model->ensure_section_teachers_table_public();
+            foreach ($subject_sections as $section) {
+                $section_id = isset($section->section_id) ? $section->section_id : (isset($section->id) ? $section->id : null);
+                $section->assigned_teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+                    ->from('section_teachers')
+                    ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
+                    ->join('users', 'users.id = staff.user_id')
+                    ->where('section_teachers.section_id', $section_id)
+                    ->where('section_teachers.subject_id', $subject_id)
+                    ->get()
+                    ->result();
+            }
 
             // Restrict non-super-admin viewers to sections from their own school.
             if ($this->original_role_slug !== 'super_admin' && !empty($this->school_id)) {

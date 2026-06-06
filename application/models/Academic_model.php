@@ -1566,20 +1566,21 @@ class Academic_model extends CI_Model
 
     public function get_teachers_by_school($school_id)
     {
-        $q = $this->db->select('users.id, users.first_name, users.last_name, users.email')
+        $q = $this->db->select('users.id, users.first_name, users.last_name, users.email, staff.IDNumber')
             ->join('roles', 'roles.id = users.role_id')
+            ->join('staff', 'staff.user_id = users.id', 'left')
             ->where('roles.slug', 'teacher')
             ->where('users.status', 1);
         if ($school_id) {
             $q->where('users.school_id', $school_id);
         }
         $result = $q->order_by('users.last_name, users.first_name')->get('users')->result();
-        
+
         // Debug: log if no teachers found
         if (empty($result)) {
             error_log("No teachers found for school_id: " . ($school_id ?: 'NULL'));
         }
-        
+
         return $result;
     }
 
@@ -1642,7 +1643,8 @@ class Academic_model extends CI_Model
     public function get_subjects_by_teacher_user($user_id)
     {
         $this->ensure_subject_teachers_table();
-        
+        $this->ensure_section_teachers_table();
+
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
         $checkName = $this->db->query("SHOW COLUMNS FROM programs LIKE 'name'")->num_rows();
@@ -1659,14 +1661,54 @@ class Academic_model extends CI_Model
             $select_fields .= ', programs.year_level as program_year_level';
         }
 
-        return $this->db->select($select_fields)
+        // Get subjects from direct subject_teachers assignments
+        $direct_subjects = $this->db->select($select_fields)
             ->join('subject_teachers', 'subject_teachers.subject_id = subjects.id')
             ->join('programs', 'programs.id = subjects.program_id', 'left')
             ->where('subject_teachers.user_id', (int)$user_id)
             ->where('subjects.status', 1)
-            ->order_by('subjects.code')
             ->get('subjects')
             ->result();
+
+        // Get subjects from section_teachers assignments
+        $staff = $this->db->where('user_id', (int)$user_id)->get('staff')->row();
+        $section_subjects = array();
+        if ($staff) {
+            $section_subjects = $this->db->select($select_fields)
+                ->distinct()
+                ->from('section_teachers')
+                ->join('subjects', 'subjects.id = section_teachers.subject_id')
+                ->join('programs', 'programs.id = subjects.program_id', 'left')
+                ->where('section_teachers.staff_id', $staff->IDNumber)
+                ->where('subjects.status', 1)
+                ->get()
+                ->result();
+        }
+
+        // Merge and deduplicate subjects by ID
+        $all_subjects = array();
+        $seen_ids = array();
+
+        foreach ($direct_subjects as $subject) {
+            if (!isset($seen_ids[$subject->id])) {
+                $seen_ids[$subject->id] = true;
+                $all_subjects[] = $subject;
+            }
+        }
+
+        foreach ($section_subjects as $subject) {
+            if (!isset($seen_ids[$subject->id])) {
+                $seen_ids[$subject->id] = true;
+                $all_subjects[] = $subject;
+            }
+        }
+
+        // Sort by code
+        usort($all_subjects, function($a, $b) {
+            return strcmp($a->code ?? '', $b->code ?? '');
+        });
+
+        return $all_subjects;
     }
 
     public function get_teacher_assignment_report_rows()
