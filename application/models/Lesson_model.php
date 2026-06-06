@@ -791,6 +791,30 @@ class Lesson_model extends CI_Model {
                   `id` int(11) NOT NULL AUTO_INCREMENT,
                   `lesson_id` int(11) DEFAULT NULL,
                   `module_id` int(11) DEFAULT NULL,
+                  `plan_day` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
+                  `session_label` varchar(100) DEFAULT NULL,
+                  `session_duration_minutes` int(11) DEFAULT 45,
+                  `learning_area` varchar(255) DEFAULT NULL,
+                  `term_name` varchar(255) DEFAULT NULL,
+                  `designed_by` varchar(255) DEFAULT NULL,
+                  `week_number` varchar(100) DEFAULT NULL,
+                  `grade_section` varchar(255) DEFAULT NULL,
+                  `teaching_date` varchar(255) DEFAULT NULL,
+                  `lesson_name` varchar(255) DEFAULT NULL,
+                  `references_text` text,
+                  `ai_use` text,
+                  `learning_competency` text,
+                  `learning_objectives` text,
+                  `learner_context` text,
+                  `pre_lesson` text,
+                  `lesson_flow` text,
+                  `learning_resources` text,
+                  `integration` text,
+                  `formative_assessment` text,
+                  `extended_learning` text,
+                  `reflections` text,
+                  `prepared_by` varchar(255) DEFAULT NULL,
+                  `prepared_position` varchar(255) DEFAULT NULL,
                   `school_id` int(11) DEFAULT NULL,
                   `objectives` text,
                   `subject_matter` text,
@@ -815,6 +839,39 @@ class Lesson_model extends CI_Model {
             $this->db->query("ALTER TABLE `lesson_plans` ADD COLUMN `module_id` int(11) DEFAULT NULL AFTER `lesson_id`, ADD KEY `module_id` (`module_id`)");
         }
 
+        $templateColumns = array(
+            'plan_day' => "`plan_day` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 AFTER `module_id`",
+            'session_label' => "`session_label` varchar(100) DEFAULT NULL AFTER `plan_day`",
+            'session_duration_minutes' => "`session_duration_minutes` int(11) DEFAULT 45 AFTER `session_label`",
+            'learning_area' => "`learning_area` varchar(255) DEFAULT NULL AFTER `session_duration_minutes`",
+            'term_name' => "`term_name` varchar(255) DEFAULT NULL AFTER `learning_area`",
+            'designed_by' => "`designed_by` varchar(255) DEFAULT NULL AFTER `term_name`",
+            'week_number' => "`week_number` varchar(100) DEFAULT NULL AFTER `designed_by`",
+            'grade_section' => "`grade_section` varchar(255) DEFAULT NULL AFTER `week_number`",
+            'teaching_date' => "`teaching_date` varchar(255) DEFAULT NULL AFTER `grade_section`",
+            'lesson_name' => "`lesson_name` varchar(255) DEFAULT NULL AFTER `teaching_date`",
+            'references_text' => "`references_text` text AFTER `lesson_name`",
+            'ai_use' => "`ai_use` text AFTER `references_text`",
+            'learning_competency' => "`learning_competency` text AFTER `ai_use`",
+            'learning_objectives' => "`learning_objectives` text AFTER `learning_competency`",
+            'learner_context' => "`learner_context` text AFTER `learning_objectives`",
+            'pre_lesson' => "`pre_lesson` text AFTER `learner_context`",
+            'lesson_flow' => "`lesson_flow` text AFTER `pre_lesson`",
+            'learning_resources' => "`learning_resources` text AFTER `lesson_flow`",
+            'integration' => "`integration` text AFTER `learning_resources`",
+            'formative_assessment' => "`formative_assessment` text AFTER `integration`",
+            'extended_learning' => "`extended_learning` text AFTER `formative_assessment`",
+            'reflections' => "`reflections` text AFTER `extended_learning`",
+            'prepared_by' => "`prepared_by` varchar(255) DEFAULT NULL AFTER `reflections`",
+            'prepared_position' => "`prepared_position` varchar(255) DEFAULT NULL AFTER `prepared_by`",
+        );
+
+        foreach ($templateColumns as $column => $definition) {
+            if (!$this->db->field_exists($column, 'lesson_plans')) {
+                $this->db->query("ALTER TABLE `lesson_plans` ADD COLUMN " . $definition);
+            }
+        }
+
         $lessonIdColumn = $this->db->query("SHOW COLUMNS FROM `lesson_plans` LIKE 'lesson_id'")->row();
         if ($lessonIdColumn && isset($lessonIdColumn->Null) && strtoupper($lessonIdColumn->Null) === 'NO') {
             $this->db->query("ALTER TABLE `lesson_plans` MODIFY `lesson_id` int(11) DEFAULT NULL");
@@ -827,13 +884,24 @@ class Lesson_model extends CI_Model {
         return $this->db->where('lesson_id', $lesson_id)->get('lesson_plans')->row();
     }
 
-    public function get_module_lesson_plan($module_id)
+    public function get_module_lesson_plan($module_id, $plan_day = 1)
+    {
+        $this->ensure_lesson_plans_table();
+        return $this->db->where('module_id', $module_id)
+                        ->where('plan_day', max(1, min(5, (int) $plan_day)))
+                        ->where('lesson_id IS NULL', null, false)
+                        ->get('lesson_plans')
+                        ->row();
+    }
+
+    public function get_module_lesson_plans($module_id)
     {
         $this->ensure_lesson_plans_table();
         return $this->db->where('module_id', $module_id)
                         ->where('lesson_id IS NULL', null, false)
+                        ->order_by('plan_day', 'ASC')
                         ->get('lesson_plans')
-                        ->row();
+                        ->result();
     }
 
     public function get_lesson_plan_by_id($id)

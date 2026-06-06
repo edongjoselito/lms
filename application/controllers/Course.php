@@ -2471,6 +2471,238 @@ class Course extends MY_Controller {
         $this->render('course/lesson_plan', $data);
     }
 
+    private function ilaw_session_labels()
+    {
+        return array(
+            1 => 'FIRST SESSION',
+            2 => 'SECOND SESSION',
+            3 => 'THIRD SESSION',
+            4 => 'FOURTH SESSION',
+            5 => 'FIFTH SESSION',
+        );
+    }
+
+    private function normalize_ilaw_plan_day($day)
+    {
+        $day = (int) $day;
+        return max(1, min(5, $day > 0 ? $day : 1));
+    }
+
+    private function module_lesson_plan_url($module_id, $plan_day, $back_param = '')
+    {
+        $query = array('day' => $this->normalize_ilaw_plan_day($plan_day));
+        $back_param = trim((string) $back_param);
+
+        if ($back_param !== '') {
+            $query['back'] = $back_param;
+        }
+
+        return 'course/module_lesson_plan/' . (int) $module_id . '?' . http_build_query($query);
+    }
+
+    private function module_lesson_plan_form_query($plan_day, $back_param = '')
+    {
+        $query = array('day' => $this->normalize_ilaw_plan_day($plan_day));
+        $back_param = trim((string) $back_param);
+
+        if ($back_param !== '') {
+            $query['back'] = $back_param;
+        }
+
+        return '?' . http_build_query($query);
+    }
+
+    private function validate_module_lesson_plan_form()
+    {
+        $fields = array(
+            'session_label' => 'Session',
+            'session_duration_minutes' => 'Duration',
+            'learning_area' => 'Learning Area',
+            'term_name' => 'Term',
+            'designed_by' => 'Designed by Teacher/s',
+            'week_number' => 'Week Number',
+            'grade_section' => 'Grade Level and Section',
+            'teaching_date' => 'Teaching Date',
+            'lesson_name' => 'Name of Lesson',
+            'references_text' => 'References',
+            'learning_competency' => 'Learning Competency',
+            'learning_objectives' => 'Learning Objectives',
+            'learner_context' => 'Learner Context',
+            'pre_lesson' => 'Pre-Lesson',
+            'lesson_flow' => 'Flow',
+            'learning_resources' => 'Learning Resources',
+            'integration' => 'Opportunities for Integration',
+            'formative_assessment' => 'Formative Assessment',
+            'extended_learning' => 'Extended Learning Opportunities',
+            'reflections' => 'Reflections',
+            'prepared_by' => 'Prepared by',
+            'prepared_position' => 'Position',
+        );
+
+        foreach ($fields as $field => $label) {
+            $this->form_validation->set_rules($field, $label, 'trim');
+        }
+
+        $this->form_validation->set_rules('plan_day', 'Day', 'trim|integer');
+    }
+
+    private function parse_ilaw_module_title($title)
+    {
+        $title = trim((string) $title);
+        $data = array(
+            'term_name' => '',
+            'week_number' => '',
+            'lesson_name' => $title,
+        );
+
+        if ($title === '') {
+            return $data;
+        }
+
+        if (preg_match('/^\s*((?:term|quarter)\s*\d+)\s*[:\-]\s*(week\s*\d+)\s*(?:[:\-]\s*(.+))?\s*$/i', $title, $matches)) {
+            $data['term_name'] = ucwords(strtolower(trim($matches[1])));
+            $data['week_number'] = ucwords(strtolower(trim($matches[2])));
+            $data['lesson_name'] = isset($matches[3]) ? trim($matches[3]) : '';
+            return $data;
+        }
+
+        if (preg_match('/^\s*(week\s*\d+)\s*(?:[:\-]\s*(.+))?\s*$/i', $title, $matches)) {
+            $data['week_number'] = ucwords(strtolower(trim($matches[1])));
+            $data['lesson_name'] = isset($matches[2]) ? trim($matches[2]) : '';
+        }
+
+        return $data;
+    }
+
+    private function ilaw_grade_section_label($subject)
+    {
+        $year_level = $this->get_subject_year_level($subject);
+        $grade_label = '';
+
+        if ($year_level !== '') {
+            $grade_label = is_numeric($year_level) ? 'Grade ' . (int) $year_level : $year_level;
+        }
+
+        $sections = array();
+        if (!empty($subject->id)) {
+            $sections = $this->Academic_model->get_subject_sections($subject->id);
+        }
+        if (empty($sections) && !empty($subject->program_id)) {
+            $sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
+        }
+        if (empty($sections) && $year_level !== '') {
+            $sections = $this->Academic_model->get_sections_by_year_level($year_level, $this->school_id);
+        }
+
+        $section_names = array();
+        foreach ($sections as $section) {
+            $section_name = trim((string) ($section->section_name ?? $section->name ?? ''));
+            if ($section_name !== '') {
+                $section_names[$section_name] = $section_name;
+            }
+        }
+
+        if (!empty($section_names)) {
+            $section_text = implode(', ', array_values($section_names));
+            return trim($grade_label . ($grade_label !== '' ? ' - ' : '') . $section_text);
+        }
+
+        return $grade_label;
+    }
+
+    private function normalize_module_lesson_plan_data($lesson_plan, $module)
+    {
+        if (!$lesson_plan) {
+            return $lesson_plan;
+        }
+
+        $lesson_name = trim((string) ($lesson_plan->lesson_name ?? ''));
+        $parsed_name = $this->parse_ilaw_module_title($lesson_name);
+
+        if ($lesson_name !== '' && ($parsed_name['term_name'] !== '' || $parsed_name['week_number'] !== '')) {
+            if (empty($lesson_plan->term_name) && $parsed_name['term_name'] !== '') {
+                $lesson_plan->term_name = $parsed_name['term_name'];
+            }
+            if (empty($lesson_plan->week_number) && $parsed_name['week_number'] !== '') {
+                $lesson_plan->week_number = $parsed_name['week_number'];
+            }
+            $lesson_plan->lesson_name = $parsed_name['lesson_name'];
+        }
+
+        $module_scope = $this->parse_ilaw_module_title($module->title ?? '');
+        if (empty($lesson_plan->term_name) && $module_scope['term_name'] !== '') {
+            $lesson_plan->term_name = $module_scope['term_name'];
+        }
+        if (empty($lesson_plan->week_number) && $module_scope['week_number'] !== '') {
+            $lesson_plan->week_number = $module_scope['week_number'];
+        }
+
+        return $lesson_plan;
+    }
+
+    private function module_lesson_plan_form_data($module_id, $subject, $plan_day)
+    {
+        $plan_day = $this->normalize_ilaw_plan_day($plan_day);
+        $duration = (int) $this->input->post('session_duration_minutes', TRUE);
+        $session_labels = $this->ilaw_session_labels();
+        $session_label = trim((string) $this->input->post('session_label', TRUE));
+
+        if ($session_label === '' && isset($session_labels[$plan_day])) {
+            $session_label = $session_labels[$plan_day];
+        }
+
+        return array(
+            'lesson_id' => null,
+            'module_id' => (int) $module_id,
+            'plan_day' => $plan_day,
+            'session_label' => $session_label,
+            'session_duration_minutes' => $duration > 0 ? $duration : 45,
+            'learning_area' => trim((string) $this->input->post('learning_area', TRUE)),
+            'term_name' => trim((string) $this->input->post('term_name', TRUE)),
+            'designed_by' => trim((string) $this->input->post('designed_by', TRUE)),
+            'week_number' => trim((string) $this->input->post('week_number', TRUE)),
+            'grade_section' => trim((string) $this->input->post('grade_section', TRUE)),
+            'teaching_date' => trim((string) $this->input->post('teaching_date', TRUE)),
+            'lesson_name' => trim((string) $this->input->post('lesson_name', TRUE)),
+            'references_text' => trim((string) $this->input->post('references_text', TRUE)),
+            'learning_competency' => trim((string) $this->input->post('learning_competency', TRUE)),
+            'learning_objectives' => trim((string) $this->input->post('learning_objectives', TRUE)),
+            'learner_context' => trim((string) $this->input->post('learner_context', TRUE)),
+            'pre_lesson' => trim((string) $this->input->post('pre_lesson', TRUE)),
+            'lesson_flow' => trim((string) $this->input->post('lesson_flow', TRUE)),
+            'learning_resources' => trim((string) $this->input->post('learning_resources', TRUE)),
+            'integration' => trim((string) $this->input->post('integration', TRUE)),
+            'formative_assessment' => trim((string) $this->input->post('formative_assessment', TRUE)),
+            'extended_learning' => trim((string) $this->input->post('extended_learning', TRUE)),
+            'reflections' => trim((string) $this->input->post('reflections', TRUE)),
+            'prepared_by' => trim((string) $this->input->post('prepared_by', TRUE)),
+            'prepared_position' => trim((string) $this->input->post('prepared_position', TRUE)),
+            'school_id' => !empty($subject->school_id) ? (int) $subject->school_id : (int) $this->school_id,
+        );
+    }
+
+    private function module_lesson_plan_defaults($module, $subject, $plan_day)
+    {
+        $session_labels = $this->ilaw_session_labels();
+        $teacher_name = '';
+        $module_scope = $this->parse_ilaw_module_title($module->title ?? '');
+
+        if ($this->current_user) {
+            $teacher_name = trim(($this->current_user->first_name ?? '') . ' ' . ($this->current_user->last_name ?? ''));
+        }
+
+        return array(
+            'session_label' => isset($session_labels[$plan_day]) ? $session_labels[$plan_day] : 'SESSION',
+            'session_duration_minutes' => 45,
+            'learning_area' => trim((string) ($subject->description ?? $subject->code ?? '')),
+            'term_name' => $module_scope['term_name'],
+            'designed_by' => $teacher_name,
+            'week_number' => $module_scope['week_number'],
+            'grade_section' => $this->ilaw_grade_section_label($subject),
+            'prepared_by' => $teacher_name,
+        );
+    }
+
     public function module_lesson_plan($module_id)
     {
         $this->require_login();
@@ -2484,7 +2716,11 @@ class Course extends MY_Controller {
             show_error('You do not have permission to view lesson plans for this subject.', 403);
         }
 
-        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        $plan_day = $this->normalize_ilaw_plan_day($this->input->get('day', TRUE));
+        $session_labels = $this->ilaw_session_labels();
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id, $plan_day);
+        $lesson_plan = $this->normalize_module_lesson_plan_data($lesson_plan, $module);
+        $lesson_plans = $this->Lesson_model->get_module_lesson_plans($module_id);
         $can_edit = !$this->is_student_content_view() && $this->current_user;
 
         $back_param = (string) $this->input->get('back', TRUE);
@@ -2497,22 +2733,75 @@ class Course extends MY_Controller {
             $back_label = 'Back to Program Subjects';
         }
 
-        $query_suffix = $back_param !== '' ? '?back=' . urlencode($back_param) : '';
+        $query_suffix = $this->module_lesson_plan_form_query($plan_day, $back_param);
+        $day_urls = array();
+        foreach ($session_labels as $day => $label) {
+            $day_urls[$day] = site_url($this->module_lesson_plan_url($module_id, $day, $back_param));
+        }
+
+        $data['lesson_plan_defaults'] = $this->module_lesson_plan_defaults($module, $subject, $plan_day);
 
         $data['title'] = 'Lesson Plan - ' . htmlspecialchars($module->title);
-        $data['lesson'] = null;
         $data['module'] = $module;
         $data['subject'] = $subject;
         $data['lesson_plan'] = $lesson_plan;
-        $data['lesson_plan_context_title'] = $module->title;
-        $data['lesson_plan_context_type'] = 'module';
+        $data['lesson_plans'] = $lesson_plans;
+        $data['selected_plan_day'] = $plan_day;
+        $data['session_labels'] = $session_labels;
+        $data['day_urls'] = $day_urls;
         $data['can_edit'] = $can_edit;
         $data['back_url'] = $back_url;
         $data['back_label'] = $back_label;
         $data['create_url'] = site_url('course/create_module_lesson_plan/' . $module_id) . $query_suffix;
         $data['update_url'] = site_url('course/update_module_lesson_plan/' . $module_id) . $query_suffix;
         $data['delete_url'] = site_url('course/delete_module_lesson_plan/' . $module_id) . $query_suffix;
-        $this->render('course/lesson_plan', $data);
+        $data['form_url'] = site_url('course/module_lesson_plan_form/' . $module_id) . $query_suffix;
+        $this->render('course/module_lesson_plan', $data);
+    }
+
+    public function module_lesson_plan_form($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view lesson plans for this subject.', 403);
+        }
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to edit lesson plans.', 403);
+        }
+
+        $plan_day = $this->normalize_ilaw_plan_day($this->input->get('day', TRUE));
+        $session_labels = $this->ilaw_session_labels();
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id, $plan_day);
+        $lesson_plan = $this->normalize_module_lesson_plan_data($lesson_plan, $module);
+        $lesson_plans = $this->Lesson_model->get_module_lesson_plans($module_id);
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = site_url($this->module_lesson_plan_url($module_id, $plan_day, $back_param));
+        $query_suffix = $this->module_lesson_plan_form_query($plan_day, $back_param);
+        $session_form_urls = array();
+        foreach ($session_labels as $day => $label) {
+            $session_form_urls[$day] = site_url('course/module_lesson_plan_form/' . (int) $module_id) . $this->module_lesson_plan_form_query($day, $back_param);
+        }
+
+        $data['title'] = ($lesson_plan ? 'Edit' : 'Create') . ' Lesson Plan - ' . htmlspecialchars($module->title);
+        $data['module'] = $module;
+        $data['subject'] = $subject;
+        $data['lesson_plan'] = $lesson_plan;
+        $data['lesson_plans'] = $lesson_plans;
+        $data['lesson_plan_defaults'] = $this->module_lesson_plan_defaults($module, $subject, $plan_day);
+        $data['selected_plan_day'] = $plan_day;
+        $data['session_labels'] = $session_labels;
+        $data['session_form_urls'] = $session_form_urls;
+        $data['form_url'] = site_url('course/create_module_lesson_plan/' . $module_id) . $query_suffix;
+        $data['back_url'] = $back_url;
+        $this->render('course/module_lesson_plan_form', $data);
     }
 
     public function create_module_lesson_plan($module_id)
@@ -2533,19 +2822,14 @@ class Course extends MY_Controller {
         }
 
         $back_param = (string) $this->input->get('back', TRUE);
-        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+        $plan_day = $this->normalize_ilaw_plan_day($this->input->post('plan_day', TRUE) ?: $this->input->get('day', TRUE));
+        $redirect_url = $this->module_lesson_plan_url($module_id, $plan_day, $back_param);
 
         if ($this->input->method() !== 'post') {
             redirect($redirect_url);
         }
 
-        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
-        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
-        $this->form_validation->set_rules('materials', 'Materials', 'trim');
-        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
-        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
-        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
-        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+        $this->validate_module_lesson_plan_form();
 
         if ($this->form_validation->run() === FALSE) {
             $this->session->set_flashdata('error', strip_tags(validation_errors()));
@@ -2553,22 +2837,18 @@ class Course extends MY_Controller {
             return;
         }
 
-        $data = array(
-            'lesson_id' => null,
-            'module_id' => (int) $module_id,
-            'school_id' => !empty($subject->school_id) ? (int) $subject->school_id : (int) $this->school_id,
-            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
-            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
-            'materials' => trim((string) $this->input->post('materials', TRUE)),
-            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
-            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
-            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
-            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
-            'created_by' => (int) $this->current_user->id,
-        );
+        $data = $this->module_lesson_plan_form_data($module_id, $subject, $plan_day);
+        $existing_plan = $this->Lesson_model->get_module_lesson_plan($module_id, $plan_day);
 
-        $this->Lesson_model->create_lesson_plan($data);
-        $this->session->set_flashdata('success', 'Lesson plan created successfully.');
+        if ($existing_plan) {
+            $this->Lesson_model->update_lesson_plan($existing_plan->id, $data);
+            $this->session->set_flashdata('success', 'Lesson plan updated successfully.');
+        } else {
+            $data['created_by'] = (int) $this->current_user->id;
+            $this->Lesson_model->create_lesson_plan($data);
+            $this->session->set_flashdata('success', 'Lesson plan created successfully.');
+        }
+
         redirect($redirect_url);
     }
 
@@ -2590,9 +2870,10 @@ class Course extends MY_Controller {
         }
 
         $back_param = (string) $this->input->get('back', TRUE);
-        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+        $plan_day = $this->normalize_ilaw_plan_day($this->input->post('plan_day', TRUE) ?: $this->input->get('day', TRUE));
+        $redirect_url = $this->module_lesson_plan_url($module_id, $plan_day, $back_param);
 
-        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id, $plan_day);
         if (!$lesson_plan) {
             $this->session->set_flashdata('error', 'Lesson plan not found.');
             redirect($redirect_url);
@@ -2602,13 +2883,7 @@ class Course extends MY_Controller {
             redirect($redirect_url);
         }
 
-        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
-        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
-        $this->form_validation->set_rules('materials', 'Materials', 'trim');
-        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
-        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
-        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
-        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+        $this->validate_module_lesson_plan_form();
 
         if ($this->form_validation->run() === FALSE) {
             $this->session->set_flashdata('error', strip_tags(validation_errors()));
@@ -2616,15 +2891,7 @@ class Course extends MY_Controller {
             return;
         }
 
-        $data = array(
-            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
-            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
-            'materials' => trim((string) $this->input->post('materials', TRUE)),
-            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
-            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
-            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
-            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
-        );
+        $data = $this->module_lesson_plan_form_data($module_id, $subject, $plan_day);
 
         $this->Lesson_model->update_lesson_plan($lesson_plan->id, $data);
         $this->session->set_flashdata('success', 'Lesson plan updated successfully.');
@@ -2649,9 +2916,10 @@ class Course extends MY_Controller {
         }
 
         $back_param = (string) $this->input->get('back', TRUE);
-        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+        $plan_day = $this->normalize_ilaw_plan_day($this->input->get('day', TRUE));
+        $redirect_url = $this->module_lesson_plan_url($module_id, $plan_day, $back_param);
 
-        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id, $plan_day);
         if (!$lesson_plan) {
             $this->session->set_flashdata('error', 'Lesson plan not found.');
             redirect($redirect_url);
