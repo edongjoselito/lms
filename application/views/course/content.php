@@ -97,6 +97,20 @@ if (!function_exists('course_module_lesson_plan_url')) {
     }
 }
 
+if (!function_exists('course_module_lesson_plan_report_url')) {
+    function course_module_lesson_plan_report_url($module_id, $back_path = '')
+    {
+        $url = site_url('course/module_lesson_plan_report/' . (int) $module_id);
+        $back_path = trim((string) $back_path);
+
+        if ($back_path !== '') {
+            $url .= '?back=' . urlencode($back_path);
+        }
+
+        return $url;
+    }
+}
+
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
 $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
@@ -395,6 +409,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                             <li><hr class="dropdown-divider"></li>
                                         <?php endif; ?>
                                         <li><a class="dropdown-item" href="<?= course_module_lesson_plan_url($module->id, $course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
+                                        <li><a class="dropdown-item" href="<?= course_module_lesson_plan_report_url($module->id, $course_return_path) ?>"><i class="bi bi-printer me-2"></i>Lesson Plan Report</a></li>
                                         <?php if ($edit_mode && $can_manage_module): ?>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_module/' . $module->id) ?>" onclick="return confirm('Delete this module and all its contents?')"><i class="bi bi-trash me-2"></i>Delete</a></li>

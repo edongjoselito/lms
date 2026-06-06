@@ -2759,6 +2759,52 @@ class Course extends MY_Controller {
         $this->render('course/module_lesson_plan', $data);
     }
 
+    public function module_lesson_plan_report($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view lesson plan reports for this subject.', 403);
+        }
+
+        $session_labels = $this->ilaw_session_labels();
+        $lesson_plans = $this->Lesson_model->get_module_lesson_plans($module_id);
+
+        foreach ($lesson_plans as $lesson_plan) {
+            $this->normalize_module_lesson_plan_data($lesson_plan, $module);
+        }
+
+        $lesson_plan_defaults = array();
+        foreach ($session_labels as $day => $label) {
+            $lesson_plan_defaults[$day] = $this->module_lesson_plan_defaults($module, $subject, $day);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . $subject->id);
+        $back_label = 'Back to Course';
+
+        if ($back_param === 'course/teacher_subjects') {
+            $back_label = 'Back to My Subjects';
+        } elseif (strpos($back_param, 'academic/program_subjects/') === 0) {
+            $back_label = 'Back to Program Subjects';
+        }
+
+        $data['title'] = 'Lesson Plan Report - ' . htmlspecialchars($module->title);
+        $data['module'] = $module;
+        $data['subject'] = $subject;
+        $data['lesson_plans'] = $lesson_plans;
+        $data['lesson_plan_defaults'] = $lesson_plan_defaults;
+        $data['session_labels'] = $session_labels;
+        $data['back_url'] = $back_url;
+        $data['back_label'] = $back_label;
+        $this->render('course/module_lesson_plan_report', $data);
+    }
+
     public function module_lesson_plan_form($module_id)
     {
         $this->require_login();
