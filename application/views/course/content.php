@@ -1211,10 +1211,15 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                         $section_url .= '&back=' . urlencode($course_back_param);
                                     }
                                     ?>
-                                    <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
-                                        <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
-                                        <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
-                                    </a>
+                                    <div class="cc-section-row">
+                                        <a href="<?= site_url($section_url) ?>" class="cc-nav-item">
+                                            <span class="cc-nav-text"><?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
+                                        </a>
+                                        <button type="button" class="cc-assign-teacher-btn" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')" title="Assign Teacher">
+                                            <i class="bi bi-person-plus"></i>
+                                        </button>
+                                    </div>
                                 <?php endforeach; ?>
                             </div>
                         <?php endforeach; ?>
@@ -1247,6 +1252,44 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Date</button>
+                </div>
+            <?= form_close() ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Assign Teacher Modal -->
+<?php if (empty($student_content_view) && !empty($can_manage_sections)): ?>
+    <div class="modal fade" id="assignTeacherModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <?= form_open('academic/assign_section_teacher', ['class' => 'modal-content', 'id' => 'assignTeacherForm']) ?>
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title mb-1">Assign Teacher to Section</h5>
+                        <p class="text-muted small mb-0" id="assignTeacherSectionLabel"></p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="section_id" id="assignSectionId">
+                    <input type="hidden" name="subject_id" id="assignSubjectId">
+                    <div class="mb-3">
+                        <label class="form-label">Select Teacher</label>
+                        <select class="form-select" name="staff_id" id="assignTeacherSelect" required>
+                            <option value="">-- Select Teacher --</option>
+                            <?php if (isset($teachers)): ?>
+                                <?php foreach ($teachers as $teacher): ?>
+                                    <option value="<?= isset($teacher->IDNumber) ? $teacher->IDNumber : (isset($teacher->id) ? $teacher->id : '') ?>">
+                                        <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Teacher</button>
                 </div>
             <?= form_close() ?>
         </div>
@@ -1935,6 +1978,31 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
     .cc-section-name {
         font-size: 0.8125rem;
         color: #1e293b;
+    }
+
+    .cc-assign-teacher-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .cc-assign-teacher-btn:hover {
+        background: #f1f5f9;
+        color: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .cc-assign-teacher-btn i {
+        font-size: 0.875rem;
     }
 
     .cc-shared-library {
@@ -4442,6 +4510,21 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         var modal = bootstrap.Modal.getInstance(document.getElementById('editSectionModal'));
         if (modal) {
             modal.hide();
+        }
+    }
+
+    function showAssignTeacherModal(sectionId, subjectId, sectionName) {
+        document.getElementById('assignSectionId').value = sectionId;
+        document.getElementById('assignSubjectId').value = subjectId;
+        document.getElementById('assignTeacherSectionLabel').textContent = sectionName + ' - Subject ID: ' + subjectId;
+        document.getElementById('assignTeacherSelect').value = '';
+
+        var modalElement = document.getElementById('assignTeacherModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            alert('Error: Bootstrap is not loaded');
         }
     }
 

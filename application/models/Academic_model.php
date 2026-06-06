@@ -780,6 +780,63 @@ class Academic_model extends CI_Model
         return $this->db->where('id', $id)->update('sections', $data);
     }
 
+    public function get_section_teachers($section_id)
+    {
+        $this->ensure_section_teachers_table();
+        $rows = $this->db->select('staff_id, subject_id')
+            ->where('section_id', $section_id)
+            ->get('section_teachers')
+            ->result();
+        return $rows;
+    }
+
+    public function update_section_teachers($section_id, $assignments = array())
+    {
+        $this->ensure_section_teachers_table();
+
+        // Delete existing section teachers
+        $this->db->where('section_id', $section_id)->delete('section_teachers');
+
+        // Insert new section teachers with subject assignments
+        if (!empty($assignments)) {
+            foreach ($assignments as $assignment) {
+                $this->db->insert('section_teachers', array(
+                    'section_id' => $section_id,
+                    'subject_id' => $assignment['subject_id'],
+                    'staff_id' => $assignment['staff_id']
+                ));
+            }
+        }
+    }
+
+    private function ensure_section_teachers_table()
+    {
+        if (!$this->db->table_exists('section_teachers')) {
+            $this->db->query("
+                CREATE TABLE IF NOT EXISTS `section_teachers` (
+                  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+                  `section_id` int(11) UNSIGNED NOT NULL,
+                  `subject_id` int(11) UNSIGNED NOT NULL,
+                  `staff_id` varchar(20) NOT NULL,
+                  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `uq_section_subject_staff` (`section_id`, `subject_id`, `staff_id`),
+                  KEY `fk_st_section` (`section_id`),
+                  KEY `fk_st_subject` (`subject_id`),
+                  KEY `fk_st_staff` (`staff_id`),
+                  CONSTRAINT `fk_st_section` FOREIGN KEY (`section_id`) REFERENCES `sections`(`id`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_st_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE,
+                  CONSTRAINT `fk_st_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff`(`IDNumber`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+        }
+    }
+
+    public function ensure_section_teachers_table_public()
+    {
+        $this->ensure_section_teachers_table();
+    }
+
     public function delete_section($id)
     {
         return $this->db->where('id', $id)->delete('sections');

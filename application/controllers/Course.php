@@ -77,6 +77,11 @@ class Course extends MY_Controller {
                 return true;
             }
 
+            // Check if teacher is assigned to a section that has this subject
+            if ($this->is_teacher_for_subject_via_section($subject->id)) {
+                return true;
+            }
+
             $year_level = $this->get_subject_year_level($subject);
             if ($year_level === '') {
                 return false;
@@ -367,6 +372,29 @@ class Course extends MY_Controller {
         return (bool)$row;
     }
 
+    private function is_teacher_for_subject_via_section($subject_id)
+    {
+        if ($this->original_role_slug !== 'teacher' || !$this->current_user) {
+            return false;
+        }
+
+        // Get staff record from staff table
+        $staff = $this->db->where('user_id', $this->current_user->id)->get('staff')->row();
+        if (!$staff) {
+            return false;
+        }
+
+        // Check if staff is directly assigned to this subject in any section
+        $this->Academic_model->ensure_section_teachers_table();
+        $row = $this->db->select('section_teachers.id')
+            ->where('section_teachers.staff_id', $staff->IDNumber)
+            ->where('section_teachers.subject_id', (int)$subject_id)
+            ->get('section_teachers')
+            ->row();
+
+        return (bool)$row;
+    }
+
     private function get_subject_access_session()
     {
         return $this->session->userdata('subject_content_access') ?: array();
@@ -597,6 +625,7 @@ class Course extends MY_Controller {
         $data['requires_enrollment_key'] = $requires_enrollment_key;
         $data['has_subject_access'] = $has_subject_access;
         $data['subject_learning_competencies'] = $this->Academic_model->get_learning_competencies($subject_id);
+        $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
 
         $back_param = $this->input->get('back', TRUE);
         if ($back_param) {

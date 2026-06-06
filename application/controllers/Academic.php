@@ -1111,7 +1111,9 @@ class Academic extends MY_Controller {
         if ($this->input->method() === 'post') {
             $post_data = $this->input->post(NULL, TRUE);
             $adviser_id = $this->input->post('adviser_id') ?: NULL;
-            
+            $subject_ids = $this->input->post('subject_ids') ?: array();
+            $staff_ids = $this->input->post('staff_ids') ?: array();
+
             // Check if adviser is already assigned to another section (excluding current section)
             if ($adviser_id) {
                 $existing = $this->db->where('adviser_id', $adviser_id)
@@ -1124,7 +1126,7 @@ class Academic extends MY_Controller {
                     redirect('academic/edit_section/' . $id);
                 }
             }
-            
+
             $d = array(
                 'name'       => $this->input->post('name', TRUE),
                 'adviser_id' => $adviser_id,
@@ -1139,13 +1141,68 @@ class Academic extends MY_Controller {
             }
 
             $this->Academic_model->update_section($id, $d);
+
+            // Build assignments array with subject_id and staff_id pairs
+            $assignments = array();
+            if (!empty($subject_ids) && !empty($staff_ids)) {
+                foreach ($subject_ids as $index => $subject_id) {
+                    if (isset($staff_ids[$index]) && !empty($staff_ids[$index])) {
+                        $assignments[] = array(
+                            'subject_id' => $subject_id,
+                            'staff_id' => $staff_ids[$index]
+                        );
+                    }
+                }
+            }
+
+            // Update section teachers with subject assignments
+            $this->Academic_model->update_section_teachers($id, $assignments);
+
             $this->session->set_flashdata('success', 'Section updated.');
             redirect('academic/sections');
         }
         $data['title'] = 'Edit Section';
         $data['grade_level'] = $grade_level;
         $data['teachers'] = $this->Academic_model->get_teachers_by_school($this->school_id);
+        $data['section_teachers'] = $this->Academic_model->get_section_teachers($id);
+        $data['subjects'] = $this->Academic_model->get_subjects_by_school($this->school_id);
         $this->render('academic/section_simple_edit_form', $data);
+    }
+
+    public function assign_section_teacher()
+    {
+        $this->require_login();
+        $section_id = $this->input->post('section_id');
+        $subject_id = $this->input->post('subject_id');
+        $staff_id = $this->input->post('staff_id');
+
+        if (!$section_id || !$subject_id || !$staff_id) {
+            $this->session->set_flashdata('error', 'Missing required parameters.');
+            redirect($this->input->server('HTTP_REFERER'));
+        }
+
+        // Check if assignment already exists
+        $this->Academic_model->ensure_section_teachers_table();
+        $existing = $this->db->where('section_id', $section_id)
+            ->where('subject_id', $subject_id)
+            ->where('staff_id', $staff_id)
+            ->get('section_teachers')
+            ->row();
+
+        if ($existing) {
+            $this->session->set_flashdata('error', 'Teacher is already assigned to this subject in this section.');
+            redirect($this->input->server('HTTP_REFERER'));
+        }
+
+        // Insert new assignment
+        $this->db->insert('section_teachers', array(
+            'section_id' => $section_id,
+            'subject_id' => $subject_id,
+            'staff_id' => $staff_id
+        ));
+
+        $this->session->set_flashdata('success', 'Teacher assigned successfully.');
+        redirect($this->input->server('HTTP_REFERER'));
     }
 
     public function delete_section($id)
