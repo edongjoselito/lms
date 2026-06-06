@@ -1,5 +1,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+<?php
+$lesson_plan_context_title = isset($lesson_plan_context_title)
+    ? (string) $lesson_plan_context_title
+    : (isset($lesson->title) ? (string) $lesson->title : (isset($module->title) ? (string) $module->title : ''));
+$lesson_plan_context_type = isset($lesson_plan_context_type) ? (string) $lesson_plan_context_type : 'lesson';
+?>
+
 <div class="lp-page">
 
     <!-- Breadcrumb -->
@@ -18,7 +25,7 @@
                 <div class="lp-hero-info">
                     <div class="lp-hero-meta">
                         <span class="lp-tag lp-tag-code"><?= htmlspecialchars($subject->code) ?></span>
-                        <span class="lp-tag lp-tag-lesson"><?= htmlspecialchars($lesson->title) ?></span>
+                        <span class="lp-tag lp-tag-lesson"><?= htmlspecialchars($lesson_plan_context_title) ?></span>
                     </div>
                     <h1 class="lp-hero-title">ILAW Lesson Plan</h1>
                     <p class="lp-hero-desc">Instructional Learning and Assessment Worksheet</p>
@@ -101,9 +108,9 @@
                     <div class="lp-empty-title">No lesson plan yet</div>
                     <div class="lp-empty-sub">
                         <?php if ($can_edit): ?>
-                            Click "Create Lesson Plan" to create an ILAW lesson plan for this lesson.
+                            Click "Create Lesson Plan" to create an ILAW lesson plan for this <?= htmlspecialchars($lesson_plan_context_type, ENT_QUOTES, 'UTF-8') ?>.
                         <?php else: ?>
-                            No lesson plan has been created for this lesson yet.
+                            No lesson plan has been created for this <?= htmlspecialchars($lesson_plan_context_type, ENT_QUOTES, 'UTF-8') ?> yet.
                         <?php endif; ?>
                     </div>
                     <?php if ($can_edit): ?>

@@ -82,6 +82,21 @@ if (!function_exists('course_lesson_completions_url')) {
         return site_url('course/lesson_completions/' . (int) $lesson_id) . '?' . http_build_query($query);
     }
 }
+
+if (!function_exists('course_module_lesson_plan_url')) {
+    function course_module_lesson_plan_url($module_id, $back_path = '')
+    {
+        $url = site_url('course/module_lesson_plan/' . (int) $module_id);
+        $back_path = trim((string) $back_path);
+
+        if ($back_path !== '') {
+            $url .= '?back=' . urlencode($back_path);
+        }
+
+        return $url;
+    }
+}
+
 $student_content_view = !empty($student_content_view) || !empty($is_student_mode);
 $is_student_mode = $student_content_view;
 $subject_system_type = strtolower(isset($subject->system_type) ? $subject->system_type : 'general');
@@ -333,6 +348,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                     $module_activities_count = !empty($module->activities) && is_array($module->activities) ? count($module->activities) : 0;
                     $module_item_count = $module_lessons_count + $module_activities_count;
                     $can_manage_module = !empty($module->can_manage);
+                    $show_module_actions = ($edit_mode && $can_manage_module) || (!$edit_mode && !empty($can_manage_sections) && !$student_content_view);
                     ?>
                     <div class="<?= $course_can_reorder_modules ? 'cc-module-sortable-entry' : '' ?>"<?= $course_can_reorder_modules ? ' data-module-id="' . (int) $module->id . '"' : '' ?>>
                     <!-- Module Card -->
@@ -359,7 +375,7 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                     <?php endif; ?>
                                 </div>
                             </div>
-                            <?php if ($edit_mode && $can_manage_module): ?>
+                            <?php if ($show_module_actions): ?>
                                 <div class="dropdown">
                                     <button class="cc-btn cc-btn--ghost cc-btn--icon" data-bs-toggle="dropdown">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -369,14 +385,20 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                         </svg>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="#" data-collapse-target="#editModule<?= $module->id ?>"><i class="bi bi-pencil me-2"></i>Edit Module</a></li>
-                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addLesson<?= $module->id ?>"><i class="bi bi-file-text me-2"></i>Add Lesson</a></li>
-                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addAssessment<?= $module->id ?>"><i class="bi bi-ui-checks me-2"></i>Add Assessment</a></li>
-                                        <li><a class="dropdown-item" href="#" data-collapse-target="#addActivity<?= $module->id ?>"><i class="bi bi-lightning me-2"></i>Add Activity</a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_module/' . $module->id) ?>" onclick="return confirm('Delete this module and all its contents?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                        <?php if ($edit_mode && $can_manage_module): ?>
+                                            <li><a class="dropdown-item" href="#" data-collapse-target="#editModule<?= $module->id ?>"><i class="bi bi-pencil me-2"></i>Edit Module</a></li>
+                                            <li><a class="dropdown-item" href="#" data-collapse-target="#addLesson<?= $module->id ?>"><i class="bi bi-file-text me-2"></i>Add Lesson</a></li>
+                                            <li><a class="dropdown-item" href="#" data-collapse-target="#addAssessment<?= $module->id ?>"><i class="bi bi-ui-checks me-2"></i>Add Assessment</a></li>
+                                            <li><a class="dropdown-item" href="#" data-collapse-target="#addActivity<?= $module->id ?>"><i class="bi bi-lightning me-2"></i>Add Activity</a></li>
+                                        <?php endif; ?>
+                                        <?php if ($edit_mode && $can_manage_module): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                        <?php endif; ?>
+                                        <li><a class="dropdown-item" href="<?= course_module_lesson_plan_url($module->id, $course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
+                                        <?php if ($edit_mode && $can_manage_module): ?>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_module/' . $module->id) ?>" onclick="return confirm('Delete this module and all its contents?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                        <?php endif; ?>
                                     </ul>
                                 </div>
                             <?php endif; ?>
@@ -592,7 +614,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                                 <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                             <?php endif; ?>
                                                             <li><a class="dropdown-item" href="<?= site_url('course/lesson_notes/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-journal-text me-2"></i>Lesson Notes</a></li>
-                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_plan/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
                                                             <?php if ($can_manage_item): ?>
                                                                 <li><a class="dropdown-item" href="#editLesson<?= $item->id ?>" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="editLesson<?= $item->id ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                                                                 <li><a class="dropdown-item text-danger" href="<?= site_url('course/delete_lesson/' . $item->id) ?>" onclick="return confirm('Delete this lesson?')"><i class="bi bi-trash me-2"></i>Delete</a></li>
@@ -637,7 +658,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                             <?php endif; ?>
                                                             <li><a class="dropdown-item" href="<?= $item_completion_url ?>"><i class="bi bi-check2-circle me-2"></i>View Completions</a></li>
                                                             <li><a class="dropdown-item" href="<?= site_url('course/lesson_notes/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-journal-text me-2"></i>Lesson Notes</a></li>
-                                                            <li><a class="dropdown-item" href="<?= site_url('course/lesson_plan/' . $item->id) . '?back=' . urlencode($course_return_path) ?>"><i class="bi bi-file-earmark-text me-2"></i>Lesson Plan (ILAW)</a></li>
                                                         <?php elseif ($is_quiz_item): ?>
                                                             <li><a class="dropdown-item" href="<?= site_url('course/assessment/' . $item->id) ?>"><i class="bi bi-people me-2"></i>View Attempts</a></li>
                                                         <?php endif; ?>

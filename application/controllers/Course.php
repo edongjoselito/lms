@@ -2471,6 +2471,197 @@ class Course extends MY_Controller {
         $this->render('course/lesson_plan', $data);
     }
 
+    public function module_lesson_plan($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to view lesson plans for this subject.', 403);
+        }
+
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        $can_edit = !$this->is_student_content_view() && $this->current_user;
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $back_url = $back_param !== '' ? site_url($back_param) : site_url('course/content/' . $subject->id);
+        $back_label = 'Back to Course';
+
+        if ($back_param === 'course/teacher_subjects') {
+            $back_label = 'Back to My Subjects';
+        } elseif (strpos($back_param, 'academic/program_subjects/') === 0) {
+            $back_label = 'Back to Program Subjects';
+        }
+
+        $query_suffix = $back_param !== '' ? '?back=' . urlencode($back_param) : '';
+
+        $data['title'] = 'Lesson Plan - ' . htmlspecialchars($module->title);
+        $data['lesson'] = null;
+        $data['module'] = $module;
+        $data['subject'] = $subject;
+        $data['lesson_plan'] = $lesson_plan;
+        $data['lesson_plan_context_title'] = $module->title;
+        $data['lesson_plan_context_type'] = 'module';
+        $data['can_edit'] = $can_edit;
+        $data['back_url'] = $back_url;
+        $data['back_label'] = $back_label;
+        $data['create_url'] = site_url('course/create_module_lesson_plan/' . $module_id) . $query_suffix;
+        $data['update_url'] = site_url('course/update_module_lesson_plan/' . $module_id) . $query_suffix;
+        $data['delete_url'] = site_url('course/delete_module_lesson_plan/' . $module_id) . $query_suffix;
+        $this->render('course/lesson_plan', $data);
+    }
+
+    public function create_module_lesson_plan($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to add lesson plans for this subject.', 403);
+        }
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to add lesson plans.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+
+        if ($this->input->method() !== 'post') {
+            redirect($redirect_url);
+        }
+
+        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
+        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
+        $this->form_validation->set_rules('materials', 'Materials', 'trim');
+        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
+        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
+        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
+        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($redirect_url);
+            return;
+        }
+
+        $data = array(
+            'lesson_id' => null,
+            'module_id' => (int) $module_id,
+            'school_id' => !empty($subject->school_id) ? (int) $subject->school_id : (int) $this->school_id,
+            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
+            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
+            'materials' => trim((string) $this->input->post('materials', TRUE)),
+            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
+            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
+            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
+            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
+            'created_by' => (int) $this->current_user->id,
+        );
+
+        $this->Lesson_model->create_lesson_plan($data);
+        $this->session->set_flashdata('success', 'Lesson plan created successfully.');
+        redirect($redirect_url);
+    }
+
+    public function update_module_lesson_plan($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to edit lesson plans for this subject.', 403);
+        }
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to edit lesson plans.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        if (!$lesson_plan) {
+            $this->session->set_flashdata('error', 'Lesson plan not found.');
+            redirect($redirect_url);
+        }
+
+        if ($this->input->method() !== 'post') {
+            redirect($redirect_url);
+        }
+
+        $this->form_validation->set_rules('objectives', 'Objectives', 'trim');
+        $this->form_validation->set_rules('subject_matter', 'Subject Matter', 'trim');
+        $this->form_validation->set_rules('materials', 'Materials', 'trim');
+        $this->form_validation->set_rules('procedures', 'Procedures', 'trim');
+        $this->form_validation->set_rules('evaluation', 'Evaluation', 'trim');
+        $this->form_validation->set_rules('assignment', 'Assignment', 'trim');
+        $this->form_validation->set_rules('remarks', 'Remarks', 'trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', strip_tags(validation_errors()));
+            redirect($redirect_url);
+            return;
+        }
+
+        $data = array(
+            'objectives' => trim((string) $this->input->post('objectives', TRUE)),
+            'subject_matter' => trim((string) $this->input->post('subject_matter', TRUE)),
+            'materials' => trim((string) $this->input->post('materials', TRUE)),
+            'procedures' => trim((string) $this->input->post('procedures', TRUE)),
+            'evaluation' => trim((string) $this->input->post('evaluation', TRUE)),
+            'assignment' => trim((string) $this->input->post('assignment', TRUE)),
+            'remarks' => trim((string) $this->input->post('remarks', TRUE)),
+        );
+
+        $this->Lesson_model->update_lesson_plan($lesson_plan->id, $data);
+        $this->session->set_flashdata('success', 'Lesson plan updated successfully.');
+        redirect($redirect_url);
+    }
+
+    public function delete_module_lesson_plan($module_id)
+    {
+        $this->require_login();
+        $module = $this->Lesson_model->get_module($module_id);
+        if (!$module) show_404();
+
+        $subject = $this->Academic_model->get_subject($module->subject_id);
+        if (!$subject) show_404();
+
+        if (!$this->can_access_subject_content_page($subject)) {
+            show_error('You do not have permission to delete lesson plans for this subject.', 403);
+        }
+
+        if ($this->is_student_content_view()) {
+            show_error('You do not have permission to delete lesson plans.', 403);
+        }
+
+        $back_param = (string) $this->input->get('back', TRUE);
+        $redirect_url = 'course/module_lesson_plan/' . $module_id . ($back_param !== '' ? '?back=' . urlencode($back_param) : '');
+
+        $lesson_plan = $this->Lesson_model->get_module_lesson_plan($module_id);
+        if (!$lesson_plan) {
+            $this->session->set_flashdata('error', 'Lesson plan not found.');
+            redirect($redirect_url);
+        }
+
+        $this->Lesson_model->delete_lesson_plan($lesson_plan->id);
+        $this->session->set_flashdata('success', 'Lesson plan deleted successfully.');
+        redirect($redirect_url);
+    }
+
     public function create_lesson_plan($lesson_id)
     {
         $this->require_login();

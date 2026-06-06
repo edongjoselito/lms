@@ -789,7 +789,8 @@ class Lesson_model extends CI_Model {
             $this->db->query("
                 CREATE TABLE IF NOT EXISTS `lesson_plans` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
-                  `lesson_id` int(11) NOT NULL,
+                  `lesson_id` int(11) DEFAULT NULL,
+                  `module_id` int(11) DEFAULT NULL,
                   `school_id` int(11) DEFAULT NULL,
                   `objectives` text,
                   `subject_matter` text,
@@ -803,10 +804,20 @@ class Lesson_model extends CI_Model {
                   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                   PRIMARY KEY (`id`),
                   KEY `lesson_id` (`lesson_id`),
+                  KEY `module_id` (`module_id`),
                   KEY `school_id` (`school_id`),
                   KEY `created_by` (`created_by`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
+        }
+
+        if (!$this->db->field_exists('module_id', 'lesson_plans')) {
+            $this->db->query("ALTER TABLE `lesson_plans` ADD COLUMN `module_id` int(11) DEFAULT NULL AFTER `lesson_id`, ADD KEY `module_id` (`module_id`)");
+        }
+
+        $lessonIdColumn = $this->db->query("SHOW COLUMNS FROM `lesson_plans` LIKE 'lesson_id'")->row();
+        if ($lessonIdColumn && isset($lessonIdColumn->Null) && strtoupper($lessonIdColumn->Null) === 'NO') {
+            $this->db->query("ALTER TABLE `lesson_plans` MODIFY `lesson_id` int(11) DEFAULT NULL");
         }
     }
 
@@ -814,6 +825,15 @@ class Lesson_model extends CI_Model {
     {
         $this->ensure_lesson_plans_table();
         return $this->db->where('lesson_id', $lesson_id)->get('lesson_plans')->row();
+    }
+
+    public function get_module_lesson_plan($module_id)
+    {
+        $this->ensure_lesson_plans_table();
+        return $this->db->where('module_id', $module_id)
+                        ->where('lesson_id IS NULL', null, false)
+                        ->get('lesson_plans')
+                        ->row();
     }
 
     public function get_lesson_plan_by_id($id)
