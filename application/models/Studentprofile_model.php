@@ -53,7 +53,7 @@ class Studentprofile_model extends CI_Model
             $this->db->or_like('CONCAT(studentprofile.last_name, ", ", studentprofile.first_name)', $search, FALSE);
             $this->db->group_end();
         }
-        return $this->db->order_by('studentprofile.last_name, studentprofile.first_name')->get('studentprofile')->result();
+        return $this->db->order_by('studentprofile.id', 'DESC')->get('studentprofile')->result();
     }
 
     public function get($id)
