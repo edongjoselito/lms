@@ -556,11 +556,15 @@ class Course extends MY_Controller {
                 }
 
                 $assigned_section_ids = array_unique($assigned_section_ids);
+                error_log("Teacher assigned section IDs: " . implode(', ', $assigned_section_ids));
 
                 if (!empty($assigned_section_ids)) {
                     $subject_sections = array_values(array_filter($subject_sections, function ($section) use ($assigned_section_ids) {
                         $section_id = isset($section->section_id) ? (int) $section->section_id : (isset($section->id) ? (int) $section->id : 0);
-                        return in_array($section_id, $assigned_section_ids);
+                        $section_name = isset($section->section_name) ? $section->section_name : (isset($section->name) ? $section->name : 'unknown');
+                        $is_allowed = in_array($section_id, $assigned_section_ids);
+                        error_log("Section: $section_name (ID: $section_id) - Allowed: " . ($is_allowed ? 'yes' : 'no'));
+                        return $is_allowed;
                     }));
                 } else {
                     // Teacher has no assigned sections, show none
