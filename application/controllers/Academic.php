@@ -56,13 +56,31 @@ class Academic extends MY_Controller {
             return false;
         }
 
+        // Check direct subject_teachers assignment
         $this->Academic_model->ensure_subject_teachers_table();
         $assigned = $this->db->where('subject_id', $subject_id)
             ->where('user_id', (int) $this->current_user->id)
             ->get('subject_teachers')
             ->row();
 
-        return (bool) $assigned;
+        if ($assigned) {
+            return true;
+        }
+
+        // Check section_teachers assignment
+        $this->Academic_model->ensure_section_teachers_table_public();
+        $staff = $this->db->where('user_id', (int) $this->current_user->id)->get('staff')->row();
+        if ($staff) {
+            $section_assigned = $this->db->where('subject_id', $subject_id)
+                ->where('staff_id', $staff->IDNumber)
+                ->get('section_teachers')
+                ->row();
+            if ($section_assigned) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function can_access_section_students($section, $subject_id = null)

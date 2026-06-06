@@ -526,6 +526,47 @@ class Course extends MY_Controller {
                     return $section_school_id === $current_school_id;
                 }));
             }
+
+            // Restrict teachers to only their assigned sections
+            if ($this->original_role_slug === 'teacher' && $this->current_user) {
+                $this->Academic_model->ensure_section_teachers_table_public();
+                $staff = $this->db->where('user_id', (int) $this->current_user->id)->get('staff')->row();
+                $assigned_section_ids = array();
+
+                if ($staff) {
+                    // Get sections from section_teachers
+                    $section_teacher_rows = $this->db->select('section_id')
+                        ->distinct()
+                        ->where('staff_id', $staff->IDNumber)
+                        ->get('section_teachers')
+                        ->result();
+                    foreach ($section_teacher_rows as $row) {
+                        $assigned_section_ids[] = (int) $row->section_id;
+                    }
+
+                    // Get sections where teacher is adviser
+                    $adviser_rows = $this->db->select('id')
+                        ->where('adviser_id', (int) $this->current_user->id)
+                        ->where('school_id', $this->school_id)
+                        ->get('sections')
+                        ->result();
+                    foreach ($adviser_rows as $row) {
+                        $assigned_section_ids[] = (int) $row->id;
+                    }
+                }
+
+                $assigned_section_ids = array_unique($assigned_section_ids);
+
+                if (!empty($assigned_section_ids)) {
+                    $subject_sections = array_values(array_filter($subject_sections, function ($section) use ($assigned_section_ids) {
+                        $section_id = isset($section->section_id) ? (int) $section->section_id : (isset($section->id) ? (int) $section->id : 0);
+                        return in_array($section_id, $assigned_section_ids);
+                    }));
+                } else {
+                    // Teacher has no assigned sections, show none
+                    $subject_sections = array();
+                }
+            }
         }
         if (empty($subject_sections) && !empty($subject->program_id)) {
             $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
