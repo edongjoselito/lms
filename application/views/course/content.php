@@ -1218,16 +1218,18 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                 <span class="cc-nav-count"><?= (int) ($section->student_count ?? 0) ?> students</span>
                                             </a>
                                             <?php if (!empty($section->assigned_teachers)): ?>
-                                                <div class="cc-assigned-teachers">
-                                                    <?php foreach ($section->assigned_teachers as $teacher): ?>
-                                                        <span class="cc-teacher-badge"><?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
-                                                    <?php endforeach; ?>
-                                                </div>
+                                                <?php foreach ($section->assigned_teachers as $teacher): ?>
+                                                    <span class="cc-teacher-badge"> - <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
+                                                <?php endforeach; ?>
+                                                <?php if (!empty($can_manage_sections)): ?>
+                                                    <button type="button" class="cc-change-teacher-btn" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')">Change Teacher</button>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <?php if (!empty($can_manage_sections)): ?>
+                                                    <a href="#" class="cc-teacher-link" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')"> - Add a Teacher</a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
-                                        <button type="button" class="cc-assign-teacher-btn" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')" title="Assign Teacher">
-                                            <i class="bi bi-person-plus"></i>
-                                        </button>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -2022,6 +2024,34 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         color: #1e40af;
         border-radius: 4px;
         font-weight: 500;
+    }
+
+    .cc-teacher-link {
+        font-size: 0.75rem;
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .cc-teacher-link:hover {
+        text-decoration: underline;
+    }
+
+    .cc-change-teacher-btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        background: #f3f4f6;
+        color: #4b5563;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+        font-weight: 500;
+    }
+
+    .cc-change-teacher-btn:hover {
+        background: #e5e7eb;
+        color: #1f2937;
     }
 
     .assigned-teachers-list {

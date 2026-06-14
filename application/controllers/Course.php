@@ -508,7 +508,7 @@ class Course extends MY_Controller {
             $this->Academic_model->ensure_section_teachers_table_public();
             foreach ($subject_sections as $section) {
                 $section_id = isset($section->section_id) ? $section->section_id : (isset($section->id) ? $section->id : null);
-                $section->assigned_teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+                $teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
                     ->from('section_teachers')
                     ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
                     ->join('users', 'users.id = staff.user_id')
@@ -516,6 +516,38 @@ class Course extends MY_Controller {
                     ->where('section_teachers.subject_id', $subject_id)
                     ->get()
                     ->result();
+
+                // If no teachers found with subject_id filter, try without it (for backwards compatibility)
+                if (empty($teachers) && !empty($section_id)) {
+                    $teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+                        ->from('section_teachers')
+                        ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
+                        ->join('users', 'users.id = staff.user_id')
+                        ->where('section_teachers.section_id', $section_id)
+                        ->get()
+                        ->result();
+                }
+
+                $section->assigned_teachers = $teachers;
+
+                // Fallback: get adviser from sections table if no teachers assigned via section_teachers
+                if (empty($teachers) && !empty($section_id)) {
+                    $section_data = $this->db->select('adviser_id')
+                        ->where('id', $section_id)
+                        ->get('sections')
+                        ->row();
+                    if ($section_data && !empty($section_data->adviser_id)) {
+                        $adviser = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+                            ->from('staff')
+                            ->join('users', 'users.id = staff.user_id')
+                            ->where('staff.IDNumber', $section_data->adviser_id)
+                            ->get()
+                            ->row();
+                        if ($adviser) {
+                            $section->assigned_teachers = array($adviser);
+                        }
+                    }
+                }
             }
 
             // Restrict non-super-admin viewers to sections from their own school.
@@ -534,10 +566,11 @@ class Course extends MY_Controller {
                 $assigned_section_ids = array();
 
                 if ($staff) {
-                    // Get sections from section_teachers
+                    // Get sections from section_teachers for this specific subject
                     $section_teacher_rows = $this->db->select('section_id')
                         ->distinct()
                         ->where('staff_id', $staff->IDNumber)
+                        ->where('subject_id', $subject_id)
                         ->get('section_teachers')
                         ->result();
                     foreach ($section_teacher_rows as $row) {
@@ -556,7 +589,7 @@ class Course extends MY_Controller {
                 }
 
                 $assigned_section_ids = array_unique($assigned_section_ids);
-                error_log("Teacher assigned section IDs: " . implode(', ', $assigned_section_ids));
+                error_log("Teacher (user_id: " . (int) $this->current_user->id . ") assigned section IDs for subject $subject_id: " . implode(', ', $assigned_section_ids));
 
                 if (!empty($assigned_section_ids)) {
                     $subject_sections = array_values(array_filter($subject_sections, function ($section) use ($assigned_section_ids) {

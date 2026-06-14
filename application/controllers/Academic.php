@@ -101,11 +101,16 @@ class Academic extends MY_Controller {
             return false;
         }
 
+        // Teachers can access any section's student list if they are assigned to the subject
+        if ($this->is_teacher_assigned_to_subject($subject_id)) {
+            return true;
+        }
+
         if (!empty($section->adviser_id) && (int) $section->adviser_id === (int) $this->current_user->id) {
             return true;
         }
 
-        return $this->is_teacher_assigned_to_subject($subject_id);
+        return false;
     }
 
     // ---- School Years ----
@@ -1081,19 +1086,7 @@ class Academic extends MY_Controller {
 
         if ($this->input->method() === 'post') {
             $adviser_id = $this->input->post('adviser_id') ?: NULL;
-            
-            // Check if adviser is already assigned to another section
-            if ($adviser_id) {
-                $existing = $this->db->where('adviser_id', $adviser_id)
-                    ->where('school_id', $this->school_id)
-                    ->get('sections')
-                    ->row();
-                if ($existing) {
-                    $this->session->set_flashdata('error', 'This adviser is already assigned to another section.');
-                    redirect('academic/create_section_for_grade/' . $grade_level_id);
-                }
-            }
-            
+
             $d = array(
                 'school_year_id' => $sy->id,
                 'school_id'      => $this->school_id,
