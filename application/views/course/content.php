@@ -1221,9 +1221,6 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                                 <?php foreach ($section->assigned_teachers as $teacher): ?>
                                                     <span class="cc-teacher-badge"> - <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
                                                 <?php endforeach; ?>
-                                                <?php if (!empty($can_manage_sections)): ?>
-                                                    <button type="button" class="cc-change-teacher-btn" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')">Change Teacher</button>
-                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <?php if (!empty($can_manage_sections)): ?>
                                                     <a href="#" class="cc-teacher-link" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>')"> - Add a Teacher</a>

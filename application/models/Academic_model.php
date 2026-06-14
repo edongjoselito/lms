@@ -1510,7 +1510,7 @@ class Academic_model extends CI_Model
         // Check which columns exist in programs table
         $checkCode = $this->db->query("SHOW COLUMNS FROM programs LIKE 'code'")->num_rows();
 
-        $select_fields = 'class_programs.*, subjects.name as subject_name, subjects.code as subject_code, sections.name as section_name, grade_levels.name as grade_level_name';
+        $select_fields = 'class_programs.*, subjects.description as subject_name, subjects.code as subject_code, sections.name as section_name, sections.year_level as grade_level_name';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
@@ -1518,7 +1518,6 @@ class Academic_model extends CI_Model
         $this->db->select($select_fields, FALSE);
         $this->db->join('subjects', 'subjects.id = class_programs.subject_id');
         $this->db->join('sections', 'sections.id = class_programs.section_id');
-        $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
         $this->db->join('programs', 'programs.id = sections.program_id', 'left');
         $this->db->where('class_programs.teacher_id', $teacher_id);
         if ($school_year_id) {
@@ -1541,7 +1540,7 @@ class Academic_model extends CI_Model
 
     public function get_teacher_by_user($user_id)
     {
-        return $this->db->where('user_id', $user_id)->get('teachers')->row();
+        return $this->db->where('user_id', $user_id)->get('staff')->row();
     }
 
     // ---- Subject–Teacher Assignment ----

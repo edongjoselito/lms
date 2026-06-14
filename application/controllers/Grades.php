@@ -18,7 +18,7 @@ class Grades extends MY_Controller {
 
         if ($this->is_teacher()) {
             $teacher = $this->Academic_model->get_teacher_by_user($this->current_user->id);
-            $data['classes'] = $teacher ? $this->Academic_model->get_teacher_classes($teacher->id, $sy ? $sy->id : null) : array();
+            $data['classes'] = $teacher ? $this->Academic_model->get_teacher_classes($teacher->IDNumber, $sy ? $sy->id : null) : array();
             $this->render('grades/teacher_index', $data);
         } else {
             $filters = array();
