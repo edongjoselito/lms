@@ -527,6 +527,36 @@ function td_color($str, $pal) { return $pal[abs(crc32($str)) % count($pal)]; }
     </div>
 </div>
 
+<?php if (!empty($advisory_sections)): ?>
+<div class="data-table mb-4">
+    <div class="table-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>My Advisory Class</h5>
+        <a href="<?= site_url('academic/my_advisory_class') ?>" class="btn-view-all">
+            Open <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    <div class="p-3 p-md-4">
+        <div class="row g-3">
+            <?php foreach ($advisory_sections as $advisory_section): ?>
+                <div class="col-md-6 col-xl-4">
+                    <div style="border:1px solid #dbeafe;border-radius:14px;padding:1rem;background:#f8fbff;height:100%;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+                            <div>
+                                <div style="font-size:0.98rem;font-weight:700;color:#1e293b;"><?= htmlspecialchars($advisory_section->name) ?></div>
+                                <div style="font-size:0.78rem;color:#64748b;margin-top:0.2rem;"><?= htmlspecialchars($advisory_section->grade_level_label) ?></div>
+                            </div>
+                            <span style="display:inline-flex;align-items:center;padding:0.3rem 0.65rem;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:0.74rem;font-weight:700;">
+                                <?= (int) $advisory_section->student_count ?> Students
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- My Subjects table -->
 <div class="data-table mb-4">
     <div class="table-header d-flex align-items-center justify-content-between">

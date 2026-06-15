@@ -8,7 +8,7 @@ class Academic extends MY_Controller {
         parent::__construct();
         $method = $this->router->fetch_method();
 
-        if (in_array($method, array('section_students', 'student_subject_records'))) {
+        if (in_array($method, array('section_students', 'student_subject_records', 'my_advisory_class'))) {
             $this->require_login();
         } else {
             $this->require_role(array('super_admin', 'school_admin', 'course_creator'));
@@ -111,6 +111,24 @@ class Academic extends MY_Controller {
         }
 
         return false;
+    }
+
+    private function format_section_grade_level_label($section)
+    {
+        if (!$section) {
+            return '—';
+        }
+
+        if (isset($section->grade_level_name) && trim((string) $section->grade_level_name) !== '') {
+            return trim((string) $section->grade_level_name);
+        }
+
+        if (isset($section->year_level) && trim((string) $section->year_level) !== '') {
+            $value = trim((string) $section->year_level);
+            return is_numeric($value) ? 'Grade ' . str_pad((int) $value, 2, '0', STR_PAD_LEFT) : $value;
+        }
+
+        return '—';
     }
 
     // ---- School Years ----
@@ -1327,6 +1345,25 @@ class Academic extends MY_Controller {
         $data['subject_id'] = $subject_id;
         $data['back'] = $back;
         $this->render('academic/section_students', $data);
+    }
+
+    public function my_advisory_class()
+    {
+        $this->require_role(array('teacher'));
+
+        $school_year_id = $this->current_school_year ? (int) $this->current_school_year->id : null;
+        $sections = $this->Academic_model->get_advisory_sections_by_user((int) $this->current_user->id, $this->school_id, $school_year_id);
+
+        foreach ($sections as $section) {
+            $section->grade_level_label = $this->format_section_grade_level_label($section);
+            $section->students = $this->Academic_model->get_section_students($section->id);
+            $section->student_count = count($section->students);
+        }
+
+        $data['title'] = 'My Advisory Class';
+        $data['sections'] = $sections;
+        $data['school_year'] = $this->current_school_year;
+        $this->render('academic/my_advisory_class', $data);
     }
 
     public function student_subject_records($section_id, $student_user_id)

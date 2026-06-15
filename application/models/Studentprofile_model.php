@@ -91,12 +91,51 @@ class Studentprofile_model extends CI_Model
             ->row();
     }
 
+    public function get_for_school($id, $school_id)
+    {
+        return $this->db->select('studentprofile.*, students.gender', FALSE)
+            ->from('studentprofile')
+            ->join('students', 'students.user_id = studentprofile.user_id', 'left')
+            ->where('studentprofile.id', $id)
+            ->where('studentprofile.school_id', $school_id)
+            ->get()
+            ->row();
+    }
+
     public function get_by_student_number($student_number, $school_id)
     {
         return $this->db->where('student_number', $student_number)
             ->where('school_id', $school_id)
             ->get('studentprofile')
             ->row();
+    }
+
+    public function find_by_identity($school_id, $first_name, $middle_name, $last_name, $birth_date, $exclude_id = null)
+    {
+        $sql = "SELECT *
+                FROM studentprofile
+                WHERE school_id = ?
+                  AND LOWER(TRIM(first_name)) = ?
+                  AND LOWER(TRIM(IFNULL(middle_name, ''))) = ?
+                  AND LOWER(TRIM(last_name)) = ?
+                  AND birth_date = ?";
+
+        $params = array(
+            (int) $school_id,
+            strtolower(trim((string) $first_name)),
+            strtolower(trim((string) $middle_name)),
+            strtolower(trim((string) $last_name)),
+            $birth_date,
+        );
+
+        if ($exclude_id !== null) {
+            $sql .= " AND id != ?";
+            $params[] = (int) $exclude_id;
+        }
+
+        $sql .= " LIMIT 1";
+
+        return $this->db->query($sql, $params)->row();
     }
 
     public function search_for_enrollment($school_id, $search = null, $limit = 20)

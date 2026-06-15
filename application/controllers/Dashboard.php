@@ -76,6 +76,11 @@ class Dashboard extends MY_Controller
             $this->Academic_model->ensure_section_teachers_table_public();
             $subjects = $this->Academic_model->get_subjects_by_teacher_user($this->current_user->id);
             $school_year = $this->Academic_model->get_active_school_year($this->school_id);
+            $advisory_sections = $this->Academic_model->get_advisory_sections_by_user(
+                $this->current_user->id,
+                $this->school_id,
+                $school_year ? (int) $school_year->id : null
+            );
 
             // Get sections where teacher is assigned (via section_teachers or as adviser)
             $staff = $this->db->where('user_id', (int) $this->current_user->id)->get('staff')->row();
@@ -107,6 +112,20 @@ class Dashboard extends MY_Controller
 
             $section_counts = array();
             $student_counts = array();
+            $total_sections = count($assigned_section_ids);
+            $total_students = 0;
+
+            foreach ($advisory_sections as $advisory_section) {
+                $grade_level_value = '';
+                if (isset($advisory_section->grade_level_name) && trim((string) $advisory_section->grade_level_name) !== '') {
+                    $grade_level_value = trim((string) $advisory_section->grade_level_name);
+                } elseif (isset($advisory_section->year_level) && trim((string) $advisory_section->year_level) !== '') {
+                    $grade_level_value = trim((string) $advisory_section->year_level);
+                }
+
+                $advisory_section->grade_level_label = $this->format_grade_level_label($grade_level_value);
+                $advisory_section->student_count = count($this->Academic_model->get_section_students($advisory_section->id));
+            }
 
             // Count sections by year level (only assigned sections)
             if (!empty($assigned_section_ids)) {
@@ -143,11 +162,19 @@ class Dashboard extends MY_Controller
                 foreach ($student_rows as $row) {
                     $student_counts[(string) $row->year_level] = (int) $row->total_students;
                 }
+
+                $this->db->from('enrollments')
+                    ->where_in('section_id', $assigned_section_ids)
+                    ->group_start()
+                        ->where('status', 'enrolled')
+                        ->or_where('status', 1)
+                    ->group_end();
+                if ($school_year && $this->db->field_exists('school_year_id', 'enrollments')) {
+                    $this->db->where('school_year_id', $school_year->id);
+                }
+                $total_students = (int) $this->db->count_all_results();
             }
 
-            $total_sections = 0;
-            $total_students = 0;
-            $counted_grade_levels = array();
             foreach ($subjects as &$s) {
                 $grade_level_value = '';
                 if (isset($s->program_year_level) && trim((string) $s->program_year_level) !== '') {
@@ -159,12 +186,6 @@ class Dashboard extends MY_Controller
                 $s->grade_level_label = $this->format_grade_level_label($grade_level_value);
                 $s->section_count = isset($section_counts[$grade_level_value]) ? $section_counts[$grade_level_value] : 0;
                 $s->student_count = isset($student_counts[$grade_level_value]) ? $student_counts[$grade_level_value] : 0;
-
-                if ($grade_level_value !== '' && !isset($counted_grade_levels[$grade_level_value])) {
-                    $total_sections += $s->section_count;
-                    $total_students += $s->student_count;
-                    $counted_grade_levels[$grade_level_value] = true;
-                }
             }
             unset($s);
 
@@ -178,6 +199,7 @@ class Dashboard extends MY_Controller
             $data['subjects']        = $subjects;
             $data['total_sections']  = $total_sections;
             $data['total_students']  = $total_students;
+            $data['advisory_sections'] = $advisory_sections;
             $data['school_year']     = $school_year;
             $data['is_teacher_view'] = true;
             $data['is_platform_view'] = false;

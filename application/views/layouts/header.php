@@ -1048,6 +1048,8 @@
     <?php $this->load->view('includes/sidebar', array(
         'original_role_slug' => isset($original_role_slug) ? $original_role_slug : null,
         'is_student_mode' => isset($is_student_mode) ? $is_student_mode : false,
+        'teacher_advisory_section_count' => isset($teacher_advisory_section_count) ? (int) $teacher_advisory_section_count : 0,
+        'teacher_has_advisory_sections' => !empty($teacher_has_advisory_sections),
     )); ?>
 
     <!-- Main Content -->

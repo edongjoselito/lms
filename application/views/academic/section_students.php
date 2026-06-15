@@ -1,10 +1,19 @@
 <?php
 $section_back = isset($back) ? trim((string) $back) : '';
 $section_course_url = '';
+$section_back_url = 'academic/sections';
+$section_back_label = 'Back to Sections';
 if (isset($subject_id) && $subject_id) {
     $section_course_url = 'course/content/' . (int) $subject_id . '?edit=1';
     if ($section_back !== '') {
         $section_course_url .= '&back=' . urlencode($section_back);
+    }
+} elseif ($section_back !== '') {
+    $section_back_url = $section_back;
+    if ($section_back === 'academic/my_advisory_class') {
+        $section_back_label = 'Back to My Advisory Class';
+    } else {
+        $section_back_label = 'Back';
     }
 }
 $student_records_suffix = '?subject_id=' . (int) $subject_id;
@@ -27,8 +36,8 @@ if ($section_back !== '') {
                     <i class="bi bi-arrow-left me-1"></i> Back to Course
                 </a>
             <?php else: ?>
-                <a href="<?= site_url('academic/sections') ?>" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Sections
+                <a href="<?= site_url($section_back_url) ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> <?= htmlspecialchars($section_back_label) ?>
                 </a>
             <?php endif; ?>
         </div>

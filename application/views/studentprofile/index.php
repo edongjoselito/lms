@@ -10,6 +10,10 @@ $active_count = 0;
 $search_label = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
 $search_query_suffix = $search_label !== '' ? '&search=' . urlencode($search_label) : '';
 $enrolled_user_ids = isset($enrolled_user_ids) && is_array($enrolled_user_ids) ? array_map('intval', array_column($enrolled_user_ids, 'student_id')) : array();
+$is_teacher_profile_access = isset($role_slug) && $role_slug === 'teacher';
+$profile_page_desc = $is_teacher_profile_access
+    ? 'Create and update student records. Existing learners are blocked from duplicate profiling.'
+    : 'Manage student records, generate login-ready accounts, and enroll learners into grade levels and sections.';
 
 if (!empty($profiles)) {
     foreach ($profiles as $profile_item) {
@@ -32,7 +36,7 @@ if (!empty($profiles)) {
                         <span class="ps-tag ps-tag-code">Profile Registry</span>
                     </div>
                     <h1 class="ps-hero-title">Student Profiles</h1>
-                    <p class="ps-hero-desc">Manage student records, generate login-ready accounts, and enroll learners into grade levels and sections.</p>
+                    <p class="ps-hero-desc"><?= htmlspecialchars($profile_page_desc) ?></p>
                 </div>
             </div>
             <div class="ps-hero-stats">
@@ -75,12 +79,14 @@ if (!empty($profiles)) {
                             </a>
                         <?php endif; ?>
                     </form>
-                    <a href="<?= site_url('studentprofile/download_template') ?>" class="ps-tool-btn ps-tool-btn-light">
-                        <i class="bi bi-download"></i> Download Template
-                    </a>
-                    <a href="<?= site_url('studentprofile/bulk_upload') ?>" class="ps-submit-btn ps-submit-btn-inline ps-submit-btn-secondary">
-                        <i class="bi bi-upload"></i> Bulk Upload
-                    </a>
+                    <?php if (!$is_teacher_profile_access): ?>
+                        <a href="<?= site_url('studentprofile/download_template') ?>" class="ps-tool-btn ps-tool-btn-light">
+                            <i class="bi bi-download"></i> Download Template
+                        </a>
+                        <a href="<?= site_url('studentprofile/bulk_upload') ?>" class="ps-submit-btn ps-submit-btn-inline ps-submit-btn-secondary">
+                            <i class="bi bi-upload"></i> Bulk Upload
+                        </a>
+                    <?php endif; ?>
                     <a href="<?= site_url('studentprofile/create') ?>" class="ps-submit-btn ps-submit-btn-inline">
                         <i class="bi bi-plus-lg"></i> Add Student
                     </a>
@@ -149,7 +155,7 @@ if (!empty($profiles)) {
                             </div>
 
                             <div class="ps-col-actions">
-                                <?php if (!$is_currently_enrolled): ?>
+                                <?php if (!$is_teacher_profile_access && !$is_currently_enrolled): ?>
                                     <a href="<?= site_url('studentprofile/enroll/' . $p->id) ?>" class="ps-action-btn ps-action-view" title="Enroll">
                                         <i class="bi bi-person-plus-fill"></i> Enroll
                                     </a>
@@ -157,9 +163,11 @@ if (!empty($profiles)) {
                                 <a href="<?= site_url('studentprofile/edit/' . $p->id) ?>" class="ps-action-btn ps-action-edit" title="Edit">
                                     <i class="bi bi-pencil-fill"></i> Edit
                                 </a>
-                                <a href="<?= site_url('studentprofile/delete/' . $p->id) ?>" class="ps-action-btn ps-action-del" title="Delete" onclick="return confirm('Delete this student profile? This will also delete the associated user account.');">
-                                    <i class="bi bi-trash3-fill"></i> Delete
-                                </a>
+                                <?php if (!$is_teacher_profile_access): ?>
+                                    <a href="<?= site_url('studentprofile/delete/' . $p->id) ?>" class="ps-action-btn ps-action-del" title="Delete" onclick="return confirm('Delete this student profile? This will also delete the associated user account.');">
+                                        <i class="bi bi-trash3-fill"></i> Delete
+                                    </a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -177,9 +185,11 @@ if (!empty($profiles)) {
                         <a href="<?= site_url('studentprofile/create') ?>" class="ps-submit-btn ps-empty-btn">
                             <i class="bi bi-plus-lg"></i> Add Student
                         </a>
-                        <a href="<?= site_url('studentprofile/bulk_upload') ?>" class="ps-tool-btn ps-tool-btn-light">
-                            <i class="bi bi-upload"></i> Bulk Upload
-                        </a>
+                        <?php if (!$is_teacher_profile_access): ?>
+                            <a href="<?= site_url('studentprofile/bulk_upload') ?>" class="ps-tool-btn ps-tool-btn-light">
+                                <i class="bi bi-upload"></i> Bulk Upload
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endif; ?>

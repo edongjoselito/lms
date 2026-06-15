@@ -12,6 +12,10 @@ $school_name = $selected_school_id ? $this->session->userdata('school_name') : '
 $brand_text = $school_name ?: 'LMS Platform';
 $super_admin_programs_url = site_url('academic/programs');
 $super_admin_school_years_url = site_url('academic/school_years');
+$is_advisory_page = ($this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'my_advisory_class');
+if (!$is_advisory_page && $this->uri->segment(1) == 'academic' && $this->uri->segment(2) == 'section_students') {
+    $is_advisory_page = ($this->input->get('back', TRUE) === 'academic/my_advisory_class');
+}
 
 // Get school logo if available
 $school_logo = null;
@@ -126,14 +130,22 @@ if ($rs === 'student') {
                 <span>My Subjects</span>
             </a>
             <div class="nav-section-title">Academics</div>
-            <a href="<?= site_url('grades') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'grades') ? 'active' : '' ?>">
-                <span class="material-symbols-outlined">checklist</span>
-                <span>Grades</span>
+            <a href="<?= site_url('studentprofile') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'studentprofile') ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">badge</span>
+                <span>Student Profile</span>
             </a>
-            <a href="<?= site_url('attendance') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'attendance') ? 'active' : '' ?>">
-                <span class="material-symbols-outlined">event_available</span>
-                <span>Attendance</span>
-            </a>
+            <?php if (!empty($teacher_has_advisory_sections)): ?>
+                <a href="<?= site_url('enrollment') ?>" class="sidebar-link <?= ($this->uri->segment(1) == 'enrollment') ? 'active' : '' ?>">
+                    <span class="material-symbols-outlined">how_to_reg</span>
+                    <span>Enrollment</span>
+                </a>
+            <?php endif; ?>
+            <?php if (!empty($teacher_has_advisory_sections)): ?>
+                <a href="<?= site_url('academic/my_advisory_class') ?>" class="sidebar-link <?= $is_advisory_page ? 'active' : '' ?>">
+                    <span class="material-symbols-outlined">groups_2</span>
+                    <span>My Advisory Class</span>
+                </a>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($nav_role === 'course_creator'): ?>
@@ -165,20 +177,13 @@ if ($rs === 'student') {
             </a>
         <?php endif; ?>
 
-        <?php if (in_array($nav_role, array('teacher', 'student'))): ?>
+        <?php if ($nav_role === 'student'): ?>
             <div class="nav-section-title">Learning</div>
-            <?php if ($nav_role === 'student'): ?>
-                <?php $student_learning_active = ($this->uri->segment(1) == 'student' && in_array($this->uri->segment(2), array('subjects', 'content', 'lesson', 'enroll'))); ?>
-                <a href="<?= site_url('student/subjects') ?>" class="sidebar-link <?= $student_learning_active ? 'active' : '' ?>">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    <span>Subjects</span>
-                </a>
-            <?php else: ?>
-                <a href="<?= site_url('subjects') ?>" class="sidebar-link <?= in_array($this->uri->segment(1), array('subjects')) ? 'active' : '' ?>">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    <span>Subjects</span>
-                </a>
-            <?php endif; ?>
+            <?php $student_learning_active = ($this->uri->segment(1) == 'student' && in_array($this->uri->segment(2), array('subjects', 'content', 'lesson', 'enroll'))); ?>
+            <a href="<?= site_url('student/subjects') ?>" class="sidebar-link <?= $student_learning_active ? 'active' : '' ?>">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span>Subjects</span>
+            </a>
         <?php endif; ?>
 
         <div class="nav-section-title">Account</div>

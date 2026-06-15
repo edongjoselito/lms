@@ -1,9 +1,24 @@
+<?php
+$is_teacher_enrollment_access = isset($role_slug) && $role_slug === 'teacher';
+$teacher_enrollment_defaults = isset($teacher_enrollment_defaults) && is_array($teacher_enrollment_defaults) ? $teacher_enrollment_defaults : null;
+$teacher_default_grade_level_id = $teacher_enrollment_defaults && !empty($teacher_enrollment_defaults['grade_level_id']) ? (string) $teacher_enrollment_defaults['grade_level_id'] : '';
+$teacher_default_section_id = $teacher_enrollment_defaults && !empty($teacher_enrollment_defaults['section_id']) ? (int) $teacher_enrollment_defaults['section_id'] : 0;
+$teacher_default_adviser_id = $teacher_enrollment_defaults && !empty($teacher_enrollment_defaults['adviser_id']) ? (int) $teacher_enrollment_defaults['adviser_id'] : 0;
+$teacher_default_adviser_name = $teacher_enrollment_defaults && !empty($teacher_enrollment_defaults['adviser_name']) ? (string) $teacher_enrollment_defaults['adviser_name'] : '';
+?>
+
 <div class="row">
     <div class="col-12">
         <div class="mb-3">
             <div>
                 <h5 style="font-weight:700;margin-bottom:0.5rem;">Enrollment Dashboard</h5>
-                <p style="color:#64748b;margin:0;">View all enrolled students and enrollment statistics</p>
+                <p style="color:#64748b;margin:0;">
+                    <?php if (isset($role_slug) && $role_slug === 'teacher'): ?>
+                        View and manage enrollments for your advisory section.
+                    <?php else: ?>
+                        View all enrolled students and enrollment statistics
+                    <?php endif; ?>
+                </p>
             </div>
         </div>
     </div>
@@ -118,7 +133,9 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end" style="z-index:9999;">
                                                 <li><a class="dropdown-item" href="<?= site_url('enrollment/edit/' . $e->id) ?>"><i class="bi bi-pencil me-2"></i>Edit</a></li>
-                                                <li><a class="dropdown-item text-danger" href="<?= site_url('enrollment/delete/' . $e->id) ?>" onclick="return confirm('Delete this enrollment?');"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                <?php if (!(isset($role_slug) && $role_slug === 'teacher')): ?>
+                                                    <li><a class="dropdown-item text-danger" href="<?= site_url('enrollment/delete/' . $e->id) ?>" onclick="return confirm('Delete this enrollment?');"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                <?php endif; ?>
                                             </ul>
                                         </div>
                                     </td>
@@ -183,6 +200,14 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="padding:1.5rem;">
+                    <?php if ($is_teacher_enrollment_access && $teacher_enrollment_defaults): ?>
+                        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:0.95rem 1rem;margin-bottom:1rem;color:#1e3a8a;">
+                            <div style="font-size:0.78rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.25rem;">Auto Setup</div>
+                            <div style="font-size:0.92rem;">
+                                Grade Level, Section, and Adviser are automatically set from your advisory class.
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Student Profile <span style="color:red;">*</span></label>
@@ -212,7 +237,7 @@
                                         }
                                     }
                                     ?>
-                                    <option value="<?= $gl->id ?>"><?= htmlspecialchars($grade_label) ?></option>
+                                    <option value="<?= $gl->id ?>" <?= ($teacher_default_grade_level_id !== '' && (string) $gl->id === $teacher_default_grade_level_id) ? 'selected' : '' ?>><?= htmlspecialchars($grade_label) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -224,7 +249,8 @@
                                     <option value="<?= $section->id ?>"
                                         data-program="<?= isset($section->program_id) ? (int) $section->program_id : '' ?>"
                                         data-adviser="<?= isset($section->adviser_user_id) ? (int) $section->adviser_user_id : '' ?>"
-                                        data-adviser-name="<?= isset($section->adviser_name) ? htmlspecialchars($section->adviser_name, ENT_QUOTES, 'UTF-8') : '' ?>">
+                                        data-adviser-name="<?= isset($section->adviser_name) ? htmlspecialchars($section->adviser_name, ENT_QUOTES, 'UTF-8') : '' ?>"
+                                        <?= ($teacher_default_section_id > 0 && (int) $section->id === $teacher_default_section_id) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($section->name) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -233,7 +259,11 @@
                         <div class="col-md-4">
                             <label class="form-label">Adviser</label>
                             <select class="form-select" name="adviser_id" id="enrollmentAdviser">
-                                <option value="">Select Adviser</option>
+                                <?php if ($teacher_default_adviser_id > 0): ?>
+                                    <option value="<?= $teacher_default_adviser_id ?>" selected><?= htmlspecialchars($teacher_default_adviser_name !== '' ? $teacher_default_adviser_name : 'Adviser') ?></option>
+                                <?php else: ?>
+                                    <option value="">Select Adviser</option>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>
@@ -299,6 +329,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var previewMetaElement = document.getElementById('selectedStudentMeta');
     var formElement = document.getElementById('enrollmentCreateForm');
     var allSectionOptions = [];
+    var isTeacherEnrollmentAccess = <?= json_encode($is_teacher_enrollment_access && $teacher_enrollment_defaults) ?>;
+    var teacherDefaults = {
+        gradeLevelId: <?= json_encode($teacher_default_grade_level_id) ?>,
+        sectionId: <?= json_encode((string) $teacher_default_section_id) ?>,
+        adviserId: <?= json_encode((string) $teacher_default_adviser_id) ?>,
+        adviserName: <?= json_encode($teacher_default_adviser_name) ?>
+    };
 
     sectionSelect.querySelectorAll('option').forEach(function(option) {
         allSectionOptions.push({
@@ -310,8 +347,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    function renderSections(selectedGradeLevel) {
-        var currentValue = sectionSelect.value;
+    function renderSections(selectedGradeLevel, preferredSectionId) {
+        var currentValue = preferredSectionId || sectionSelect.value;
         sectionSelect.innerHTML = '<option value="">Select Section</option>';
 
         allSectionOptions.forEach(function(option) {
@@ -363,6 +400,16 @@ document.addEventListener('DOMContentLoaded', function() {
         adviserSelect.value = adviserId;
     }
 
+    function applyTeacherDefaults() {
+        if (!isTeacherEnrollmentAccess) {
+            return;
+        }
+
+        gradeLevelSelect.value = teacherDefaults.gradeLevelId || '';
+        renderSections(teacherDefaults.gradeLevelId || '', teacherDefaults.sectionId || '');
+        syncAdviserFromSection();
+    }
+
     function resetStudentPreview() {
         previewElement.style.display = 'none';
         previewNameElement.textContent = '';
@@ -387,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     gradeLevelSelect.addEventListener('change', function() {
-        renderSections(this.value);
+        renderSections(this.value, '');
         adviserSelect.value = '';
     });
 
@@ -395,11 +442,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     modalElement.addEventListener('hidden.bs.modal', function() {
         formElement.reset();
-        renderSections('');
-        adviserSelect.value = '';
         resetStudentPreview();
         if (window.jQuery && window.jQuery.fn.select2) {
             window.jQuery('#enrollmentProfileId').val(null).trigger('change');
+        }
+
+        if (isTeacherEnrollmentAccess) {
+            applyTeacherDefaults();
+        } else {
+            renderSections('', '');
+            adviserSelect.value = '';
         }
     });
 
@@ -432,6 +484,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.jQuery('#enrollmentProfileId').on('select2:clear', resetStudentPreview);
     }
 
-    renderSections('');
+    if (isTeacherEnrollmentAccess) {
+        applyTeacherDefaults();
+    } else {
+        renderSections('', '');
+    }
 });
 </script>

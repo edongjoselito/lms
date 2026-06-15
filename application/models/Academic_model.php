@@ -589,6 +589,11 @@ class Academic_model extends CI_Model
         return $this->db->where('subjects.status', 1)->order_by('code')->get('subjects')->result();
     }
 
+    public function get_subjects_by_school($school_id)
+    {
+        return $this->get_subjects(array('school_id' => $school_id));
+    }
+
     public function get_subjects_by_program($program_id)
     {
         $this->db->select('subjects.*');
@@ -767,6 +772,32 @@ class Academic_model extends CI_Model
         $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
         $this->db->where('sections.id', $id);
         return $this->db->get('sections')->row();
+    }
+
+    public function get_advisory_sections_by_user($user_id, $school_id = null, $school_year_id = null)
+    {
+        $checkGradeLevel = $this->db->query("SHOW COLUMNS FROM sections LIKE 'grade_level_id'")->num_rows();
+
+        $this->db->select('sections.*, CONCAT(u.first_name, " ", u.last_name) as adviser_name', FALSE);
+        if ($checkGradeLevel > 0) {
+            $this->db->select('grade_levels.name as grade_level_name');
+            $this->db->join('grade_levels', 'grade_levels.id = sections.grade_level_id', 'left');
+        }
+        $this->db->join('users u', 'u.id = sections.adviser_id', 'left');
+        $this->db->where('sections.adviser_id', (int) $user_id);
+
+        if ($school_id) {
+            $this->db->where('sections.school_id', $school_id);
+        }
+
+        if ($school_year_id && $this->db->field_exists('school_year_id', 'sections')) {
+            $this->db->where('sections.school_year_id', (int) $school_year_id);
+        }
+
+        return $this->db->order_by('sections.year_level', 'ASC')
+            ->order_by('sections.name', 'ASC')
+            ->get('sections')
+            ->result();
     }
 
     public function create_section($data)

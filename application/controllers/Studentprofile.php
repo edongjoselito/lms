@@ -1,13 +1,84 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Studentprofile extends Admin_Controller
+class Studentprofile extends MY_Controller
 {
     public function __construct()
     {
         parent::__construct();
         $this->load->model(array('Studentprofile_model', 'User_model'));
         $this->require_school();
+
+        $method = $this->router->fetch_method();
+        if (in_array($method, array('index', 'create', 'edit'))) {
+            $this->require_role(array('super_admin', 'school_admin', 'teacher'));
+        } else {
+            $this->require_role(array('super_admin', 'school_admin'));
+        }
+    }
+
+    private function get_school_profile_or_404($id)
+    {
+        $profile = $this->Studentprofile_model->get_for_school($id, $this->school_id);
+        if (!$profile) {
+            show_404();
+        }
+
+        return $profile;
+    }
+
+    private function get_profile_duplicate_message($student_number, $first_name, $middle_name, $last_name, $birth_date, $exclude_profile_id = null, $exclude_user_id = null)
+    {
+        $student_number = trim((string) $student_number);
+        $first_name = trim((string) $first_name);
+        $middle_name = trim((string) $middle_name);
+        $last_name = trim((string) $last_name);
+        $birth_date = trim((string) $birth_date);
+
+        if ($student_number !== '') {
+            $existing = $this->db->where('student_number', $student_number)
+                ->where('school_id', $this->school_id);
+
+            if ($exclude_profile_id !== null) {
+                $existing->where('id !=', (int) $exclude_profile_id);
+            }
+
+            $existing = $existing->get('studentprofile')->row();
+            if ($existing) {
+                return 'Student Number already exists in this school.';
+            }
+
+            $existing_user = $this->db->where('email', $student_number);
+            if ($exclude_user_id !== null) {
+                $existing_user->where('id !=', (int) $exclude_user_id);
+            }
+            $existing_user = $existing_user->get('users')->row();
+            if ($existing_user) {
+                return 'Student Number already exists as a login in the system.';
+            }
+        }
+
+        if ($first_name !== '' && $last_name !== '' && $birth_date !== '') {
+            $duplicate_profile = $this->Studentprofile_model->find_by_identity(
+                $this->school_id,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $birth_date,
+                $exclude_profile_id
+            );
+
+            if ($duplicate_profile) {
+                $message = 'Student already exists in the profile registry';
+                if (!empty($duplicate_profile->student_number)) {
+                    $message .= ' (Student Number: ' . $duplicate_profile->student_number . ')';
+                }
+                $message .= '. Please edit the existing profile instead.';
+                return $message;
+            }
+        }
+
+        return null;
     }
 
     public function index()
@@ -50,17 +121,15 @@ class Studentprofile extends Admin_Controller
             $birth_date = $this->input->post('birth_date', TRUE);
             $gender = $this->normalize_gender($this->input->post('gender', TRUE));
 
-            // Check if student number already exists
-            $existing = $this->Studentprofile_model->get_by_student_number($student_number, $this->school_id);
-            if ($existing) {
-                $this->session->set_flashdata('error', 'Student Number already exists in this school.');
-                redirect('studentprofile/create');
-            }
-
-            // Check if student number already exists in users table (as email)
-            $existing_user = $this->db->where('email', $student_number)->get('users')->row();
-            if ($existing_user) {
-                $this->session->set_flashdata('error', 'Student Number already exists as a login in the system.');
+            $duplicate_message = $this->get_profile_duplicate_message(
+                $student_number,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $birth_date
+            );
+            if ($duplicate_message !== null) {
+                $this->session->set_flashdata('error', $duplicate_message);
                 redirect('studentprofile/create');
             }
 
@@ -105,42 +174,38 @@ class Studentprofile extends Admin_Controller
 
     public function edit($id)
     {
-        $data['profile'] = $this->Studentprofile_model->get($id);
+        $data['profile'] = $this->get_school_profile_or_404($id);
         if (!$data['profile']) show_404();
 
         if ($this->input->method() === 'post') {
             $student_number = $this->input->post('student_number', TRUE);
             $email = $this->input->post('email', TRUE);
             $birth_date = $this->input->post('birth_date', TRUE);
+            $first_name = $this->input->post('first_name', TRUE);
+            $middle_name = $this->input->post('middle_name', TRUE);
+            $last_name = $this->input->post('last_name', TRUE);
             $gender = $this->normalize_gender($this->input->post('gender', TRUE));
 
-            // Check if student number already exists (excluding current record)
-            $existing = $this->db->where('student_number', $student_number)
-                ->where('school_id', $this->school_id)
-                ->where('id !=', $id)
-                ->get('studentprofile')
-                ->row();
-            if ($existing) {
-                $this->session->set_flashdata('error', 'Student Number already exists in this school.');
-                redirect('studentprofile/edit/' . $id);
-            }
-
-            // Check if student number already exists in users table (as email, excluding current user)
-            $existing_user = $this->db->where('email', $student_number)
-                ->where('id !=', $data['profile']->user_id)
-                ->get('users')
-                ->row();
-            if ($existing_user) {
-                $this->session->set_flashdata('error', 'Student Number already exists as a login in the system.');
+            $duplicate_message = $this->get_profile_duplicate_message(
+                $student_number,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $birth_date,
+                $id,
+                $data['profile']->user_id
+            );
+            if ($duplicate_message !== null) {
+                $this->session->set_flashdata('error', $duplicate_message);
                 redirect('studentprofile/edit/' . $id);
             }
 
             $profile_data = array(
                 'student_number' => $student_number,
                 'email' => $email,
-                'first_name' => $this->input->post('first_name', TRUE),
-                'middle_name' => $this->input->post('middle_name', TRUE),
-                'last_name' => $this->input->post('last_name', TRUE),
+                'first_name' => $first_name,
+                'middle_name' => $middle_name,
+                'last_name' => $last_name,
                 'birth_date' => $birth_date
             );
 
@@ -148,9 +213,9 @@ class Studentprofile extends Admin_Controller
             if ($data['profile']->user_id) {
                 $user_data = array(
                     'email' => $student_number,
-                    'first_name' => $this->input->post('first_name', TRUE),
-                    'middle_name' => $this->input->post('middle_name', TRUE),
-                    'last_name' => $this->input->post('last_name', TRUE),
+                    'first_name' => $first_name,
+                    'middle_name' => $middle_name,
+                    'last_name' => $last_name,
                     'updated_at' => date('Y-m-d H:i:s')
                 );
                 $this->db->where('id', $data['profile']->user_id)->update('users', $user_data);
@@ -210,8 +275,7 @@ class Studentprofile extends Admin_Controller
 
     public function delete($id)
     {
-        $profile = $this->Studentprofile_model->get($id);
-        if (!$profile) show_404();
+        $profile = $this->get_school_profile_or_404($id);
 
         // Delete user record if exists
         if ($profile->user_id) {
@@ -225,7 +289,7 @@ class Studentprofile extends Admin_Controller
 
     public function enroll($id)
     {
-        $data['profile'] = $this->Studentprofile_model->get($id);
+        $data['profile'] = $this->get_school_profile_or_404($id);
         if (!$data['profile']) show_404();
 
         // Get student's current enrollment to show current grade level
@@ -428,20 +492,16 @@ class Studentprofile extends Admin_Controller
                         continue;
                     }
 
-                    // Check if student number already exists
-                    $existing = $this->Studentprofile_model->get_by_student_number($student_number, $this->school_id);
-                    if ($existing) {
+                    $duplicate_message = $this->get_profile_duplicate_message(
+                        $student_number,
+                        $first_name,
+                        $middle_name,
+                        $last_name,
+                        $birth_date
+                    );
+                    if ($duplicate_message !== null) {
                         $error_count++;
-                        $errors[] = "Row $row_num: Student Number $student_number already exists";
-                        $row_num++;
-                        continue;
-                    }
-
-                    // Check if student number already exists in users table
-                    $existing_user = $this->db->where('email', $student_number)->get('users')->row();
-                    if ($existing_user) {
-                        $error_count++;
-                        $errors[] = "Row $row_num: Student Number $student_number already exists as login";
+                        $errors[] = "Row $row_num: " . $duplicate_message;
                         $row_num++;
                         continue;
                     }

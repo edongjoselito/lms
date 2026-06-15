@@ -169,6 +169,19 @@ class MY_Controller extends CI_Controller {
 
     protected function render($view, $data = array())
     {
+        $teacher_advisory_section_count = 0;
+        if ($this->current_user && $this->original_role_slug === 'teacher' && $this->school_id) {
+            $this->db->from('sections');
+            $this->db->where('adviser_id', (int) $this->current_user->id);
+            $this->db->where('school_id', (int) $this->school_id);
+
+            if ($this->current_school_year && $this->db->field_exists('school_year_id', 'sections')) {
+                $this->db->where('school_year_id', (int) $this->current_school_year->id);
+            }
+
+            $teacher_advisory_section_count = (int) $this->db->count_all_results();
+        }
+
         $data['current_user'] = $this->current_user;
         $data['role_slug'] = $this->role_slug;
         $data['school_id'] = $this->school_id;
@@ -176,6 +189,8 @@ class MY_Controller extends CI_Controller {
         $data['current_school_year'] = $this->current_school_year;
         $data['is_student_mode'] = $this->is_student_mode;
         $data['original_role_slug'] = $this->original_role_slug;
+        $data['teacher_advisory_section_count'] = $teacher_advisory_section_count;
+        $data['teacher_has_advisory_sections'] = $teacher_advisory_section_count > 0;
         $this->load->view('layouts/header', $data);
         $this->load->view($view, $data);
         $this->load->view('layouts/footer', $data);
