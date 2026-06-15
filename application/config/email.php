@@ -15,3 +15,4 @@ $config['crlf']         = "\r\n";
 $config['wordwrap']     = TRUE;
 $config['from_email']   = 'lms@depeddavor.com';
 $config['from_name']    = 'BlueCampus LMS';
+
