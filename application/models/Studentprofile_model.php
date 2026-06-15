@@ -110,6 +110,27 @@ class Studentprofile_model extends CI_Model
             ->row();
     }
 
+    public function email_exists($email, $school_id = null, $exclude_id = null)
+    {
+        $email = trim((string) $email);
+        if ($email === '') {
+            return false;
+        }
+
+        $this->db->from('studentprofile');
+        $this->db->where('email', $email);
+
+        if ($school_id !== null) {
+            $this->db->where('school_id', (int) $school_id);
+        }
+
+        if ($exclude_id !== null) {
+            $this->db->where('id !=', (int) $exclude_id);
+        }
+
+        return $this->db->count_all_results() > 0;
+    }
+
     public function find_by_identity($school_id, $first_name, $middle_name, $last_name, $birth_date, $exclude_id = null)
     {
         $sql = "SELECT *

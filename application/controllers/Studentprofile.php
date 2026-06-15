@@ -10,7 +10,7 @@ class Studentprofile extends MY_Controller
         $this->require_school();
 
         $method = $this->router->fetch_method();
-        if (in_array($method, array('index', 'create', 'edit'))) {
+        if (in_array($method, array('index', 'create', 'edit', 'check_duplicate'))) {
             $this->require_role(array('super_admin', 'school_admin', 'teacher'));
         } else {
             $this->require_role(array('super_admin', 'school_admin'));
@@ -27,14 +27,9 @@ class Studentprofile extends MY_Controller
         return $profile;
     }
 
-    private function get_profile_duplicate_message($student_number, $first_name, $middle_name, $last_name, $birth_date, $exclude_profile_id = null, $exclude_user_id = null)
+    private function get_student_number_duplicate_message($student_number, $exclude_profile_id = null, $exclude_user_id = null)
     {
         $student_number = trim((string) $student_number);
-        $first_name = trim((string) $first_name);
-        $middle_name = trim((string) $middle_name);
-        $last_name = trim((string) $last_name);
-        $birth_date = trim((string) $birth_date);
-
         if ($student_number !== '') {
             $existing = $this->db->where('student_number', $student_number)
                 ->where('school_id', $this->school_id);
@@ -56,6 +51,44 @@ class Studentprofile extends MY_Controller
             if ($existing_user) {
                 return 'Student Number already exists as a login in the system.';
             }
+        }
+
+        return null;
+    }
+
+    private function get_profile_email_duplicate_message($email, $exclude_profile_id = null, $exclude_user_id = null)
+    {
+        $email = trim((string) $email);
+        if ($email === '') {
+            return null;
+        }
+
+        if ($this->Studentprofile_model->email_exists($email, $this->school_id, $exclude_profile_id)) {
+            return 'Email already exists in this school.';
+        }
+
+        if ($this->User_model->email_exists($email, $exclude_user_id)) {
+            return 'Email already exists as a login in the system.';
+        }
+
+        return null;
+    }
+
+    private function get_profile_duplicate_message($student_number, $email, $first_name, $middle_name, $last_name, $birth_date, $exclude_profile_id = null, $exclude_user_id = null)
+    {
+        $first_name = trim((string) $first_name);
+        $middle_name = trim((string) $middle_name);
+        $last_name = trim((string) $last_name);
+        $birth_date = trim((string) $birth_date);
+
+        $student_number_message = $this->get_student_number_duplicate_message($student_number, $exclude_profile_id, $exclude_user_id);
+        if ($student_number_message !== null) {
+            return $student_number_message;
+        }
+
+        $email_message = $this->get_profile_email_duplicate_message($email, $exclude_profile_id, $exclude_user_id);
+        if ($email_message !== null) {
+            return $email_message;
         }
 
         if ($first_name !== '' && $last_name !== '' && $birth_date !== '') {
@@ -110,6 +143,40 @@ class Studentprofile extends MY_Controller
         $this->render('studentprofile/index', $data);
     }
 
+    public function check_duplicate()
+    {
+        $this->output->set_content_type('application/json');
+
+        if ($this->input->method() !== 'get') {
+            $this->output->set_status_header(405)
+                ->set_output(json_encode(array(
+                    'success' => false,
+                    'message' => 'Method not allowed.',
+                )));
+            return;
+        }
+
+        $exclude_profile_id = (int) $this->input->get('exclude_profile_id', TRUE);
+        $exclude_user_id = (int) $this->input->get('exclude_user_id', TRUE);
+        $student_number = trim((string) $this->input->get('student_number', TRUE));
+        $email = trim((string) $this->input->get('email', TRUE));
+
+        $student_number_message = $this->get_student_number_duplicate_message($student_number, $exclude_profile_id ?: null, $exclude_user_id ?: null);
+        $email_message = $this->get_profile_email_duplicate_message($email, $exclude_profile_id ?: null, $exclude_user_id ?: null);
+
+        $this->output->set_output(json_encode(array(
+            'success' => true,
+            'student_number' => array(
+                'exists' => $student_number_message !== null,
+                'message' => $student_number_message,
+            ),
+            'email' => array(
+                'exists' => $email_message !== null,
+                'message' => $email_message,
+            ),
+        )));
+    }
+
     public function create()
     {
         if ($this->input->method() === 'post') {
@@ -123,6 +190,7 @@ class Studentprofile extends MY_Controller
 
             $duplicate_message = $this->get_profile_duplicate_message(
                 $student_number,
+                $email,
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -188,6 +256,7 @@ class Studentprofile extends MY_Controller
 
             $duplicate_message = $this->get_profile_duplicate_message(
                 $student_number,
+                $email,
                 $first_name,
                 $middle_name,
                 $last_name,
@@ -494,6 +563,7 @@ class Studentprofile extends MY_Controller
 
                     $duplicate_message = $this->get_profile_duplicate_message(
                         $student_number,
+                        $email,
                         $first_name,
                         $middle_name,
                         $last_name,
