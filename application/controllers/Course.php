@@ -354,7 +354,10 @@ class Course extends MY_Controller {
         if (in_array($this->original_role_slug, array('course_creator', 'super_admin', 'school_admin'))) {
             return;
         }
-        if ($this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id)) {
+        if (
+            $this->original_role_slug === 'teacher' &&
+            ($this->is_teacher_for_subject($subject_id) || $this->is_teacher_for_subject_via_section($subject_id))
+        ) {
             return;
         }
         show_error('You do not have permission to manage sections.', 403);
@@ -740,7 +743,10 @@ class Course extends MY_Controller {
         $data['shared_modules'] = $shared_modules;
         $can_edit = $this->can_manage_course_content($subject_id);
         $can_reorder_modules = !$student_content_view && $can_edit && count($modules) > 1;
-        $can_manage_sections = $can_edit || ($this->original_role_slug === 'teacher' && $this->is_teacher_for_subject($subject_id));
+        $can_manage_sections = $can_edit || (
+            $this->original_role_slug === 'teacher' &&
+            ($this->is_teacher_for_subject($subject_id) || $this->is_teacher_for_subject_via_section($subject_id))
+        );
         $data['edit_mode']          = !$student_content_view && $this->input->get('edit') === '1' && $can_edit;
         $data['can_edit']           = $can_edit;
         $data['can_reorder_modules'] = $can_reorder_modules;
