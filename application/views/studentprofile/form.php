@@ -37,6 +37,14 @@
                         <input type="date" class="form-control" name="birth_date" value="<?= isset($profile) ? htmlspecialchars($profile->birth_date) : '' ?>" required>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label">Sex</label>
+                        <select class="form-select" name="gender">
+                            <option value="">Select Sex</option>
+                            <option value="Male" <?= isset($profile) && isset($profile->gender) && $profile->gender === 'Male' ? 'selected' : '' ?>>Male</option>
+                            <option value="Female" <?= isset($profile) && isset($profile->gender) && $profile->gender === 'Female' ? 'selected' : '' ?>>Female</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Email</label>
                         <input type="email" class="form-control" name="email" value="<?= isset($profile) && isset($profile->email) ? htmlspecialchars($profile->email) : '' ?>">
                     </div>

@@ -36,9 +36,10 @@ class Studentprofile_model extends CI_Model
         }
     }
 
-    public function get_all($school_id = null, $search = null)
+    public function get_all($school_id = null, $search = null, $limit = null, $offset = null)
     {
         $this->db->select('studentprofile.*, studentprofile.email as profile_email, users.email as user_email, users.status as user_status');
+        $this->db->from('studentprofile');
         $this->db->join('users', 'users.id = studentprofile.user_id', 'left');
         if ($school_id) {
             $this->db->where('studentprofile.school_id', $school_id);
@@ -53,12 +54,41 @@ class Studentprofile_model extends CI_Model
             $this->db->or_like('CONCAT(studentprofile.last_name, ", ", studentprofile.first_name)', $search, FALSE);
             $this->db->group_end();
         }
-        return $this->db->order_by('studentprofile.id', 'DESC')->get('studentprofile')->result();
+        if ($limit !== null) {
+            $this->db->limit((int) $limit, (int) $offset);
+        }
+        return $this->db->order_by('studentprofile.id', 'DESC')->get()->result();
+    }
+
+    public function count_all($school_id = null, $search = null)
+    {
+        $this->db->from('studentprofile');
+        $this->db->join('users', 'users.id = studentprofile.user_id', 'left');
+        if ($school_id) {
+            $this->db->where('studentprofile.school_id', $school_id);
+        }
+        if ($search) {
+            $this->db->group_start();
+            $this->db->like('studentprofile.student_number', $search);
+            $this->db->or_like('studentprofile.first_name', $search);
+            $this->db->or_like('studentprofile.middle_name', $search);
+            $this->db->or_like('studentprofile.last_name', $search);
+            $this->db->or_like('CONCAT(studentprofile.first_name, " ", studentprofile.last_name)', $search, FALSE);
+            $this->db->or_like('CONCAT(studentprofile.last_name, ", ", studentprofile.first_name)', $search, FALSE);
+            $this->db->group_end();
+        }
+
+        return (int) $this->db->count_all_results();
     }
 
     public function get($id)
     {
-        return $this->db->where('id', $id)->get('studentprofile')->row();
+        return $this->db->select('studentprofile.*, students.gender', FALSE)
+            ->from('studentprofile')
+            ->join('students', 'students.user_id = studentprofile.user_id', 'left')
+            ->where('studentprofile.id', $id)
+            ->get()
+            ->row();
     }
 
     public function get_by_student_number($student_number, $school_id)
@@ -67,6 +97,39 @@ class Studentprofile_model extends CI_Model
             ->where('school_id', $school_id)
             ->get('studentprofile')
             ->row();
+    }
+
+    public function search_for_enrollment($school_id, $search = null, $limit = 20)
+    {
+        $this->db->select('studentprofile.*, studentprofile.email as profile_email, users.email as user_email');
+        $this->db->from('studentprofile');
+        $this->db->join('users', 'users.id = studentprofile.user_id', 'left');
+        $this->db->join(
+            'enrollments e',
+            'e.student_id = studentprofile.user_id AND e.school_id = studentprofile.school_id AND e.status = "enrolled"',
+            'left',
+            FALSE
+        );
+        $this->db->where('studentprofile.school_id', $school_id);
+        $this->db->where('studentprofile.user_id IS NOT NULL', null, false);
+        $this->db->where('e.id IS NULL', null, false);
+
+        if ($search !== null && $search !== '') {
+            $this->db->group_start();
+            $this->db->like('studentprofile.student_number', $search);
+            $this->db->or_like('studentprofile.first_name', $search);
+            $this->db->or_like('studentprofile.middle_name', $search);
+            $this->db->or_like('studentprofile.last_name', $search);
+            $this->db->or_like('CONCAT(studentprofile.first_name, " ", studentprofile.last_name)', $search, FALSE);
+            $this->db->or_like('CONCAT(studentprofile.last_name, ", ", studentprofile.first_name)', $search, FALSE);
+            $this->db->group_end();
+        }
+
+        return $this->db->order_by('studentprofile.last_name', 'ASC')
+            ->order_by('studentprofile.first_name', 'ASC')
+            ->limit((int) $limit)
+            ->get()
+            ->result();
     }
 
     public function create($data)

@@ -25,7 +25,7 @@
                 <div class="row g-3 mt-3">
                     <div class="col-md-4">
                         <label class="form-label">Grade Level <span style="color:red;">*</span></label>
-                        <select class="form-select" name="grade_level_id" required>
+                        <select class="form-select" name="grade_level_id" id="edit_grade_level_id" required>
                             <option value="">Select Grade Level</option>
                             <?php if (empty($grade_levels)): ?>
                                 <?php for ($i = 1; $i <= 12; $i++): ?>
@@ -54,10 +54,14 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Section <span style="color:red;">*</span></label>
-                        <select class="form-select" name="section_id" required>
+                        <select class="form-select" name="section_id" id="edit_section_id" required>
                             <option value="">Select Section</option>
                             <?php foreach ($sections as $s): ?>
-                                <option value="<?= $s->id ?>" data-grade-level="<?= isset($s->grade_level_id) ? $s->grade_level_id : (isset($s->year_level) ? $s->year_level : '') ?>" <?= $enrollment->section_id == $s->id ? 'selected' : '' ?>>
+                                <option value="<?= $s->id ?>"
+                                    data-program="<?= isset($s->program_id) ? (int) $s->program_id : '' ?>"
+                                    data-adviser="<?= isset($s->adviser_user_id) ? (int) $s->adviser_user_id : '' ?>"
+                                    data-adviser-name="<?= isset($s->adviser_name) ? htmlspecialchars($s->adviser_name, ENT_QUOTES, 'UTF-8') : '' ?>"
+                                    <?= $enrollment->section_id == $s->id ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($s->name) ?>
                                     <?php if (isset($s->grade_level_name) && !empty($s->grade_level_name)): ?>
                                         (<?= htmlspecialchars($s->grade_level_name) ?>)
@@ -68,22 +72,8 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Adviser</label>
-                        <select class="form-select" name="adviser_id">
+                        <select class="form-select" name="adviser_id" id="edit_adviser_id">
                             <option value="">Select Adviser</option>
-                            <?php foreach ($advisers as $a): ?>
-                                <?php 
-                                $is_selected = false;
-                                // Match by staff_id if available (when using staff table), otherwise by user_id
-                                if (!empty($current_section) && isset($current_section->adviser_staff_id) && isset($a->staff_id) && $current_section->adviser_staff_id == $a->staff_id) {
-                                    $is_selected = true;
-                                } elseif (!empty($current_section) && isset($current_section->adviser_user_id) && $current_section->adviser_user_id == $a->id) {
-                                    $is_selected = true;
-                                } elseif (!empty($current_section) && isset($current_section->adviser_id) && $current_section->adviser_id == $a->id) {
-                                    $is_selected = true;
-                                }
-                                ?>
-                                <option value="<?= $a->id ?>" <?= $is_selected ? 'selected' : '' ?>><?= htmlspecialchars($a->last_name . ', ' . $a->first_name) ?></option>
-                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
@@ -95,3 +85,86 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var gradeLevelSelect = document.getElementById('edit_grade_level_id');
+    var sectionSelect = document.getElementById('edit_section_id');
+    var adviserSelect = document.getElementById('edit_adviser_id');
+    var allSectionOptions = [];
+
+    sectionSelect.querySelectorAll('option').forEach(function(option) {
+        allSectionOptions.push({
+            value: option.value,
+            text: option.text,
+            program: option.getAttribute('data-program') || '',
+            adviserId: option.getAttribute('data-adviser') || '',
+            adviserName: option.getAttribute('data-adviser-name') || '',
+            selected: option.selected
+        });
+    });
+
+    function renderSections(selectedGradeLevel, preferredSectionId) {
+        sectionSelect.innerHTML = '<option value="">Select Section</option>';
+
+        allSectionOptions.forEach(function(option) {
+            if (!option.value) {
+                return;
+            }
+
+            if (!selectedGradeLevel || option.program === selectedGradeLevel) {
+                var sectionOption = document.createElement('option');
+                sectionOption.value = option.value;
+                sectionOption.text = option.text;
+                sectionOption.setAttribute('data-program', option.program);
+                sectionOption.setAttribute('data-adviser', option.adviserId);
+                sectionOption.setAttribute('data-adviser-name', option.adviserName);
+
+                if (preferredSectionId && option.value === preferredSectionId) {
+                    sectionOption.selected = true;
+                }
+
+                sectionSelect.add(sectionOption);
+            }
+        });
+
+        if (sectionSelect.options.length === 1) {
+            var emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.text = 'No sections available for this grade level';
+            sectionSelect.add(emptyOption);
+        }
+    }
+
+    function syncAdviserFromSection() {
+        var selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+        adviserSelect.innerHTML = '<option value="">Select Adviser</option>';
+
+        if (!selectedOption) {
+            return;
+        }
+
+        var adviserId = selectedOption.getAttribute('data-adviser');
+        var adviserName = selectedOption.getAttribute('data-adviser-name');
+
+        if (!adviserId) {
+            return;
+        }
+
+        var adviserOption = document.createElement('option');
+        adviserOption.value = adviserId;
+        adviserOption.text = adviserName || 'Adviser';
+        adviserSelect.add(adviserOption);
+        adviserSelect.value = adviserId;
+    }
+
+    gradeLevelSelect.addEventListener('change', function() {
+        renderSections(this.value, '');
+        syncAdviserFromSection();
+    });
+
+    sectionSelect.addEventListener('change', syncAdviserFromSection);
+    renderSections(gradeLevelSelect.value, '<?= (int) $enrollment->section_id ?>');
+    syncAdviserFromSection();
+});
+</script>

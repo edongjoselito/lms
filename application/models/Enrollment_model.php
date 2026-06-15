@@ -248,4 +248,36 @@ class Enrollment_model extends CI_Model {
         $this->db->order_by($group_field, 'ASC');
         return $this->db->get('enrollments')->result();
     }
+
+    public function get_grade_level_section_enrollees($grade_level_value, $school_id = null)
+    {
+        $grade_level_value = (int) $grade_level_value;
+        if ($grade_level_value <= 0) {
+            return array();
+        }
+
+        $this->db->select('enrollments.*, sections.name as section_name, sp.student_number, sp.first_name, sp.middle_name, sp.last_name, sp.birth_date, COALESCE(students.gender, \'Unspecified\') as gender', FALSE);
+        $this->db->from('enrollments');
+        $this->db->join('sections', 'sections.id = enrollments.section_id', 'left');
+        $this->db->join('studentprofile sp', 'sp.user_id = enrollments.student_id', 'left');
+        $this->db->join('students', 'students.user_id = enrollments.student_id', 'left');
+
+        if ($this->db->field_exists('year_level', 'enrollments')) {
+            $this->db->where('enrollments.year_level', $grade_level_value);
+        } else {
+            $this->db->where('enrollments.grade_level_id', $grade_level_value);
+        }
+
+        $this->db->where('enrollments.status', 'enrolled');
+        if ($school_id) {
+            $this->db->where('enrollments.school_id', $school_id);
+        }
+
+        $this->db->order_by('sections.name', 'ASC');
+        $this->db->order_by("CASE COALESCE(students.gender, 'Unspecified') WHEN 'Male' THEN 1 WHEN 'Female' THEN 2 ELSE 3 END", '', FALSE);
+        $this->db->order_by('sp.last_name', 'ASC');
+        $this->db->order_by('sp.first_name', 'ASC');
+
+        return $this->db->get()->result();
+    }
 }

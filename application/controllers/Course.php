@@ -456,7 +456,7 @@ class Course extends MY_Controller {
                           sections.name as section_name,
                           sections.school_id as section_school_id,
                           schools.name as school_name,
-                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND (enrollments.status = \'enrolled\' OR enrollments.status = 1)) as student_count';
 
         return $this->db->select($select_fields, FALSE)
             ->from('sections')

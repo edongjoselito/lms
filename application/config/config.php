@@ -2,7 +2,22 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 
-$config['base_url'] = 'http://localhost/lms/';
+if (isset($_SERVER['HTTP_HOST']) && isset($_SERVER['SCRIPT_NAME'])) {
+	$scheme = 'http';
+	if ((!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+		|| (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)) {
+		$scheme = 'https';
+	}
+
+	$base_path = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
+	if ($base_path === '/' || $base_path === '.') {
+		$base_path = '';
+	}
+
+	$config['base_url'] = $scheme . '://' . $_SERVER['HTTP_HOST'] . rtrim($base_path, '/') . '/';
+} else {
+	$config['base_url'] = 'http://localhost/lms/';
+}
 
 /*
 |--------------------------------------------------------------------------

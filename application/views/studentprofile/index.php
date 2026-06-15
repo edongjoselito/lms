@@ -1,9 +1,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <?php
-$profile_count = !empty($profiles) ? count($profiles) : 0;
+$page_profile_count = !empty($profiles) ? count($profiles) : 0;
+$total_profile_count = isset($total_profiles) ? (int) $total_profiles : $page_profile_count;
+$per_page = isset($per_page) ? (int) $per_page : 15;
+$current_page = isset($current_page) ? (int) $current_page : 1;
+$total_pages = isset($total_pages) ? (int) $total_pages : 1;
 $active_count = 0;
 $search_label = isset($_GET['search']) ? trim((string) $_GET['search']) : '';
+$search_query_suffix = $search_label !== '' ? '&search=' . urlencode($search_label) : '';
 $enrolled_user_ids = isset($enrolled_user_ids) && is_array($enrolled_user_ids) ? array_map('intval', array_column($enrolled_user_ids, 'student_id')) : array();
 
 if (!empty($profiles)) {
@@ -32,7 +37,7 @@ if (!empty($profiles)) {
             </div>
             <div class="ps-hero-stats">
                 <div class="ps-hero-stat">
-                    <div class="ps-hero-stat-num"><?= (int) $profile_count ?></div>
+                    <div class="ps-hero-stat-num"><?= (int) $total_profile_count ?></div>
                     <div class="ps-hero-stat-lbl">Results</div>
                 </div>
                 <div class="ps-hero-stat">
@@ -53,7 +58,7 @@ if (!empty($profiles)) {
                 <div class="ps-card-title">
                     <i class="bi bi-person-vcard-fill"></i>
                     <span>Student Profiles</span>
-                    <span class="ps-count-pill"><?= (int) $profile_count ?></span>
+                    <span class="ps-count-pill"><?= (int) $page_profile_count ?></span>
                 </div>
                 <div class="ps-card-tools">
                     <form action="<?= site_url('studentprofile') ?>" method="get" class="ps-search-form">
@@ -104,7 +109,7 @@ if (!empty($profiles)) {
                         ?>
                         <div class="ps-subject-item ps-student-item">
                             <div class="ps-col-num">
-                                <span class="ps-subject-index"><?= $index + 1 ?></span>
+                                <span class="ps-subject-index"><?= (($current_page - 1) * $per_page) + $index + 1 ?></span>
                             </div>
 
                             <div class="ps-col-id">
@@ -176,6 +181,47 @@ if (!empty($profiles)) {
                             <i class="bi bi-upload"></i> Bulk Upload
                         </a>
                     </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($total_profile_count > 0): ?>
+                <div class="ps-pagination-bar">
+                    <?php if ($total_pages > 1): ?>
+                        <span class="ps-pagination-info">
+                            Showing <?= (($current_page - 1) * $per_page) + 1 ?> - <?= min($current_page * $per_page, $total_profile_count) ?> of <?= (int) $total_profile_count ?> student profiles
+                        </span>
+                        <div class="ps-pagination">
+                            <?php if ($current_page > 1): ?>
+                                <a href="<?= site_url('studentprofile?page=' . ($current_page - 1) . $search_query_suffix) ?>" class="ps-page-btn">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            <?php else: ?>
+                                <span class="ps-page-btn ps-page-btn-disabled">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </span>
+                            <?php endif; ?>
+
+                            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                <?php if ($i == $current_page): ?>
+                                    <span class="ps-page-num ps-page-num-active"><?= $i ?></span>
+                                <?php else: ?>
+                                    <a href="<?= site_url('studentprofile?page=' . $i . $search_query_suffix) ?>" class="ps-page-num"><?= $i ?></a>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+
+                            <?php if ($current_page < $total_pages): ?>
+                                <a href="<?= site_url('studentprofile?page=' . ($current_page + 1) . $search_query_suffix) ?>" class="ps-page-btn">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <span class="ps-page-btn ps-page-btn-disabled">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <span class="ps-pagination-info">Showing <?= (int) $page_profile_count ?> of <?= (int) $total_profile_count ?> student profiles</span>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -799,6 +845,71 @@ if (!empty($profiles)) {
     padding: 0.75rem 1rem;
 }
 
+.ps-pagination-bar {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem 0;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ps-pagination-info {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.ps-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ps-page-btn,
+.ps-page-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.95rem;
+    border-radius: 12px;
+    border: 1px solid #dbeafe;
+    background: #ffffff;
+    color: #1e3a8a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+}
+
+.ps-page-btn:hover,
+.ps-page-num:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+    text-decoration: none;
+}
+
+.ps-page-num {
+    padding: 0;
+}
+
+.ps-page-num-active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.ps-page-btn-disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    pointer-events: none;
+}
+
 @media (max-width: 1180px) {
     .ps-student-table-head {
         display: none;
@@ -855,6 +966,15 @@ if (!empty($profiles)) {
 
     .ps-subject-item {
         padding: 1rem;
+    }
+
+    .ps-pagination-bar {
+        padding: 1.25rem 1rem 0;
+        align-items: flex-start;
+    }
+
+    .ps-pagination {
+        width: 100%;
     }
 }
 

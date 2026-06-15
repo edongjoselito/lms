@@ -909,7 +909,7 @@ class Academic_model extends CI_Model
         $select_fields = 'class_programs.*, sections.name as section_name,
                           sections.school_id as section_school_id,
                           schools.name as school_name,
-                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = class_programs.section_id AND enrollments.status = 1) as student_count';
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = class_programs.section_id AND (enrollments.status = \'enrolled\' OR enrollments.status = 1)) as student_count';
         if ($checkCode > 0) {
             $select_fields .= ', programs.code as program_code';
         }
@@ -1067,6 +1067,10 @@ class Academic_model extends CI_Model
             ->join('users', 'users.id = enrollments.student_id')
             ->join('studentprofile sp', 'sp.user_id = users.id', 'left')
             ->where('enrollments.section_id', $section_id)
+            ->group_start()
+                ->where('enrollments.status', 'enrolled')
+                ->or_where('enrollments.status', 1)
+            ->group_end()
             ->get()
             ->result();
 
@@ -1184,6 +1188,10 @@ class Academic_model extends CI_Model
             ->join('students', 'students.user_id = users.id', 'left')
             ->where('enrollments.section_id', $section_id)
             ->where('enrollments.student_id', $student_user_id)
+            ->group_start()
+                ->where('enrollments.status', 'enrolled')
+                ->or_where('enrollments.status', 1)
+            ->group_end()
             ->get()
             ->row();
     }

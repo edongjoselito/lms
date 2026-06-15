@@ -14,7 +14,17 @@ class Studentprofile extends Admin_Controller
     {
         $data['title'] = 'Student Profiles';
         $search = $this->input->get('search', TRUE);
-        $data['profiles'] = $this->Studentprofile_model->get_all($this->school_id, $search);
+        $per_page = 15;
+        $page = max(1, (int) $this->input->get('page'));
+        $total_profiles = $this->Studentprofile_model->count_all($this->school_id, $search);
+        $total_pages = max(1, (int) ceil($total_profiles / $per_page));
+
+        if ($page > $total_pages) {
+            $page = $total_pages;
+        }
+
+        $offset = ($page - 1) * $per_page;
+        $data['profiles'] = $this->Studentprofile_model->get_all($this->school_id, $search, $per_page, $offset);
         $data['enrolled_user_ids'] = $this->db->select('student_id')
             ->from('enrollments')
             ->where('school_id', $this->school_id)
@@ -22,6 +32,10 @@ class Studentprofile extends Admin_Controller
             ->group_by('student_id')
             ->get()
             ->result_array();
+        $data['total_profiles'] = $total_profiles;
+        $data['per_page'] = $per_page;
+        $data['current_page'] = $page;
+        $data['total_pages'] = $total_pages;
         $this->render('studentprofile/index', $data);
     }
 
@@ -34,6 +48,7 @@ class Studentprofile extends Admin_Controller
             $middle_name = $this->input->post('middle_name', TRUE);
             $last_name = $this->input->post('last_name', TRUE);
             $birth_date = $this->input->post('birth_date', TRUE);
+            $gender = $this->normalize_gender($this->input->post('gender', TRUE));
 
             // Check if student number already exists
             $existing = $this->Studentprofile_model->get_by_student_number($student_number, $this->school_id);
@@ -78,6 +93,7 @@ class Studentprofile extends Admin_Controller
                 'birth_date' => $birth_date
             );
             $this->Studentprofile_model->create($profile_data);
+            $this->sync_student_gender_record($user_id, $student_number, $birth_date, $gender);
 
             $this->session->set_flashdata('success', 'Student Profile created. Login: ' . $student_number . ', Password: ' . $password);
             redirect('studentprofile');
@@ -95,6 +111,8 @@ class Studentprofile extends Admin_Controller
         if ($this->input->method() === 'post') {
             $student_number = $this->input->post('student_number', TRUE);
             $email = $this->input->post('email', TRUE);
+            $birth_date = $this->input->post('birth_date', TRUE);
+            $gender = $this->normalize_gender($this->input->post('gender', TRUE));
 
             // Check if student number already exists (excluding current record)
             $existing = $this->db->where('student_number', $student_number)
@@ -123,7 +141,7 @@ class Studentprofile extends Admin_Controller
                 'first_name' => $this->input->post('first_name', TRUE),
                 'middle_name' => $this->input->post('middle_name', TRUE),
                 'last_name' => $this->input->post('last_name', TRUE),
-                'birth_date' => $this->input->post('birth_date', TRUE)
+                'birth_date' => $birth_date
             );
 
             // Update user record if exists (always use student number as login email)
@@ -139,12 +157,55 @@ class Studentprofile extends Admin_Controller
             }
 
             $this->Studentprofile_model->update($id, $profile_data);
+            if (!empty($data['profile']->user_id)) {
+                $this->sync_student_gender_record($data['profile']->user_id, $student_number, $birth_date, $gender);
+            }
             $this->session->set_flashdata('success', 'Student Profile updated.');
             redirect('studentprofile');
         }
 
         $data['title'] = 'Edit Student Profile';
         $this->render('studentprofile/form', $data);
+    }
+
+    private function normalize_gender($gender)
+    {
+        $gender = trim((string) $gender);
+        if ($gender === 'Male' || $gender === 'Female') {
+            return $gender;
+        }
+
+        return null;
+    }
+
+    private function sync_student_gender_record($user_id, $student_number, $birth_date, $gender = null)
+    {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return;
+        }
+
+        $student = $this->db->where('user_id', $user_id)->get('students')->row();
+        if ($student) {
+            $update_data = array(
+                'school_id' => $this->school_id,
+                'birthdate' => $birth_date ?: null,
+                'gender' => $gender,
+            );
+            $this->db->where('id', $student->id)->update('students', $update_data);
+            return;
+        }
+
+        $insert_data = array(
+            'user_id' => $user_id,
+            'school_id' => $this->school_id,
+            'student_id' => $student_number,
+            'birthdate' => $birth_date ?: null,
+            'gender' => $gender,
+            'system_type' => 'deped',
+            'status' => 'active',
+        );
+        $this->db->insert('students', $insert_data);
     }
 
     public function delete($id)
