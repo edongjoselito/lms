@@ -1219,7 +1219,14 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
                                             </a>
                                             <?php if (!empty($section->assigned_teachers)): ?>
                                                 <?php foreach ($section->assigned_teachers as $teacher): ?>
-                                                    <span class="cc-teacher-badge"> - <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
+                                                    <span class="cc-teacher-chip">
+                                                        <?php if (!empty($can_manage_sections)): ?>
+                                                            <a href="#" class="cc-teacher-badge cc-teacher-action" onclick="showAssignTeacherModal(<?= $section_target_id ?>, <?= (int) $subject->id ?>, '<?= htmlspecialchars($section_target_name, ENT_QUOTES, 'UTF-8') ?>'); return false;"> - <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></a>
+                                                            <button type="button" class="cc-teacher-remove" onclick="removeTeacher('<?= $section_target_id ?>', '<?= (int) $subject->id ?>', '<?= htmlspecialchars($teacher->IDNumber, ENT_QUOTES, 'UTF-8') ?>')">Remove</button>
+                                                        <?php else: ?>
+                                                            <span class="cc-teacher-badge"> - <?= htmlspecialchars($teacher->last_name . ', ' . $teacher->first_name) ?></span>
+                                                        <?php endif; ?>
+                                                    </span>
                                                 <?php endforeach; ?>
                                             <?php else: ?>
                                                 <?php if (!empty($can_manage_sections)): ?>
@@ -2012,6 +2019,13 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         margin-top: 0.25rem;
     }
 
+    .cc-teacher-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+    }
+
     .cc-teacher-badge {
         display: inline-flex;
         align-items: center;
@@ -2021,6 +2035,35 @@ $course_learning_competencies_url = site_url('course/learning_competencies/' . (
         color: #1e40af;
         border-radius: 4px;
         font-weight: 500;
+    }
+
+    .cc-teacher-action {
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .cc-teacher-action:hover {
+        background: #bfdbfe;
+        color: #1d4ed8;
+        text-decoration: none;
+    }
+
+    .cc-teacher-remove {
+        font-size: 0.68rem;
+        line-height: 1;
+        padding: 0.18rem 0.38rem;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #b91c1c;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .cc-teacher-remove:hover {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
     .cc-teacher-link {

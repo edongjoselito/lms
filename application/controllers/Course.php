@@ -395,6 +395,105 @@ class Course extends MY_Controller {
         return (bool)$row;
     }
 
+    private function get_teacher_assigned_section_ids($subject_id = null, $include_adviser_sections = true)
+    {
+        $section_ids = array();
+
+        if ($this->original_role_slug !== 'teacher' || !$this->current_user) {
+            return $section_ids;
+        }
+
+        $this->Academic_model->ensure_section_teachers_table_public();
+        $staff = $this->db->where('user_id', (int) $this->current_user->id)->get('staff')->row();
+
+        if ($staff && !empty($staff->IDNumber)) {
+            $this->db->select('section_id')
+                ->distinct()
+                ->from('section_teachers')
+                ->where('staff_id', $staff->IDNumber);
+
+            if ($subject_id !== null) {
+                $this->db->where('subject_id', (int) $subject_id);
+            }
+
+            $section_teacher_rows = $this->db->get()->result();
+            foreach ($section_teacher_rows as $row) {
+                $section_ids[] = (int) $row->section_id;
+            }
+        }
+
+        if ($include_adviser_sections) {
+            $this->db->select('id')
+                ->from('sections');
+
+            if (!empty($this->school_id)) {
+                $this->db->where('school_id', (int) $this->school_id);
+            }
+
+            $this->db->where('adviser_id', (int) $this->current_user->id);
+
+            $adviser_rows = $this->db->get()->result();
+            foreach ($adviser_rows as $row) {
+                $section_ids[] = (int) $row->id;
+            }
+        }
+
+        $section_ids = array_unique(array_filter($section_ids));
+        sort($section_ids);
+
+        return $section_ids;
+    }
+
+    private function get_sidebar_sections_by_ids($section_ids)
+    {
+        $section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
+        if (empty($section_ids)) {
+            return array();
+        }
+
+        $select_fields = 'sections.*,
+                          sections.id as section_id,
+                          sections.name as section_name,
+                          sections.school_id as section_school_id,
+                          schools.name as school_name,
+                          (SELECT COUNT(*) FROM enrollments WHERE enrollments.section_id = sections.id AND enrollments.status = 1) as student_count';
+
+        return $this->db->select($select_fields, FALSE)
+            ->from('sections')
+            ->join('schools', 'schools.id = sections.school_id', 'left')
+            ->where_in('sections.id', $section_ids)
+            ->order_by('schools.name', 'ASC')
+            ->order_by('sections.name', 'ASC')
+            ->get()
+            ->result();
+    }
+
+    private function populate_subject_section_teachers(&$subject_sections, $subject_id)
+    {
+        if (empty($subject_sections)) {
+            return;
+        }
+
+        $this->Academic_model->ensure_section_teachers_table_public();
+        foreach ($subject_sections as $section) {
+            $section_id = isset($section->section_id) ? $section->section_id : (isset($section->id) ? $section->id : null);
+            $section->assigned_teachers = array();
+
+            if (empty($section_id)) {
+                continue;
+            }
+
+            $section->assigned_teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
+                ->from('section_teachers')
+                ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
+                ->join('users', 'users.id = staff.user_id')
+                ->where('section_teachers.section_id', $section_id)
+                ->where('section_teachers.subject_id', $subject_id)
+                ->get()
+                ->result();
+        }
+    }
+
     private function get_subject_access_session()
     {
         return $this->session->userdata('subject_content_access') ?: array();
@@ -502,52 +601,16 @@ class Course extends MY_Controller {
         // Prefer explicit subject-to-section assignments; fall back to program/year-level sections for compatibility.
         $subject_sections = array();
         if (!$student_content_view) {
+            $assigned_section_ids = array();
+            $explicit_teacher_section_ids = array();
+            if ($this->original_role_slug === 'teacher' && $this->current_user) {
+                $assigned_section_ids = $this->get_teacher_assigned_section_ids($subject_id);
+                $explicit_teacher_section_ids = $this->get_teacher_assigned_section_ids($subject_id, false);
+            }
+
             $subject_sections = $this->Academic_model->get_subject_sections($subject_id);
-
-            // Get assigned teachers for each section
-            $this->Academic_model->ensure_section_teachers_table_public();
-            foreach ($subject_sections as $section) {
-                $section_id = isset($section->section_id) ? $section->section_id : (isset($section->id) ? $section->id : null);
-                $teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
-                    ->from('section_teachers')
-                    ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
-                    ->join('users', 'users.id = staff.user_id')
-                    ->where('section_teachers.section_id', $section_id)
-                    ->where('section_teachers.subject_id', $subject_id)
-                    ->get()
-                    ->result();
-
-                // If no teachers found with subject_id filter, try without it (for backwards compatibility)
-                if (empty($teachers) && !empty($section_id)) {
-                    $teachers = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
-                        ->from('section_teachers')
-                        ->join('staff', 'staff.IDNumber = section_teachers.staff_id')
-                        ->join('users', 'users.id = staff.user_id')
-                        ->where('section_teachers.section_id', $section_id)
-                        ->get()
-                        ->result();
-                }
-
-                $section->assigned_teachers = $teachers;
-
-                // Fallback: get adviser from sections table if no teachers assigned via section_teachers
-                if (empty($teachers) && !empty($section_id)) {
-                    $section_data = $this->db->select('adviser_id')
-                        ->where('id', $section_id)
-                        ->get('sections')
-                        ->row();
-                    if ($section_data && !empty($section_data->adviser_id)) {
-                        $adviser = $this->db->select('staff.IDNumber, users.first_name, users.last_name')
-                            ->from('staff')
-                            ->join('users', 'users.id = staff.user_id')
-                            ->where('staff.IDNumber', $section_data->adviser_id)
-                            ->get()
-                            ->row();
-                        if ($adviser) {
-                            $section->assigned_teachers = array($adviser);
-                        }
-                    }
-                }
+            if ($this->original_role_slug === 'teacher' && empty($subject_sections) && !empty($explicit_teacher_section_ids)) {
+                $subject_sections = $this->get_sidebar_sections_by_ids($explicit_teacher_section_ids);
             }
 
             // Restrict non-super-admin viewers to sections from their own school.
@@ -561,34 +624,6 @@ class Course extends MY_Controller {
 
             // Restrict teachers to only their assigned sections
             if ($this->original_role_slug === 'teacher' && $this->current_user) {
-                $this->Academic_model->ensure_section_teachers_table_public();
-                $staff = $this->db->where('user_id', (int) $this->current_user->id)->get('staff')->row();
-                $assigned_section_ids = array();
-
-                if ($staff) {
-                    // Get sections from section_teachers for this specific subject
-                    $section_teacher_rows = $this->db->select('section_id')
-                        ->distinct()
-                        ->where('staff_id', $staff->IDNumber)
-                        ->where('subject_id', $subject_id)
-                        ->get('section_teachers')
-                        ->result();
-                    foreach ($section_teacher_rows as $row) {
-                        $assigned_section_ids[] = (int) $row->section_id;
-                    }
-
-                    // Get sections where teacher is adviser
-                    $adviser_rows = $this->db->select('id')
-                        ->where('adviser_id', (int) $this->current_user->id)
-                        ->where('school_id', $this->school_id)
-                        ->get('sections')
-                        ->result();
-                    foreach ($adviser_rows as $row) {
-                        $assigned_section_ids[] = (int) $row->id;
-                    }
-                }
-
-                $assigned_section_ids = array_unique($assigned_section_ids);
                 error_log("Teacher (user_id: " . (int) $this->current_user->id . ") assigned section IDs for subject $subject_id: " . implode(', ', $assigned_section_ids));
 
                 if (!empty($assigned_section_ids)) {
@@ -605,11 +640,14 @@ class Course extends MY_Controller {
                 }
             }
         }
-        if (empty($subject_sections) && !empty($subject->program_id)) {
+        if ($this->original_role_slug !== 'teacher' && empty($subject_sections) && !empty($subject->program_id)) {
             $subject_sections = $this->Academic_model->get_sections_by_program($subject->program_id, $this->school_id);
         }
-        if (empty($subject_sections) && !empty($subject->year_level)) {
+        if ($this->original_role_slug !== 'teacher' && empty($subject_sections) && !empty($subject->year_level)) {
             $subject_sections = $this->Academic_model->get_sections_by_year_level($subject->year_level, $this->school_id);
+        }
+        if (!$student_content_view && !empty($subject_sections)) {
+            $this->populate_subject_section_teachers($subject_sections, $subject_id);
         }
         $requires_enrollment_key = $this->Academic_model->subject_has_enrollment_keys($subject_id);
         $has_subject_access = $this->has_subject_access($subject_id);
