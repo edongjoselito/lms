@@ -48,7 +48,7 @@ if ($current_session_label === '' && isset($session_labels[$selected_plan_day]))
     $current_session_label = $session_labels[$selected_plan_day];
 }
 $current_duration = module_ilaw_value($lesson_plan, $lesson_plan_defaults, 'session_duration_minutes');
-$current_duration = $current_duration !== '' ? $current_duration : '45';
+$current_duration = $current_duration !== '' ? $current_duration : '0';
 
 $total_sessions = count($session_labels);
 $completed_sessions = count($lesson_plans_by_day);
